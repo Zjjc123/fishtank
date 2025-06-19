@@ -17,6 +17,7 @@ struct ContentView: View {
   @State private var timeSpent: TimeInterval = 0
   @State private var showCommitmentSelection = false
   @State private var showFishCollection = false
+  @State private var showSettings = false
   @State private var showReward = false
   @State private var rewardMessage = ""
 
@@ -35,7 +36,19 @@ struct ContentView: View {
         .ignoresSafeArea()
 
         VStack {
-          ClockDisplayView(currentTime: currentTime)
+          HStack {
+            ClockDisplayView(currentTime: currentTime)
+            Spacer()
+            Button(action: {
+              showSettings = true
+            }) {
+              Image(systemName: "gearshape.fill")
+                .font(.title2)
+                .foregroundColor(.white)
+                .opacity(0.8)
+            }
+            .padding(.trailing)
+          }
 
           if let commitment = commitmentManager.currentCommitment {
             CommitmentProgressView(
@@ -133,6 +146,13 @@ struct ContentView: View {
               showRewardMessage("🐠 \(fish.emoji) added to swimming display!")
             },
             isPresented: $showFishCollection
+          )
+        }
+
+        if showSettings {
+          SettingsView(
+            isPresented: $showSettings,
+            statsManager: statsManager
           )
         }
       }
