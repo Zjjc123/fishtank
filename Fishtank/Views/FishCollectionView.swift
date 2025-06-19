@@ -12,7 +12,6 @@ struct FishCollectionView: View {
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Bool
   @Binding var isPresented: Bool
-
   @State private var showLimitAlert = false
 
   private var visibleFish: [CollectedFish] {
@@ -23,132 +22,220 @@ struct FishCollectionView: View {
     collectedFish.filter { !$0.isVisible }
   }
 
-  private var rarityStats: [FishRarity: Int] {
-    Dictionary(grouping: collectedFish, by: { $0.rarity })
-      .mapValues { $0.count }
-  }
-
   var body: some View {
     ZStack {
-      Color.black.opacity(0.4)
-        .ignoresSafeArea()
-        .onTapGesture {
-          isPresented = false
-        }
-
-      VStack {
-        HStack {
-          Text("Your Fish Collection")
-            .font(.title2)
-            .fontWeight(.bold)
-            .foregroundColor(.white)
-          Spacer()
-          Button("Done") {
-            isPresented = false
-          }
-          .foregroundColor(.blue)
-        }
-        .padding()
-
-        // Stats Section
-        VStack(spacing: 8) {
-          HStack {
-            Text("Total Fish: \(collectedFish.count)")
-              .font(.headline)
-              .foregroundColor(.white)
-            Spacer()
-            Text(
-              "Swimming: \(visibleFish.count)/\(AppConfig.maxSwimmingFish) | Hidden: \(hiddenFish.count)"
-            )
-            .font(.subheadline)
-            .foregroundColor(visibleFish.count >= AppConfig.maxSwimmingFish ? .orange : .gray)
-          }
-
-          // Rarity breakdown
-          HStack(spacing: 12) {
-            ForEach(FishRarity.allCases, id: \.self) { rarity in
-              let count = rarityStats[rarity] ?? 0
-              VStack(spacing: 2) {
-                Text("\(count)")
-                  .font(.caption)
-                  .fontWeight(.bold)
-                  .foregroundColor(rarity.color)
-                Text(rarity.rawValue.prefix(1))
-                  .font(.system(size: 8))
-                  .foregroundColor(rarity.color)
-              }
-            }
-            Spacer()
-          }
-        }
-        .padding(.horizontal)
-        .padding(.bottom, 8)
-
-        ScrollView {
-          LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 15) {
-            ForEach(collectedFish) { fish in
-              VStack {
-                Button(action: {
-                  if fish.isVisible {
-                    onFishSelected(fish)
-                  }
-                }) {
-                  VStack {
-                    Text(fish.emoji)
-                      .font(.title)
-                    Text(fish.rarity.rawValue)
-                      .font(.caption)
-                      .foregroundColor(fish.rarity.color)
-                    Text(formatDate(fish.dateCaught))
-                      .font(.system(size: 8))
-                      .foregroundColor(.gray)
-                  }
-                  .padding(8)
-                  .background(Color.blue.opacity(0.2))
-                  .cornerRadius(8)
-                  .opacity(fish.isVisible ? 1.0 : 0.6)
-                }
-                .disabled(!fish.isVisible)
-
-                // Visibility Toggle Button
-                Button(action: {
-                  let success = onVisibilityToggled(fish)
-                  if !success {
-                    showLimitAlert = true
-                  }
-                }) {
-                  Image(systemName: fish.isVisible ? "eye.fill" : "eye.slash.fill")
-                    .font(.caption)
-                    .foregroundColor(fish.isVisible ? .green : .red)
-                    .padding(4)
-                    .background(Color.black.opacity(0.3))
-                    .cornerRadius(4)
-                }
-              }
-            }
-          }
-          .padding()
-        }
-
-        Text("👁️ = Swimming in tank | 👁️‍🗨️ = Hidden from tank")
-          .font(.system(size: 10))
-          .foregroundColor(.gray)
-        Text("Maximum \(AppConfig.maxSwimmingFish) fish can swim at once")
-          .font(.system(size: 10))
-          .foregroundColor(.orange)
-          .padding(.bottom)
-      }
-      .background(Color.black.opacity(0.9))
-      .cornerRadius(15)
-      .padding(.horizontal, 20)
-      .padding(.vertical, 40)
+      backgroundOverlay
+      mainContent
     }
-    .alert("Tank Full!", isPresented: $showLimitAlert) {
-      Button("OK") {}
-    } message: {
-      Text(
-        "You can only have \(AppConfig.maxSwimmingFish) fish swimming at once. Hide some fish first to make room for new ones."
+  }
+
+  private var backgroundOverlay: some View {
+    Color.black.opacity(0.3)
+      .ignoresSafeArea()
+      .onTapGesture {
+        isPresented = false
+      }
+  }
+
+  private var mainContent: some View {
+    VStack {
+      headerSection
+
+      GeometryReader { geometry in
+        HStack(spacing: 16) {
+          statsPanel
+          fishGridSection(geometry: geometry)
+        }
+      }
+
+      footerSection
+    }
+    .background(contentBackground)
+    .padding(.horizontal, 20)
+    .padding(.vertical, 40)
+  }
+
+  private var headerSection: some View {
+    HStack {
+      Text("Your Fish Collection")
+        .font(.title2)
+        .fontWeight(.bold)
+        .foregroundColor(.white)
+        .opacity(0.9)
+      Spacer()
+      Button("Done") {
+        isPresented = false
+      }
+      .foregroundColor(.blue)
+      .opacity(0.8)
+    }
+    .padding()
+  }
+
+  private var statsPanel: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      statsSection
+      Spacer(minLength: 0)
+    }
+    .frame(width: 100)
+    .frame(maxHeight: .infinity, alignment: .top)
+    .padding(.leading, 8)
+  }
+
+  private var statsSection: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text("Stats")
+        .font(.headline)
+        .foregroundColor(.white)
+        .opacity(0.9)
+
+      Text("Total: \(collectedFish.count)")
+        .font(.subheadline)
+        .foregroundColor(.white)
+        .opacity(0.8)
+
+      Text("Swimming:")
+        .font(.caption)
+        .foregroundColor(.gray.opacity(0.7))
+
+      Text("\(visibleFish.count)/\(AppConfig.maxSwimmingFish)")
+        .font(.caption)
+        .foregroundColor(
+          visibleFish.count >= AppConfig.maxSwimmingFish
+            ? .orange.opacity(0.9) : .green.opacity(0.8))
+
+      Text("Hidden: \(hiddenFish.count)")
+        .font(.caption)
+        .foregroundColor(.gray.opacity(0.7))
+    }
+  }
+
+  private func fishGridSection(geometry: GeometryProxy) -> some View {
+    ScrollView {
+      LazyVGrid(
+        columns: Array(
+          repeating: GridItem(.flexible()),
+          count: columnCount(for: geometry.size.width - 120)),
+        spacing: 15
+      ) {
+        ForEach(collectedFish) { fish in
+          FishItemView(
+            fish: fish,
+            onFishSelected: onFishSelected,
+            onVisibilityToggled: onVisibilityToggled,
+            showLimitAlert: $showLimitAlert
+          )
+        }
+      }
+      .padding()
+      .frame(maxWidth: .infinity)
+    }
+    .frame(maxWidth: .infinity)
+  }
+
+  private var footerSection: some View {
+    VStack(spacing: 4) {
+      Text("👁️ = Swimming in tank | 👁️‍🗨️ = Hidden from tank")
+        .font(.system(size: 10))
+        .foregroundColor(.gray)
+      Text("Maximum \(AppConfig.maxSwimmingFish) fish can swim at once")
+        .font(.system(size: 10))
+        .foregroundColor(.orange)
+        .padding(.bottom)
+    }
+  }
+
+  private var contentBackground: some View {
+    RoundedRectangle(cornerRadius: 15)
+      .fill(.regularMaterial)
+      .overlay(
+        RoundedRectangle(cornerRadius: 15)
+          .stroke(Color.white.opacity(0.1), lineWidth: 1)
       )
+  }
+
+  private func formatDate(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .short
+    formatter.timeStyle = .none
+    return formatter.string(from: date)
+  }
+
+  private func columnCount(for width: CGFloat) -> Int {
+    // Calculate columns based on screen width
+    // Assuming each column needs roughly 120 points (item + spacing)
+    let availableWidth = width - 40  // Account for padding
+    let columnWidth: CGFloat = 120
+    let calculatedColumns = Int(availableWidth / columnWidth)
+
+    // Ensure minimum 2 columns and maximum 6 columns
+    return max(2, min(6, calculatedColumns))
+  }
+}
+
+struct FishItemView: View {
+  let fish: CollectedFish
+  let onFishSelected: (CollectedFish) -> Void
+  let onVisibilityToggled: (CollectedFish) -> Bool
+  @Binding var showLimitAlert: Bool
+
+  var body: some View {
+    VStack {
+      fishButton
+      visibilityToggleButton
+    }
+  }
+
+  private var fishButton: some View {
+    Button(action: {
+      let success = onVisibilityToggled(fish)
+      if !success {
+        showLimitAlert = true
+      }
+    }) {
+      fishContent
+    }
+  }
+
+  private var fishContent: some View {
+    VStack {
+      Text(fish.emoji)
+        .font(.title)
+        .frame(width: 40, height: 40)
+      Text(fish.rarity.rawValue)
+        .font(.caption)
+        .foregroundColor(fish.rarity.color.opacity(0.9))
+      Text(formatDate(fish.dateCaught))
+        .font(.system(size: 8))
+        .foregroundColor(.gray.opacity(0.7))
+    }
+    .padding(8)
+    .background(fishBackground)
+    .opacity(fish.isVisible ? 0.9 : 0.5)
+  }
+
+  private var fishBackground: some View {
+    RoundedRectangle(cornerRadius: 8)
+      .fill(.ultraThinMaterial)
+      .overlay(
+        RoundedRectangle(cornerRadius: 8)
+          .stroke(Color.white.opacity(0.15), lineWidth: 1)
+      )
+  }
+
+  private var visibilityToggleButton: some View {
+    Button(action: {
+      let success = onVisibilityToggled(fish)
+      if !success {
+        showLimitAlert = true
+      }
+    }) {
+      Image(systemName: fish.isVisible ? "eye.fill" : "eye.slash.fill")
+        .font(.caption)
+        .foregroundColor(fish.isVisible ? .green : .red)
+        .padding(4)
+        .background(Color.black.opacity(0.3))
+        .cornerRadius(4)
     }
   }
 

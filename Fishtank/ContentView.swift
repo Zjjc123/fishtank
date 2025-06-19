@@ -21,6 +21,7 @@ struct ContentView: View {
   @State private var showReward = false
   @State private var rewardMessage = ""
   @State private var cancelledCommitment: FocusCommitment?
+  @State private var notificationTimer: DispatchWorkItem?
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
@@ -46,7 +47,7 @@ struct ContentView: View {
               Image(systemName: "gearshape.fill")
                 .font(.title2)
                 .foregroundColor(.white)
-                .opacity(0.8)
+                .opacity(0.4)
             }
             .padding(.trailing)
           }
@@ -69,9 +70,16 @@ struct ContentView: View {
                 Text("🎯 Start Focus Session")
                   .font(.headline)
                   .foregroundColor(.white)
+                  .opacity(0.85)
                   .padding()
-                  .background(Color.green.opacity(0.8))
-                  .cornerRadius(10)
+                  .background(
+                    RoundedRectangle(cornerRadius: 10)
+                      .fill(.ultraThinMaterial)
+                      .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                          .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                      )
+                  )
               }
             }
 
@@ -81,9 +89,16 @@ struct ContentView: View {
               Text("🐠 View Collection")
                 .font(.headline)
                 .foregroundColor(.white)
+                .opacity(0.85)
                 .padding()
-                .background(Color.blue.opacity(0.8))
-                .cornerRadius(10)
+                .background(
+                  RoundedRectangle(cornerRadius: 10)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                )
             }
           }
           .padding(.bottom, 30)
@@ -105,7 +120,8 @@ struct ContentView: View {
 
               let fishMessages = newFishes.map { "\($0.rarity.rawValue) \($0.emoji)" }
               let hiddenCount = newFishes.filter { !$0.isVisible }.count
-              let hiddenMessage = hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
+              let hiddenMessage =
+                hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
               showRewardMessage(
                 "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(newFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))\(hiddenMessage)"
               )
@@ -130,11 +146,8 @@ struct ContentView: View {
             },
             onVisibilityToggled: { fish in
               let wasVisible = fish.isVisible
-              let success = statsManager.toggleFishVisibility(fish, fishTankManager: fishTankManager)
-              if success {
-                let status = !wasVisible ? "visible" : "hidden"
-                showRewardMessage("🐠 \(fish.emoji) is now \(status)")
-              }
+              let success = statsManager.toggleFishVisibility(
+                fish, fishTankManager: fishTankManager)
               return success
             },
             isPresented: $showFishCollection
@@ -190,16 +203,23 @@ struct ContentView: View {
   }
 
   private func showRewardMessage(_ message: String) {
+    // Cancel any existing notification timer to prevent glitches
+    notificationTimer?.cancel()
+    
     rewardMessage = message
     withAnimation(.spring()) {
       showReward = true
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + AppConfig.rewardDisplayDuration) {
+    // Create a new timer and store it so we can cancel it if needed
+    let newTimer = DispatchWorkItem {
       withAnimation(.spring()) {
         showReward = false
       }
     }
+    notificationTimer = newTimer
+    
+    DispatchQueue.main.asyncAfter(deadline: .now() + AppConfig.rewardDisplayDuration, execute: newTimer)
   }
 }
 

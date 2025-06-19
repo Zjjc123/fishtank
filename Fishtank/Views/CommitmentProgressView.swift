@@ -18,14 +18,16 @@ struct CommitmentProgressView: View {
         Text("\(commitment.emoji) \(commitment.rawValue)")
           .font(.headline)
           .foregroundColor(.white)
+          .opacity(0.8)
         Spacer()
         Text(formatCommitmentTime(timeRemaining))
           .font(.headline)
           .foregroundColor(.yellow)
+          .opacity(0.9)
       }
 
       ProgressView(value: progress)
-        .progressViewStyle(LinearProgressViewStyle(tint: .green))
+        .progressViewStyle(LinearProgressViewStyle(tint: .green.opacity(0.7)))
         .scaleEffect(x: 1, y: 2, anchor: .center)
     }
     .padding(.horizontal, 30)

@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - Configuration
 struct AppConfig {
-  static let rewardDisplayDuration: TimeInterval = 4
+  static let rewardDisplayDuration: TimeInterval = 2
   static let maxSwimmingFish = 10
 }
 
