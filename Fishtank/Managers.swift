@@ -9,174 +9,346 @@ import SwiftUI
 
 // MARK: - Fish Tank Manager
 class FishTankManager: ObservableObject {
-    @Published var fishes: [Fish] = []
-    @Published var giftBoxes: [GiftBox] = []
-    @Published var commitmentLootboxes: [CommitmentLootbox] = []
-    
-    private var lastGiftBoxTime: TimeInterval = 0
-    private let bounds: CGRect
-    
-    init(bounds: CGRect) {
-        self.bounds = bounds
-        spawnInitialFish()
+  @Published var swimmingFish: [SwimmingFish] = []
+  @Published var giftBoxes: [GiftBox] = []
+  @Published var commitmentLootboxes: [CommitmentLootbox] = []
+
+  private var lastGiftBoxTime: TimeInterval = 0
+  private let bounds: CGRect
+
+  init(bounds: CGRect) {
+    self.bounds = bounds
+  }
+
+  func updateBounds(_ newBounds: CGRect) {
+    // Update bounds if needed for screen rotation, etc.
+  }
+
+  func addSwimmingFish(from collectedFish: CollectedFish) {
+    if swimmingFish.count < AppConfig.maxSwimmingFish {
+      let swimmingFish = SwimmingFish(collectedFish: collectedFish, in: bounds)
+      self.swimmingFish.append(swimmingFish)
     }
-    
-    func updateBounds(_ newBounds: CGRect) {
-        // Update bounds if needed for screen rotation, etc.
+  }
+
+  func addSwimmingFishFromCollection(_ collectedFish: [CollectedFish]) {
+    // Add recently collected fish to swimming display
+    let availableSlots = AppConfig.maxSwimmingFish - swimmingFish.count
+    let fishToAdd = Array(collectedFish.prefix(availableSlots))
+
+    for fish in fishToAdd {
+      let swimmingFish = SwimmingFish(collectedFish: fish, in: bounds)
+      self.swimmingFish.append(swimmingFish)
     }
-    
-    func spawnInitialFish() {
-        for _ in 0..<AppConfig.initialFishCount {
-            fishes.append(Fish.random(in: bounds))
-        }
+  }
+
+  func spawnFishIfNeeded(timeSpent: TimeInterval, from collectedFish: [CollectedFish]) {
+    if Int(timeSpent) % Int(AppConfig.fishSpawnInterval) == 0
+      && Int(timeSpent) > 0
+      && swimmingFish.count < AppConfig.maxSwimmingFish
+      && !collectedFish.isEmpty
+    {
+
+      // Pick a random fish from collection to start swimming
+      if let randomCollectedFish = collectedFish.randomElement() {
+        addSwimmingFish(from: randomCollectedFish)
+      }
     }
-    
-    func spawnFishIfNeeded(timeSpent: TimeInterval) {
-        if Int(timeSpent) % Int(AppConfig.fishSpawnInterval) == 0 
-            && Int(timeSpent) > 0 
-            && fishes.count < AppConfig.maxFishCount {
-            fishes.append(Fish.random(in: bounds))
-        }
+  }
+
+  func animateFish() {
+    for i in swimmingFish.indices {
+      swimmingFish[i].x += swimmingFish[i].speed * swimmingFish[i].direction
+
+      if swimmingFish[i].x <= 0 || swimmingFish[i].x >= bounds.width {
+        swimmingFish[i].direction *= -1
+      }
+
+      swimmingFish[i].x = max(0, min(bounds.width, swimmingFish[i].x))
     }
-    
-    func animateFish() {
-        for i in fishes.indices {
-            fishes[i].x += fishes[i].speed * fishes[i].direction
-            
-            if fishes[i].x <= 0 || fishes[i].x >= bounds.width {
-                fishes[i].direction *= -1
-            }
-            
-            fishes[i].x = max(0, min(bounds.width, fishes[i].x))
-        }
+  }
+
+  func spawnGiftBoxIfNeeded(timeSpent: TimeInterval) -> Bool {
+    let minutes = Int(timeSpent) / 60
+    if timeSpent >= lastGiftBoxTime + AppConfig.giftBoxInterval && minutes > 0 {
+      spawnGiftBox()
+      lastGiftBoxTime = timeSpent
+      return true
     }
-    
-    func spawnGiftBoxIfNeeded(timeSpent: TimeInterval) -> Bool {
-        let minutes = Int(timeSpent) / 60
-        if timeSpent >= lastGiftBoxTime + AppConfig.giftBoxInterval && minutes > 0 {
-            spawnGiftBox()
-            lastGiftBoxTime = timeSpent
-            return true
-        }
-        return false
+    return false
+  }
+
+  private func spawnGiftBox() {
+    let giftBox = GiftBox(
+      x: CGFloat.random(in: 50...bounds.width - 50),
+      y: CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
+    )
+    giftBoxes.append(giftBox)
+  }
+
+  func openGiftBox(_ giftBox: GiftBox) -> CollectedFish {
+    if let index = giftBoxes.firstIndex(where: { $0.id == giftBox.id }) {
+      giftBoxes.remove(at: index)
     }
-    
-    private func spawnGiftBox() {
-        let giftBox = GiftBox(
-            x: CGFloat.random(in: 50...bounds.width - 50),
-            y: CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
-        )
-        giftBoxes.append(giftBox)
+
+    let rarity = FishRarity.randomRarity()
+    let newFish = CollectedFish(rarity: rarity)
+
+    // Add to swimming display
+    addSwimmingFish(from: newFish)
+
+    return newFish
+  }
+
+  func spawnCommitmentLootbox(type: LootboxType) {
+    let lootbox = CommitmentLootbox(
+      type: type,
+      x: CGFloat.random(in: 50...bounds.width - 50),
+      y: CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
+    )
+    commitmentLootboxes.append(lootbox)
+  }
+
+  func openLootbox(_ lootbox: CommitmentLootbox) -> [CollectedFish] {
+    if let index = commitmentLootboxes.firstIndex(where: { $0.id == lootbox.id }) {
+      commitmentLootboxes.remove(at: index)
     }
-    
-    func openGiftBox(_ giftBox: GiftBox) -> Fish {
-        if let index = giftBoxes.firstIndex(where: { $0.id == giftBox.id }) {
-            giftBoxes.remove(at: index)
-        }
-        
-        let rarity = FishRarity.randomRarity()
-        let newFish = Fish.random(in: bounds, rarity: rarity)
-        fishes.append(newFish)
-        
-        return newFish
+
+    var newFishes: [CollectedFish] = []
+    for _ in 0..<lootbox.type.fishCount {
+      let rarity = FishRarity.randomRarity(boost: lootbox.type.rarityBoost)
+      let newFish = CollectedFish(rarity: rarity)
+      newFishes.append(newFish)
     }
-    
-    func spawnCommitmentLootbox(type: LootboxType) {
-        let lootbox = CommitmentLootbox(
-            type: type,
-            x: CGFloat.random(in: 50...bounds.width - 50),
-            y: CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
-        )
-        commitmentLootboxes.append(lootbox)
+
+    // Add some of the new fish to swimming display
+    addSwimmingFishFromCollection(newFishes)
+
+    return newFishes
+  }
+
+  func removeSwimmingFish(_ fish: SwimmingFish) {
+    if let index = swimmingFish.firstIndex(where: { $0.id == fish.id }) {
+      swimmingFish.remove(at: index)
     }
-    
-    func openLootbox(_ lootbox: CommitmentLootbox) -> [Fish] {
-        if let index = commitmentLootboxes.firstIndex(where: { $0.id == lootbox.id }) {
-            commitmentLootboxes.remove(at: index)
-        }
-        
-        var newFishes: [Fish] = []
-        for _ in 0..<lootbox.type.fishCount {
-            let rarity = FishRarity.randomRarity(boost: lootbox.type.rarityBoost)
-            let newFish = Fish.random(in: bounds, rarity: rarity)
-            fishes.append(newFish)
-            newFishes.append(newFish)
-        }
-        
-        return newFishes
-    }
+  }
+
+  func clearSwimmingFish() {
+    swimmingFish.removeAll()
+  }
+
+  func replaceSwimmingFish(with collectedFish: [CollectedFish]) {
+    clearSwimmingFish()
+    addSwimmingFishFromCollection(collectedFish)
+  }
 }
 
 // MARK: - Commitment Manager
 class CommitmentManager: ObservableObject {
-    @Published var currentCommitment: FocusCommitment?
-    @Published var commitmentStartTime: Date?
-    
-    var progress: Double {
-        guard let commitment = currentCommitment,
-              let startTime = commitmentStartTime else { return 0 }
-        
-        let elapsed = Date().timeIntervalSince(startTime)
-        return min(elapsed / commitment.duration, 1.0)
+  @Published var currentCommitment: FocusCommitment?
+  @Published var commitmentStartTime: Date?
+
+  var progress: Double {
+    guard let commitment = currentCommitment,
+      let startTime = commitmentStartTime
+    else { return 0 }
+
+    let elapsed = Date().timeIntervalSince(startTime)
+    return min(elapsed / commitment.duration, 1.0)
+  }
+
+  var timeRemaining: TimeInterval {
+    guard let commitment = currentCommitment,
+      let startTime = commitmentStartTime
+    else { return 0 }
+
+    let elapsed = Date().timeIntervalSince(startTime)
+    return max(commitment.duration - elapsed, 0)
+  }
+
+  var isActive: Bool {
+    currentCommitment != nil
+  }
+
+  func startCommitment(_ commitment: FocusCommitment) {
+    currentCommitment = commitment
+    commitmentStartTime = Date()
+  }
+
+  func checkProgress() -> FocusCommitment? {
+    guard let commitment = currentCommitment,
+      let startTime = commitmentStartTime
+    else { return nil }
+
+    let elapsed = Date().timeIntervalSince(startTime)
+
+    if elapsed >= commitment.duration {
+      let completedCommitment = commitment
+      currentCommitment = nil
+      commitmentStartTime = nil
+      return completedCommitment
     }
-    
-    var timeRemaining: TimeInterval {
-        guard let commitment = currentCommitment,
-              let startTime = commitmentStartTime else { return 0 }
-        
-        let elapsed = Date().timeIntervalSince(startTime)
-        return max(commitment.duration - elapsed, 0)
+
+    return nil
+  }
+}
+
+// MARK: - Persistent Storage Manager
+class PersistentStorageManager {
+  private static let collectedFishKey = "CollectedFish"
+  private static let fishCollectionKey = "FishCollection"
+
+  static func saveFish(_ fish: [CollectedFish]) {
+    do {
+      let data = try JSONEncoder().encode(fish)
+      UserDefaults.standard.set(data, forKey: collectedFishKey)
+    } catch {
+      print("Failed to save fish collection: \(error)")
     }
-    
-    var isActive: Bool {
-        currentCommitment != nil
+  }
+
+  static func loadFish() -> [CollectedFish] {
+    guard let data = UserDefaults.standard.data(forKey: collectedFishKey) else {
+      return []
     }
-    
-    func startCommitment(_ commitment: FocusCommitment) {
-        currentCommitment = commitment
-        commitmentStartTime = Date()
+
+    do {
+      return try JSONDecoder().decode([CollectedFish].self, from: data)
+    } catch {
+      print("Failed to load fish collection: \(error)")
+      return []
     }
-    
-    func checkProgress() -> FocusCommitment? {
-        guard let commitment = currentCommitment,
-              let startTime = commitmentStartTime else { return nil }
-        
-        let elapsed = Date().timeIntervalSince(startTime)
-        
-        if elapsed >= commitment.duration {
-            let completedCommitment = commitment
-            currentCommitment = nil
-            commitmentStartTime = nil
-            return completedCommitment
-        }
-        
-        return nil
+  }
+
+  static func saveFishCollection(_ collection: [FishRarity: Int]) {
+    do {
+      let data = try JSONEncoder().encode(collection)
+      UserDefaults.standard.set(data, forKey: fishCollectionKey)
+    } catch {
+      print("Failed to save fish collection stats: \(error)")
     }
+  }
+
+  static func loadFishCollection() -> [FishRarity: Int] {
+    guard let data = UserDefaults.standard.data(forKey: fishCollectionKey) else {
+      return [:]
+    }
+
+    do {
+      return try JSONDecoder().decode([FishRarity: Int].self, from: data)
+    } catch {
+      print("Failed to load fish collection stats: \(error)")
+      return [:]
+    }
+  }
+
+  static func clearAllData() {
+    UserDefaults.standard.removeObject(forKey: collectedFishKey)
+    UserDefaults.standard.removeObject(forKey: fishCollectionKey)
+  }
 }
 
 // MARK: - Game Stats Manager
 class GameStatsManager: ObservableObject {
-    @Published var fishCount = 0
-    @Published var fishCollection: [FishRarity: Int] = [:]
-    
-    init() {
-        initializeFishCollection()
+  @Published var collectedFish: [CollectedFish] = []
+  @Published var fishCollection: [FishRarity: Int] = [:]
+
+  var fishCount: Int {
+    collectedFish.count
+  }
+
+  init() {
+    loadFromStorage()
+
+    // If no fish were loaded (first launch), add starter fish
+    if collectedFish.isEmpty {
+      addStarterFish()
     }
-    
-    private func initializeFishCollection() {
-        for rarity in FishRarity.allCases {
-            fishCollection[rarity] = 0
-        }
+  }
+
+  private func loadFromStorage() {
+    collectedFish = PersistentStorageManager.loadFish()
+    fishCollection = PersistentStorageManager.loadFishCollection()
+
+    // If collection stats are empty but we have fish, recalculate
+    if fishCollection.isEmpty && !collectedFish.isEmpty {
+      recalculateFishCollection()
+    } else if fishCollection.isEmpty {
+      initializeFishCollection()
     }
-    
-    func addFish(_ fish: Fish) {
-        fishCount += 1
-        fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
+  }
+
+  private func saveToStorage() {
+    PersistentStorageManager.saveFish(collectedFish)
+    PersistentStorageManager.saveFishCollection(fishCollection)
+  }
+
+  private func initializeFishCollection() {
+    for rarity in FishRarity.allCases {
+      fishCollection[rarity] = 0
     }
-    
-    func addFishes(_ fishes: [Fish]) {
-        for fish in fishes {
-            addFish(fish)
-        }
+  }
+
+  private func recalculateFishCollection() {
+    initializeFishCollection()
+    for fish in collectedFish {
+      fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     }
-} 
+  }
+
+  private func addStarterFish() {
+    // Add 3 common starter fish
+    for _ in 0..<AppConfig.initialFishCount {
+      let starterFish = CollectedFish(rarity: .common)
+      addFish(starterFish)
+    }
+  }
+
+  func addFish(_ fish: CollectedFish) {
+    collectedFish.append(fish)
+    fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
+    saveToStorage()
+  }
+
+  func addFishes(_ fishes: [CollectedFish]) {
+    for fish in fishes {
+      collectedFish.append(fish)
+      fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
+    }
+    saveToStorage()
+  }
+
+  func getFishByRarity(_ rarity: FishRarity) -> [CollectedFish] {
+    return collectedFish.filter { $0.rarity == rarity }
+  }
+
+  func getRecentFish(limit: Int = 5) -> [CollectedFish] {
+    return Array(collectedFish.suffix(limit))
+  }
+
+  func removeFish(_ fish: CollectedFish) {
+    if let index = collectedFish.firstIndex(of: fish) {
+      collectedFish.remove(at: index)
+      fishCollection[fish.rarity] = max(0, (fishCollection[fish.rarity] ?? 0) - 1)
+      saveToStorage()
+    }
+  }
+
+  func clearAllFish() {
+    collectedFish.removeAll()
+    initializeFishCollection()
+    saveToStorage()
+  }
+
+  func exportFishCollection() -> String {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .prettyPrinted
+
+    do {
+      let data = try encoder.encode(collectedFish)
+      return String(data: data, encoding: .utf8) ?? "Export failed"
+    } catch {
+      return "Export error: \(error)"
+    }
+  }
+}

@@ -16,6 +16,7 @@ struct ContentView: View {
   @State private var appStartTime = Date()
   @State private var timeSpent: TimeInterval = 0
   @State private var showCommitmentSelection = false
+  @State private var showFishCollection = false
   @State private var showReward = false
   @State private var rewardMessage = ""
 
@@ -55,24 +56,37 @@ struct ContentView: View {
 
           CollectionSummaryView(fishCollection: statsManager.fishCollection)
 
-          if !commitmentManager.isActive {
+          HStack(spacing: 15) {
+            if !commitmentManager.isActive {
+              Button(action: {
+                showCommitmentSelection = true
+              }) {
+                Text("🎯 Start Focus Session")
+                  .font(.headline)
+                  .foregroundColor(.white)
+                  .padding()
+                  .background(Color.green.opacity(0.8))
+                  .cornerRadius(10)
+              }
+            }
+
             Button(action: {
-              showCommitmentSelection = true
+              showFishCollection = true
             }) {
-              Text("🎯 Start Focus Session")
+              Text("🐠 View Collection")
                 .font(.headline)
                 .foregroundColor(.white)
                 .padding()
-                .background(Color.green.opacity(0.8))
+                .background(Color.blue.opacity(0.8))
                 .cornerRadius(10)
             }
-            .padding(.bottom, 30)
           }
+          .padding(.bottom, 30)
         }
 
-        // Fish
-        ForEach(fishTankManager.fishes) { fish in
-          FishView(fish: fish)
+        // Swimming Fish
+        ForEach(fishTankManager.swimmingFish) { fish in
+          SwimmingFishView(fish: fish)
             .position(x: fish.x, y: fish.y)
         }
 
@@ -110,6 +124,17 @@ struct ContentView: View {
             showRewardMessage("🎯 \(commitment.rawValue) focus session started!")
           }
         }
+
+        if showFishCollection {
+          FishCollectionView(
+            collectedFish: statsManager.collectedFish,
+            onFishSelected: { fish in
+              fishTankManager.addSwimmingFish(from: fish)
+              showRewardMessage("🐠 \(fish.emoji) added to swimming display!")
+            },
+            isPresented: $showFishCollection
+          )
+        }
       }
     }
     .onReceive(timer) { _ in
@@ -129,10 +154,12 @@ struct ContentView: View {
     }
     .onReceive(fishTimer) { _ in
       fishTankManager.animateFish()
-      fishTankManager.spawnFishIfNeeded(timeSpent: timeSpent)
+      fishTankManager.spawnFishIfNeeded(timeSpent: timeSpent, from: statsManager.collectedFish)
     }
     .onAppear {
       appStartTime = Date()
+      // Initialize swimming fish with starter fish
+      fishTankManager.addSwimmingFishFromCollection(statsManager.getRecentFish())
     }
   }
 
