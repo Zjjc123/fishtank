@@ -12,7 +12,6 @@ struct FishCollectionView: View {
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Void
   @Binding var isPresented: Bool
-  @State private var showHiddenFish = false
 
   private var visibleFish: [CollectedFish] {
     collectedFish.filter { $0.isVisible }
@@ -22,8 +21,9 @@ struct FishCollectionView: View {
     collectedFish.filter { !$0.isVisible }
   }
 
-  private var displayedFish: [CollectedFish] {
-    showHiddenFish ? hiddenFish : visibleFish
+  private var rarityStats: [FishRarity: Int] {
+    Dictionary(grouping: collectedFish, by: { $0.rarity })
+      .mapValues { $0.count }
   }
 
   var body: some View {
@@ -48,42 +48,44 @@ struct FishCollectionView: View {
         }
         .padding()
 
-        // Filter Toggle
-        HStack {
-          Button(action: {
-            showHiddenFish = false
-          }) {
-            Text("Visible (\(visibleFish.count))")
-              .font(.caption)
-              .padding(.horizontal, 12)
-              .padding(.vertical, 6)
-              .background(showHiddenFish ? Color.gray.opacity(0.3) : Color.blue.opacity(0.6))
+        // Stats Section
+        VStack(spacing: 8) {
+          HStack {
+            Text("Total Fish: \(collectedFish.count)")
+              .font(.headline)
               .foregroundColor(.white)
-              .cornerRadius(15)
+            Spacer()
+            Text("Swimming: \(visibleFish.count) | Hidden: \(hiddenFish.count)")
+              .font(.subheadline)
+              .foregroundColor(.gray)
           }
 
-          Button(action: {
-            showHiddenFish = true
-          }) {
-            Text("Hidden (\(hiddenFish.count))")
-              .font(.caption)
-              .padding(.horizontal, 12)
-              .padding(.vertical, 6)
-              .background(showHiddenFish ? Color.blue.opacity(0.6) : Color.gray.opacity(0.3))
-              .foregroundColor(.white)
-              .cornerRadius(15)
+          // Rarity breakdown
+          HStack(spacing: 12) {
+            ForEach(FishRarity.allCases, id: \.self) { rarity in
+              let count = rarityStats[rarity] ?? 0
+              VStack(spacing: 2) {
+                Text("\(count)")
+                  .font(.caption)
+                  .fontWeight(.bold)
+                  .foregroundColor(rarity.color)
+                Text(rarity.rawValue.prefix(1))
+                  .font(.system(size: 8))
+                  .foregroundColor(rarity.color)
+              }
+            }
+            Spacer()
           }
-
-          Spacer()
         }
         .padding(.horizontal)
+        .padding(.bottom, 8)
 
         ScrollView {
           LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 15) {
-            ForEach(displayedFish) { fish in
+            ForEach(collectedFish) { fish in
               VStack {
                 Button(action: {
-                  if !showHiddenFish {
+                  if fish.isVisible {
                     onFishSelected(fish)
                   }
                 }) {
@@ -100,9 +102,9 @@ struct FishCollectionView: View {
                   .padding(8)
                   .background(Color.blue.opacity(0.2))
                   .cornerRadius(8)
-                  .opacity(showHiddenFish ? 0.6 : 1.0)
+                  .opacity(fish.isVisible ? 1.0 : 0.6)
                 }
-                .disabled(showHiddenFish)
+                .disabled(!fish.isVisible)
 
                 // Visibility Toggle Button
                 Button(action: {
@@ -120,15 +122,6 @@ struct FishCollectionView: View {
           }
           .padding()
         }
-
-        Text(
-          showHiddenFish
-            ? "Hidden fish are not displayed in the tank"
-            : "All visible fish are automatically displayed in the tank"
-        )
-        .font(.caption)
-        .foregroundColor(.gray)
-        .padding(.bottom)
 
         Text("👁️ = Swimming in tank | 👁️‍🗨️ = Hidden from tank")
           .font(.system(size: 10))
