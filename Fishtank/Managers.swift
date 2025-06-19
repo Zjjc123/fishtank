@@ -32,12 +32,22 @@ class FishTankManager: ObservableObject {
   }
 
   func updateSwimmingFish(with visibleFish: [CollectedFish]) {
-    // Clear current swimming fish
-    swimmingFish.removeAll()
-
-    // Add all visible fish to swimming display (up to max limit)
-    let fishToDisplay = Array(visibleFish.prefix(AppConfig.maxSwimmingFish))
-    for fish in fishToDisplay {
+    // Create a set of currently swimming fish IDs for quick lookup
+    let currentSwimmingIDs = Set(swimmingFish.map { $0.collectedFish.id })
+    
+    // Create a set of visible fish IDs
+    let visibleFishIDs = Set(visibleFish.map { $0.id })
+    
+    // Remove fish that are no longer visible
+    swimmingFish.removeAll { fish in
+      !visibleFishIDs.contains(fish.collectedFish.id)
+    }
+    
+    // Add new visible fish that aren't already swimming (up to max limit)
+    let availableSlots = AppConfig.maxSwimmingFish - swimmingFish.count
+    let newFishToAdd = visibleFish.filter { !currentSwimmingIDs.contains($0.id) }
+    
+    for fish in Array(newFishToAdd.prefix(availableSlots)) {
       let swimmingFish = SwimmingFish(collectedFish: fish, in: bounds)
       self.swimmingFish.append(swimmingFish)
     }

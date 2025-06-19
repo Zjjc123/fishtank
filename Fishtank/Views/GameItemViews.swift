@@ -12,32 +12,10 @@ struct SwimmingFishView: View {
   let fish: SwimmingFish
 
   var body: some View {
-    ZStack {
-      Ellipse()
-        .fill(fish.color)
-        .frame(width: fish.size, height: fish.size * 0.6)
-
-      Triangle()
-        .fill(fish.color.opacity(0.8))
-        .frame(width: fish.size * 0.4, height: fish.size * 0.4)
-        .offset(x: fish.direction > 0 ? -fish.size * 0.4 : fish.size * 0.4)
-
-      Circle()
-        .fill(.white)
-        .frame(width: fish.size * 0.2)
-        .overlay(
-          Circle()
-            .fill(.black)
-            .frame(width: fish.size * 0.1)
-        )
-        .offset(x: fish.direction > 0 ? fish.size * 0.15 : -fish.size * 0.15, y: -fish.size * 0.1)
-
-      Text(fish.emoji)
-        .font(.system(size: fish.size * 0.3))
-        .offset(y: fish.size * 0.1)
-    }
-    .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
-    .shadow(color: .black.opacity(0.3), radius: 2)
+    Text(fish.emoji)
+      .font(.system(size: fish.size))
+      .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
+      .shadow(color: .black.opacity(0.3), radius: 2)
   }
 }
 
