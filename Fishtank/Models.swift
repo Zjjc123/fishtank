@@ -9,10 +9,6 @@ import SwiftUI
 
 // MARK: - Configuration
 struct AppConfig {
-  static let maxFishCount = 15
-  static let initialFishCount = 3
-  static let fishSpawnInterval: TimeInterval = 30
-  static let giftBoxInterval: TimeInterval = 600  // 10 minutes
   static let rewardDisplayDuration: TimeInterval = 4
   static let maxSwimmingFish = 10
 }
@@ -233,12 +229,6 @@ struct SwimmingFish: Identifiable {
     self.speed = CGFloat.random(in: 0.5...2.0)
     self.direction = CGFloat.random(in: -1...1)
   }
-}
-
-struct GiftBox: Identifiable {
-  let id = UUID()
-  let x: CGFloat
-  let y: CGFloat
 }
 
 struct CommitmentLootbox: Identifiable {

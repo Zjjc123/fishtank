@@ -10,10 +10,8 @@ import SwiftUI
 // MARK: - Fish Tank Manager
 class FishTankManager: ObservableObject {
   @Published var swimmingFish: [SwimmingFish] = []
-  @Published var giftBoxes: [GiftBox] = []
   @Published var commitmentLootboxes: [CommitmentLootbox] = []
 
-  private var lastGiftBoxTime: TimeInterval = 0
   private let bounds: CGRect
 
   init(bounds: CGRect) {
@@ -63,35 +61,6 @@ class FishTankManager: ObservableObject {
 
       swimmingFish[i].x = max(0, min(bounds.width, swimmingFish[i].x))
     }
-  }
-
-  func spawnGiftBoxIfNeeded(timeSpent: TimeInterval) -> Bool {
-    let minutes = Int(timeSpent) / 60
-    if timeSpent >= lastGiftBoxTime + AppConfig.giftBoxInterval && minutes > 0 {
-      spawnGiftBox()
-      lastGiftBoxTime = timeSpent
-      return true
-    }
-    return false
-  }
-
-  private func spawnGiftBox() {
-    let giftBox = GiftBox(
-      x: CGFloat.random(in: 50...bounds.width - 50),
-      y: CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
-    )
-    giftBoxes.append(giftBox)
-  }
-
-  func openGiftBox(_ giftBox: GiftBox) -> CollectedFish {
-    if let index = giftBoxes.firstIndex(where: { $0.id == giftBox.id }) {
-      giftBoxes.remove(at: index)
-    }
-
-    let rarity = FishRarity.randomRarity()
-    let newFish = CollectedFish(rarity: rarity)
-
-    return newFish
   }
 
   func spawnCommitmentLootbox(type: LootboxType) {
@@ -243,11 +212,6 @@ class GameStatsManager: ObservableObject {
 
   init() {
     loadFromStorage()
-
-    // If no fish were loaded (first launch), add starter fish
-    if collectedFish.isEmpty {
-      addStarterFish()
-    }
   }
 
   private func loadFromStorage() {
@@ -280,16 +244,15 @@ class GameStatsManager: ObservableObject {
     }
   }
 
-  private func addStarterFish() {
-    // Add 3 common starter fish
-    for _ in 0..<AppConfig.initialFishCount {
-      let starterFish = CollectedFish(rarity: .common)
-      addFish(starterFish)
-    }
-  }
-
   func addFish(_ fish: CollectedFish, fishTankManager: FishTankManager? = nil) {
-    collectedFish.append(fish)
+    // Check if we already have 10 visible fish - if so, hide the new fish
+    let currentVisibleCount = getVisibleFish().count
+    var newFish = fish
+    if currentVisibleCount >= AppConfig.maxSwimmingFish {
+      newFish.isVisible = false
+    }
+    
+    collectedFish.append(newFish)
     fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     saveToStorage()
     // Update swimming fish display if manager provided
@@ -299,8 +262,19 @@ class GameStatsManager: ObservableObject {
   }
 
   func addFishes(_ fishes: [CollectedFish], fishTankManager: FishTankManager? = nil) {
+    let currentVisibleCount = getVisibleFish().count
+    var visibleSlotsLeft = max(0, AppConfig.maxSwimmingFish - currentVisibleCount)
+    
     for fish in fishes {
-      collectedFish.append(fish)
+      var newFish = fish
+      if visibleSlotsLeft > 0 {
+        newFish.isVisible = true
+        visibleSlotsLeft -= 1
+      } else {
+        newFish.isVisible = false
+      }
+      
+      collectedFish.append(newFish)
       fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     }
     saveToStorage()
@@ -332,13 +306,24 @@ class GameStatsManager: ObservableObject {
     saveToStorage()
   }
 
-  func toggleFishVisibility(_ fish: CollectedFish, fishTankManager: FishTankManager) {
+  func toggleFishVisibility(_ fish: CollectedFish, fishTankManager: FishTankManager) -> Bool {
     if let index = collectedFish.firstIndex(of: fish) {
+      // If fish is currently hidden and user wants to show it, check the limit
+      if !collectedFish[index].isVisible {
+        let currentVisibleCount = getVisibleFish().count
+        if currentVisibleCount >= AppConfig.maxSwimmingFish {
+          // Cannot show more fish - limit reached
+          return false
+        }
+      }
+      
       collectedFish[index].isVisible.toggle()
       saveToStorage()
       // Update swimming fish display
       fishTankManager.updateSwimmingFish(with: getVisibleFish())
+      return true
     }
+    return false
   }
 
   func getVisibleFish() -> [CollectedFish] {

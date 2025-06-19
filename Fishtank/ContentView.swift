@@ -95,17 +95,6 @@ struct ContentView: View {
             .position(x: fish.x, y: fish.y)
         }
 
-        // Gift Boxes
-        ForEach(fishTankManager.giftBoxes) { giftBox in
-          GiftBoxView()
-            .position(x: giftBox.x, y: giftBox.y)
-            .onTapGesture {
-              let newFish = fishTankManager.openGiftBox(giftBox)
-              statsManager.addFish(newFish, fishTankManager: fishTankManager)
-              showRewardMessage("🎉 \(newFish.rarity.rawValue) \(newFish.emoji) fish obtained!")
-            }
-        }
-
         // Commitment Lootboxes
         ForEach(fishTankManager.commitmentLootboxes) { lootbox in
           LootboxView(type: lootbox.type)
@@ -115,8 +104,10 @@ struct ContentView: View {
               statsManager.addFishes(newFishes, fishTankManager: fishTankManager)
 
               let fishMessages = newFishes.map { "\($0.rarity.rawValue) \($0.emoji)" }
+              let hiddenCount = newFishes.filter { !$0.isVisible }.count
+              let hiddenMessage = hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
               showRewardMessage(
-                "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(newFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))"
+                "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(newFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))\(hiddenMessage)"
               )
             }
         }
@@ -138,9 +129,13 @@ struct ContentView: View {
               showRewardMessage("🐠 \(fish.emoji) visibility controls swimming display!")
             },
             onVisibilityToggled: { fish in
-              statsManager.toggleFishVisibility(fish, fishTankManager: fishTankManager)
-              let status = fish.isVisible ? "visible" : "hidden"
-              showRewardMessage("🐠 \(fish.emoji) is now \(status)")
+              let wasVisible = fish.isVisible
+              let success = statsManager.toggleFishVisibility(fish, fishTankManager: fishTankManager)
+              if success {
+                let status = !wasVisible ? "visible" : "hidden"
+                showRewardMessage("🐠 \(fish.emoji) is now \(status)")
+              }
+              return success
             },
             isPresented: $showFishCollection
           )
@@ -157,10 +152,6 @@ struct ContentView: View {
     .onReceive(timer) { _ in
       currentTime = Date()
       timeSpent = Date().timeIntervalSince(appStartTime)
-
-      if fishTankManager.spawnGiftBoxIfNeeded(timeSpent: timeSpent) {
-        showRewardMessage("🎁 Gift box appeared! Tap to open!")
-      }
 
       if let completedCommitment = commitmentManager.checkProgress() {
         fishTankManager.spawnCommitmentLootbox(type: completedCommitment.lootboxType)

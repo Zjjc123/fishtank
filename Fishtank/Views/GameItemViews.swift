@@ -19,41 +19,6 @@ struct SwimmingFishView: View {
   }
 }
 
-// MARK: - Gift Box View
-struct GiftBoxView: View {
-  @State private var isAnimating = false
-
-  var body: some View {
-    ZStack {
-      RoundedRectangle(cornerRadius: 8)
-        .fill(Color.brown)
-        .frame(width: 40, height: 40)
-
-      Rectangle()
-        .fill(Color.red)
-        .frame(width: 40, height: 6)
-
-      Rectangle()
-        .fill(Color.red)
-        .frame(width: 6, height: 40)
-
-      Text("🎀")
-        .font(.title3)
-        .offset(y: -20)
-    }
-    .scaleEffect(isAnimating ? 1.1 : 1.0)
-    .animation(
-      Animation.easeInOut(duration: 1.0)
-        .repeatForever(autoreverses: true),
-      value: isAnimating
-    )
-    .onAppear {
-      isAnimating = true
-    }
-    .shadow(color: .yellow.opacity(0.5), radius: 8)
-  }
-}
-
 // MARK: - Lootbox View
 struct LootboxView: View {
   let type: LootboxType

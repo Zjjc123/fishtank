@@ -10,8 +10,10 @@ import SwiftUI
 struct FishCollectionView: View {
   let collectedFish: [CollectedFish]
   let onFishSelected: (CollectedFish) -> Void
-  let onVisibilityToggled: (CollectedFish) -> Void
+  let onVisibilityToggled: (CollectedFish) -> Bool
   @Binding var isPresented: Bool
+
+  @State private var showLimitAlert = false
 
   private var visibleFish: [CollectedFish] {
     collectedFish.filter { $0.isVisible }
@@ -55,9 +57,11 @@ struct FishCollectionView: View {
               .font(.headline)
               .foregroundColor(.white)
             Spacer()
-            Text("Swimming: \(visibleFish.count) | Hidden: \(hiddenFish.count)")
-              .font(.subheadline)
-              .foregroundColor(.gray)
+            Text(
+              "Swimming: \(visibleFish.count)/\(AppConfig.maxSwimmingFish) | Hidden: \(hiddenFish.count)"
+            )
+            .font(.subheadline)
+            .foregroundColor(visibleFish.count >= AppConfig.maxSwimmingFish ? .orange : .gray)
           }
 
           // Rarity breakdown
@@ -108,7 +112,10 @@ struct FishCollectionView: View {
 
                 // Visibility Toggle Button
                 Button(action: {
-                  onVisibilityToggled(fish)
+                  let success = onVisibilityToggled(fish)
+                  if !success {
+                    showLimitAlert = true
+                  }
                 }) {
                   Image(systemName: fish.isVisible ? "eye.fill" : "eye.slash.fill")
                     .font(.caption)
@@ -126,12 +133,22 @@ struct FishCollectionView: View {
         Text("👁️ = Swimming in tank | 👁️‍🗨️ = Hidden from tank")
           .font(.system(size: 10))
           .foregroundColor(.gray)
+        Text("Maximum \(AppConfig.maxSwimmingFish) fish can swim at once")
+          .font(.system(size: 10))
+          .foregroundColor(.orange)
           .padding(.bottom)
       }
       .background(Color.black.opacity(0.9))
       .cornerRadius(15)
       .padding(.horizontal, 20)
       .padding(.vertical, 40)
+    }
+    .alert("Tank Full!", isPresented: $showLimitAlert) {
+      Button("OK") {}
+    } message: {
+      Text(
+        "You can only have \(AppConfig.maxSwimmingFish) fish swimming at once. Hide some fish first to make room for new ones."
+      )
     }
   }
 
