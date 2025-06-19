@@ -109,7 +109,7 @@ struct ContentView: View {
             .position(x: giftBox.x, y: giftBox.y)
             .onTapGesture {
               let newFish = fishTankManager.openGiftBox(giftBox)
-              statsManager.addFish(newFish)
+              statsManager.addFish(newFish, fishTankManager: fishTankManager)
               showRewardMessage("🎉 \(newFish.rarity.rawValue) \(newFish.emoji) fish obtained!")
             }
         }
@@ -120,7 +120,7 @@ struct ContentView: View {
             .position(x: lootbox.x, y: lootbox.y)
             .onTapGesture {
               let newFishes = fishTankManager.openLootbox(lootbox)
-              statsManager.addFishes(newFishes)
+              statsManager.addFishes(newFishes, fishTankManager: fishTankManager)
 
               let fishMessages = newFishes.map { "\($0.rarity.rawValue) \($0.emoji)" }
               showRewardMessage(
@@ -142,8 +142,13 @@ struct ContentView: View {
           FishCollectionView(
             collectedFish: statsManager.collectedFish,
             onFishSelected: { fish in
-              fishTankManager.addSwimmingFish(from: fish)
-              showRewardMessage("🐠 \(fish.emoji) added to swimming display!")
+              // Fish selection no longer adds to swimming - visibility controls this
+              showRewardMessage("🐠 \(fish.emoji) visibility controls swimming display!")
+            },
+            onVisibilityToggled: { fish in
+              statsManager.toggleFishVisibility(fish, fishTankManager: fishTankManager)
+              let status = fish.isVisible ? "visible" : "hidden"
+              showRewardMessage("🐠 \(fish.emoji) is now \(status)")
             },
             isPresented: $showFishCollection
           )
@@ -174,12 +179,11 @@ struct ContentView: View {
     }
     .onReceive(fishTimer) { _ in
       fishTankManager.animateFish()
-      fishTankManager.spawnFishIfNeeded(timeSpent: timeSpent, from: statsManager.collectedFish)
     }
     .onAppear {
       appStartTime = Date()
-      // Initialize swimming fish with starter fish
-      fishTankManager.addSwimmingFishFromCollection(statsManager.getRecentFish())
+      // Initialize swimming fish with all visible fish
+      fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
     }
   }
 

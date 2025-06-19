@@ -31,28 +31,15 @@ class FishTankManager: ObservableObject {
     }
   }
 
-  func addSwimmingFishFromCollection(_ collectedFish: [CollectedFish]) {
-    // Add recently collected fish to swimming display
-    let availableSlots = AppConfig.maxSwimmingFish - swimmingFish.count
-    let fishToAdd = Array(collectedFish.prefix(availableSlots))
+  func updateSwimmingFish(with visibleFish: [CollectedFish]) {
+    // Clear current swimming fish
+    swimmingFish.removeAll()
 
-    for fish in fishToAdd {
+    // Add all visible fish to swimming display (up to max limit)
+    let fishToDisplay = Array(visibleFish.prefix(AppConfig.maxSwimmingFish))
+    for fish in fishToDisplay {
       let swimmingFish = SwimmingFish(collectedFish: fish, in: bounds)
       self.swimmingFish.append(swimmingFish)
-    }
-  }
-
-  func spawnFishIfNeeded(timeSpent: TimeInterval, from collectedFish: [CollectedFish]) {
-    if Int(timeSpent) % Int(AppConfig.fishSpawnInterval) == 0
-      && Int(timeSpent) > 0
-      && swimmingFish.count < AppConfig.maxSwimmingFish
-      && !collectedFish.isEmpty
-    {
-
-      // Pick a random fish from collection to start swimming
-      if let randomCollectedFish = collectedFish.randomElement() {
-        addSwimmingFish(from: randomCollectedFish)
-      }
     }
   }
 
@@ -94,9 +81,6 @@ class FishTankManager: ObservableObject {
     let rarity = FishRarity.randomRarity()
     let newFish = CollectedFish(rarity: rarity)
 
-    // Add to swimming display
-    addSwimmingFish(from: newFish)
-
     return newFish
   }
 
@@ -121,26 +105,9 @@ class FishTankManager: ObservableObject {
       newFishes.append(newFish)
     }
 
-    // Add some of the new fish to swimming display
-    addSwimmingFishFromCollection(newFishes)
-
     return newFishes
   }
 
-  func removeSwimmingFish(_ fish: SwimmingFish) {
-    if let index = swimmingFish.firstIndex(where: { $0.id == fish.id }) {
-      swimmingFish.remove(at: index)
-    }
-  }
-
-  func clearSwimmingFish() {
-    swimmingFish.removeAll()
-  }
-
-  func replaceSwimmingFish(with collectedFish: [CollectedFish]) {
-    clearSwimmingFish()
-    addSwimmingFishFromCollection(collectedFish)
-  }
 }
 
 // MARK: - Commitment Manager
@@ -304,18 +271,26 @@ class GameStatsManager: ObservableObject {
     }
   }
 
-  func addFish(_ fish: CollectedFish) {
+  func addFish(_ fish: CollectedFish, fishTankManager: FishTankManager? = nil) {
     collectedFish.append(fish)
     fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     saveToStorage()
+    // Update swimming fish display if manager provided
+    if let manager = fishTankManager {
+      manager.updateSwimmingFish(with: getVisibleFish())
+    }
   }
 
-  func addFishes(_ fishes: [CollectedFish]) {
+  func addFishes(_ fishes: [CollectedFish], fishTankManager: FishTankManager? = nil) {
     for fish in fishes {
       collectedFish.append(fish)
       fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     }
     saveToStorage()
+    // Update swimming fish display if manager provided
+    if let manager = fishTankManager {
+      manager.updateSwimmingFish(with: getVisibleFish())
+    }
   }
 
   func getFishByRarity(_ rarity: FishRarity) -> [CollectedFish] {
@@ -338,6 +313,23 @@ class GameStatsManager: ObservableObject {
     collectedFish.removeAll()
     initializeFishCollection()
     saveToStorage()
+  }
+
+  func toggleFishVisibility(_ fish: CollectedFish, fishTankManager: FishTankManager) {
+    if let index = collectedFish.firstIndex(of: fish) {
+      collectedFish[index].isVisible.toggle()
+      saveToStorage()
+      // Update swimming fish display
+      fishTankManager.updateSwimmingFish(with: getVisibleFish())
+    }
+  }
+
+  func getVisibleFish() -> [CollectedFish] {
+    return collectedFish.filter { $0.isVisible }
+  }
+
+  func getHiddenFish() -> [CollectedFish] {
+    return collectedFish.filter { !$0.isVisible }
   }
 
   func exportFishCollection() -> String {

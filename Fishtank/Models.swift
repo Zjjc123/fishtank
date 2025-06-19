@@ -169,6 +169,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
   let emoji: String
   let dateCaught: Date
   var isSwimming: Bool = false
+  var isVisible: Bool = true
 
   init(rarity: FishRarity) {
     self.id = UUID()
@@ -179,7 +180,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
 
   // Custom Codable implementation to handle UUID properly
   enum CodingKeys: String, CodingKey {
-    case id, rarity, emoji, dateCaught, isSwimming
+    case id, rarity, emoji, dateCaught, isSwimming, isVisible
   }
 
   init(from decoder: Decoder) throws {
@@ -189,6 +190,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     emoji = try container.decode(String.self, forKey: .emoji)
     dateCaught = try container.decode(Date.self, forKey: .dateCaught)
     isSwimming = try container.decodeIfPresent(Bool.self, forKey: .isSwimming) ?? false
+    isVisible = try container.decodeIfPresent(Bool.self, forKey: .isVisible) ?? true
   }
 
   func encode(to encoder: Encoder) throws {
@@ -198,6 +200,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     try container.encode(emoji, forKey: .emoji)
     try container.encode(dateCaught, forKey: .dateCaught)
     try container.encode(isSwimming, forKey: .isSwimming)
+    try container.encode(isVisible, forKey: .isVisible)
   }
 
   func hash(into hasher: inout Hasher) {
