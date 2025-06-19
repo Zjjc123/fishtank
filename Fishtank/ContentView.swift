@@ -20,6 +20,7 @@ struct ContentView: View {
   @State private var showSettings = false
   @State private var showReward = false
   @State private var rewardMessage = ""
+  @State private var cancelledCommitment: FocusCommitment?
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
@@ -59,15 +60,6 @@ struct ContentView: View {
           }
 
           Spacer()
-
-          StatsDisplayView(
-            fishCount: statsManager.fishCount,
-            timeSpent: timeSpent,
-            giftBoxCount: fishTankManager.giftBoxes.count,
-            lootboxCount: fishTankManager.commitmentLootboxes.count
-          )
-
-          CollectionSummaryView(fishCollection: statsManager.fishCollection)
 
           HStack(spacing: 15) {
             if !commitmentManager.isActive {
@@ -184,6 +176,25 @@ struct ContentView: View {
       appStartTime = Date()
       // Initialize swimming fish with all visible fish
       fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
+    }
+    .onReceive(
+      NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
+    ) { _ in
+      // Cancel focus session when app goes to background (silently)
+      if let cancelled = commitmentManager.cancelCommitment() {
+        cancelledCommitment = cancelled
+      }
+    }
+    .onReceive(
+      NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+    ) { _ in
+      // Show notification when user returns to app if session was cancelled
+      if let cancelled = cancelledCommitment {
+        showRewardMessage(
+          "🚨 Focus session cancelled - app was backgrounded\n\(cancelled.emoji) \(cancelled.rawValue) session ended"
+        )
+        cancelledCommitment = nil  // Clear the stored cancellation
+      }
     }
   }
 

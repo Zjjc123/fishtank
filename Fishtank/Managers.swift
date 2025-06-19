@@ -142,6 +142,13 @@ class CommitmentManager: ObservableObject {
     commitmentStartTime = Date()
   }
 
+  func cancelCommitment() -> FocusCommitment? {
+    let cancelledCommitment = currentCommitment
+    currentCommitment = nil
+    commitmentStartTime = nil
+    return cancelledCommitment
+  }
+
   func checkProgress() -> FocusCommitment? {
     guard let commitment = currentCommitment,
       let startTime = commitmentStartTime
