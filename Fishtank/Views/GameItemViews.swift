@@ -156,6 +156,7 @@ struct RewardItemView: View {
         .lineLimit(1)
     }
     .padding(8)
+    .frame(width: 80)  // Fixed width to ensure consistency
     .background(
       RoundedRectangle(cornerRadius: 10)
         .fill(fish.rarity.color.opacity(0.2))

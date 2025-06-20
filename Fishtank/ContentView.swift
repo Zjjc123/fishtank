@@ -106,8 +106,9 @@ struct ContentView: View {
 
           HStack {
             ClockDisplayView(currentTime: currentTime)
-            .padding(.leading, 30)
-            .padding(.top, 50)
+              .padding(.leading, 30)
+              .padding(.top, 50)
+              .allowsHitTesting(false)
             Spacer()
           }
 
