@@ -130,14 +130,57 @@ enum FishRarity: String, CaseIterable, Codable {
     }
   }
 
-  var emojis: [String] {
+  var fishOptions: [(name: String, emoji: String)] {
     switch self {
-    case .common: return ["🐟", "🐠"]
-    case .uncommon: return ["🐡", "🦈"]
-    case .rare: return ["🐙", "🦑"]
-    case .epic: return ["🐳", "🦭"]
-    case .legendary: return ["🐉", "🦄"]
+    case .common:
+      return [
+        ("Goldfish", "🐟"),
+        ("Minnow", "🐠"),
+        ("Guppy", "🐟"),
+        ("Tetra", "🐠"),
+        ("Danio", "🐟"),
+      ]
+    case .uncommon:
+      return [
+        ("Pufferfish", "🐡"),
+        ("Shark", "🦈"),
+        ("Barracuda", "🦈"),
+        ("Tuna", "🐟"),
+        ("Mackerel", "🐟"),
+      ]
+    case .rare:
+      return [
+        ("Octopus", "🐙"),
+        ("Squid", "🦑"),
+        ("Cuttlefish", "🦑"),
+        ("Nautilus", "🐙"),
+        ("Jellyfish", "🦑"),
+      ]
+    case .epic:
+      return [
+        ("Whale", "🐳"),
+        ("Seal", "🦭"),
+        ("Dolphin", "🐬"),
+        ("Orca", "🐳"),
+        ("Narwhal", "🦄"),
+      ]
+    case .legendary:
+      return [
+        ("Dragon", "🐉"),
+        ("Unicorn", "🦄"),
+        ("Phoenix", "🦅"),
+        ("Kraken", "🐙"),
+        ("Leviathan", "🐋"),
+      ]
     }
+  }
+
+  var emojis: [String] {
+    fishOptions.map { $0.emoji }
+  }
+
+  var names: [String] {
+    fishOptions.map { $0.name }
   }
 
   static func randomRarity(boost: Double = 1.0) -> FishRarity {
@@ -173,6 +216,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
   let id: UUID
   let rarity: FishRarity
   let emoji: String
+  let name: String
   let dateCaught: Date
   var isSwimming: Bool = false
   var isVisible: Bool = true
@@ -180,13 +224,15 @@ struct CollectedFish: Identifiable, Hashable, Codable {
   init(rarity: FishRarity) {
     self.id = UUID()
     self.rarity = rarity
-    self.emoji = rarity.emojis.randomElement()!
+    let fishOption = rarity.fishOptions.randomElement()!
+    self.emoji = fishOption.emoji
+    self.name = fishOption.name
     self.dateCaught = Date()
   }
 
   // Custom Codable implementation to handle UUID properly
   enum CodingKeys: String, CodingKey {
-    case id, rarity, emoji, dateCaught, isSwimming, isVisible
+    case id, rarity, emoji, name, dateCaught, isSwimming, isVisible
   }
 
   init(from decoder: Decoder) throws {
@@ -194,6 +240,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     id = try container.decode(UUID.self, forKey: .id)
     rarity = try container.decode(FishRarity.self, forKey: .rarity)
     emoji = try container.decode(String.self, forKey: .emoji)
+    name = try container.decode(String.self, forKey: .name)
     dateCaught = try container.decode(Date.self, forKey: .dateCaught)
     isSwimming = try container.decodeIfPresent(Bool.self, forKey: .isSwimming) ?? false
     isVisible = try container.decodeIfPresent(Bool.self, forKey: .isVisible) ?? true
@@ -204,6 +251,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     try container.encode(id, forKey: .id)
     try container.encode(rarity, forKey: .rarity)
     try container.encode(emoji, forKey: .emoji)
+    try container.encode(name, forKey: .name)
     try container.encode(dateCaught, forKey: .dateCaught)
     try container.encode(isSwimming, forKey: .isSwimming)
     try container.encode(isVisible, forKey: .isVisible)

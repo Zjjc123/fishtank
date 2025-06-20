@@ -147,16 +147,22 @@ struct RewardItemView: View {
     VStack(spacing: 5) {
       Text(fish.emoji)
         .font(.title)
-        .frame(width: 50, height: 50)
+        .frame(width: 65, height: 35)
+
+      Text(fish.name)
+        .font(.caption2)
+        .fontWeight(.medium)
+        .foregroundColor(.white)
+        .lineLimit(1)
 
       Text(fish.rarity.rawValue)
-        .font(.caption)
-        .fontWeight(.medium)
+        .font(.caption2)
+        .fontWeight(.light)
         .foregroundColor(fish.rarity.color)
         .lineLimit(1)
     }
     .padding(8)
-    .frame(width: 80)  // Fixed width to ensure consistency
+    .frame(width: 80)
     .background(
       RoundedRectangle(cornerRadius: 10)
         .fill(fish.rarity.color.opacity(0.2))
