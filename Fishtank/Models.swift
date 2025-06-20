@@ -15,14 +15,12 @@ struct AppConfig {
 
 // MARK: - Focus Commitment
 enum FocusCommitment: String, CaseIterable {
-  case test = "1 Second"
   case short = "10 Minutes"
   case medium = "1 Hour"
   case long = "4 Hours"
 
   var duration: TimeInterval {
     switch self {
-    case .test: return 1
     case .short: return 600
     case .medium: return 3600
     case .long: return 14400
@@ -31,7 +29,6 @@ enum FocusCommitment: String, CaseIterable {
 
   var lootboxType: LootboxType {
     switch self {
-    case .test: return .basic
     case .short: return .silver
     case .medium: return .gold
     case .long: return .platinum
@@ -40,7 +37,6 @@ enum FocusCommitment: String, CaseIterable {
 
   var emoji: String {
     switch self {
-    case .test: return "⚡"
     case .short: return "🕐"
     case .medium: return "⏰"
     case .long: return "🏆"
@@ -67,9 +63,9 @@ enum LootboxType: String, CaseIterable {
   var fishCount: Int {
     switch self {
     case .basic: return 1
-    case .silver: return 2
-    case .gold: return 4
-    case .platinum: return 6
+    case .silver: return 1
+    case .gold: return 1
+    case .platinum: return 1
     }
   }
 
