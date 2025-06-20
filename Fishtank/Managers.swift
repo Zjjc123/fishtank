@@ -18,10 +18,6 @@ class FishTankManager: ObservableObject {
     self.bounds = bounds
   }
 
-  func updateBounds(_ newBounds: CGRect) {
-    // Update bounds if needed for screen rotation, etc.
-  }
-
   func addSwimmingFish(from collectedFish: CollectedFish) {
     if swimmingFish.count < AppConfig.maxSwimmingFish {
       let swimmingFish = SwimmingFish(collectedFish: collectedFish, in: bounds)
@@ -32,19 +28,19 @@ class FishTankManager: ObservableObject {
   func updateSwimmingFish(with visibleFish: [CollectedFish]) {
     // Create a set of currently swimming fish IDs for quick lookup
     let currentSwimmingIDs = Set(swimmingFish.map { $0.collectedFish.id })
-    
+
     // Create a set of visible fish IDs
     let visibleFishIDs = Set(visibleFish.map { $0.id })
-    
+
     // Remove fish that are no longer visible
     swimmingFish.removeAll { fish in
       !visibleFishIDs.contains(fish.collectedFish.id)
     }
-    
+
     // Add new visible fish that aren't already swimming (up to max limit)
     let availableSlots = AppConfig.maxSwimmingFish - swimmingFish.count
     let newFishToAdd = visibleFish.filter { !currentSwimmingIDs.contains($0.id) }
-    
+
     for fish in Array(newFishToAdd.prefix(availableSlots)) {
       let swimmingFish = SwimmingFish(collectedFish: fish, in: bounds)
       self.swimmingFish.append(swimmingFish)
@@ -63,7 +59,7 @@ class FishTankManager: ObservableObject {
     }
   }
 
-  func spawnCommitmentLootbox(type: LootboxType) {
+  func spawnLootbox(type: LootboxType) {
     let lootbox = CommitmentLootbox(
       type: type,
       x: CGFloat.random(in: 50...bounds.width - 50),
@@ -72,19 +68,10 @@ class FishTankManager: ObservableObject {
     commitmentLootboxes.append(lootbox)
   }
 
-  func openLootbox(_ lootbox: CommitmentLootbox) -> [CollectedFish] {
+  func removeLootbox(_ lootbox: CommitmentLootbox) {
     if let index = commitmentLootboxes.firstIndex(where: { $0.id == lootbox.id }) {
       commitmentLootboxes.remove(at: index)
     }
-
-    var newFishes: [CollectedFish] = []
-    for _ in 0..<lootbox.type.fishCount {
-      let rarity = FishRarity.randomRarity(boost: lootbox.type.rarityBoost)
-      let newFish = CollectedFish(rarity: rarity)
-      newFishes.append(newFish)
-    }
-
-    return newFishes
   }
 
 }
@@ -251,7 +238,7 @@ class GameStatsManager: ObservableObject {
     if currentVisibleCount >= AppConfig.maxSwimmingFish {
       newFish.isVisible = false
     }
-    
+
     collectedFish.append(newFish)
     fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     saveToStorage()
@@ -264,7 +251,7 @@ class GameStatsManager: ObservableObject {
   func addFishes(_ fishes: [CollectedFish], fishTankManager: FishTankManager? = nil) {
     let currentVisibleCount = getVisibleFish().count
     var visibleSlotsLeft = max(0, AppConfig.maxSwimmingFish - currentVisibleCount)
-    
+
     for fish in fishes {
       var newFish = fish
       if visibleSlotsLeft > 0 {
@@ -273,7 +260,7 @@ class GameStatsManager: ObservableObject {
       } else {
         newFish.isVisible = false
       }
-      
+
       collectedFish.append(newFish)
       fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     }
@@ -316,7 +303,7 @@ class GameStatsManager: ObservableObject {
           return false
         }
       }
-      
+
       collectedFish[index].isVisible.toggle()
       saveToStorage()
       // Update swimming fish display

@@ -22,6 +22,9 @@ struct ContentView: View {
   @State private var rewardMessage = ""
   @State private var cancelledCommitment: FocusCommitment?
   @State private var notificationTimer: DispatchWorkItem?
+  @State private var showCaseOpening = false
+  @State private var caseOpeningLootbox: CommitmentLootbox?
+  @State private var caseOpeningRewards: [CollectedFish] = []
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
@@ -36,6 +39,31 @@ struct ContentView: View {
           endPoint: .bottom
         )
         .ignoresSafeArea()
+
+        // Swimming Fish
+        ForEach(fishTankManager.swimmingFish) { fish in
+          SwimmingFishView(fish: fish)
+            .position(x: fish.x, y: fish.y)
+        }
+
+        // Commitment Lootboxes
+        ForEach(fishTankManager.commitmentLootboxes) { lootbox in
+          LootboxView(type: lootbox.type)
+            .position(x: lootbox.x, y: lootbox.y)
+            .onTapGesture {
+              // Generate possible rewards for the wheel
+              var possibleRewards: [CollectedFish] = []
+              for _ in 0..<(lootbox.type.fishCount * 10) {  // Generate more options for variety
+                let rarity = FishRarity.randomRarity(boost: lootbox.type.rarityBoost)
+                let fish = CollectedFish(rarity: rarity)
+                possibleRewards.append(fish)
+              }
+
+              caseOpeningLootbox = lootbox
+              caseOpeningRewards = possibleRewards
+              showCaseOpening = true
+            }
+        }
 
         VStack {
           HStack {
@@ -104,30 +132,6 @@ struct ContentView: View {
           .padding(.bottom, 30)
         }
 
-        // Swimming Fish
-        ForEach(fishTankManager.swimmingFish) { fish in
-          SwimmingFishView(fish: fish)
-            .position(x: fish.x, y: fish.y)
-        }
-
-        // Commitment Lootboxes
-        ForEach(fishTankManager.commitmentLootboxes) { lootbox in
-          LootboxView(type: lootbox.type)
-            .position(x: lootbox.x, y: lootbox.y)
-            .onTapGesture {
-              let newFishes = fishTankManager.openLootbox(lootbox)
-              statsManager.addFishes(newFishes, fishTankManager: fishTankManager)
-
-              let fishMessages = newFishes.map { "\($0.rarity.rawValue) \($0.emoji)" }
-              let hiddenCount = newFishes.filter { !$0.isVisible }.count
-              let hiddenMessage =
-                hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
-              showRewardMessage(
-                "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(newFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))\(hiddenMessage)"
-              )
-            }
-        }
-
         RewardNotificationView(message: rewardMessage, isVisible: showReward)
 
         if showCommitmentSelection {
@@ -160,6 +164,30 @@ struct ContentView: View {
             statsManager: statsManager
           )
         }
+
+        if showCaseOpening, let lootbox = caseOpeningLootbox, !caseOpeningRewards.isEmpty {
+          CaseOpeningWheelView(
+            lootboxType: lootbox.type,
+            possibleRewards: caseOpeningRewards,
+            selectedReward: caseOpeningRewards.first!,  // First reward will be the "selected" one
+            isPresented: $showCaseOpening
+          ) { selectedFishes in
+            // Handle completion - add fishes and remove lootbox
+            fishTankManager.removeLootbox(lootbox)
+            statsManager.addFishes(selectedFishes, fishTankManager: fishTankManager)
+
+            let fishMessages = selectedFishes.map { "\($0.rarity.rawValue) \($0.emoji)" }
+            let hiddenCount = selectedFishes.filter { !$0.isVisible }.count
+            let hiddenMessage = hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
+            showRewardMessage(
+              "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(selectedFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))\(hiddenMessage)"
+            )
+
+            // Reset state
+            caseOpeningLootbox = nil
+            caseOpeningRewards = []
+          }
+        }
       }
     }
     .onReceive(timer) { _ in
@@ -167,7 +195,7 @@ struct ContentView: View {
       timeSpent = Date().timeIntervalSince(appStartTime)
 
       if let completedCommitment = commitmentManager.checkProgress() {
-        fishTankManager.spawnCommitmentLootbox(type: completedCommitment.lootboxType)
+        fishTankManager.spawnLootbox(type: completedCommitment.lootboxType)
         showRewardMessage(
           "🏆 \(completedCommitment.rawValue) completed! \(completedCommitment.lootboxType.emoji) \(completedCommitment.lootboxType.rawValue) lootbox earned!"
         )
@@ -205,7 +233,7 @@ struct ContentView: View {
   private func showRewardMessage(_ message: String) {
     // Cancel any existing notification timer to prevent glitches
     notificationTimer?.cancel()
-    
+
     rewardMessage = message
     withAnimation(.spring()) {
       showReward = true
@@ -218,8 +246,9 @@ struct ContentView: View {
       }
     }
     notificationTimer = newTimer
-    
-    DispatchQueue.main.asyncAfter(deadline: .now() + AppConfig.rewardDisplayDuration, execute: newTimer)
+
+    DispatchQueue.main.asyncAfter(
+      deadline: .now() + AppConfig.rewardDisplayDuration, execute: newTimer)
   }
 }
 
