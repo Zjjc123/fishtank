@@ -13,13 +13,54 @@ struct FishCollectionView: View {
   let onVisibilityToggled: (CollectedFish) -> Bool
   @Binding var isPresented: Bool
   @State private var showLimitAlert = false
+  @AppStorage("FishCollectionSortOption") private var sortOption: SortOption = .time
+  @AppStorage("FishCollectionSortDirection") private var sortDirection: SortDirection = .descending
+
+  enum SortOption: String, CaseIterable {
+    case time = "Time"
+    case rarity = "Rarity"
+
+    var displayName: String {
+      switch self {
+      case .time: return "Time"
+      case .rarity: return "Rarity"
+      }
+    }
+  }
+
+  enum SortDirection: String {
+    case ascending, descending
+
+    var icon: String {
+      switch self {
+      case .ascending: return "chevron.up"
+      case .descending: return "chevron.down"
+      }
+    }
+  }
+
+  private var sortedFish: [CollectedFish] {
+    let sorted =
+      switch sortOption {
+      case .time:
+        collectedFish.sorted { $0.dateCaught > $1.dateCaught }
+      case .rarity:
+        collectedFish.sorted { $0.rarity.sortOrder > $1.rarity.sortOrder }
+      }
+
+    if sortDirection == .ascending {
+      return sorted.reversed()
+    } else {
+      return sorted
+    }
+  }
 
   private var visibleFish: [CollectedFish] {
-    collectedFish.filter { $0.isVisible }
+    sortedFish.filter { $0.isVisible }
   }
 
   private var hiddenFish: [CollectedFish] {
-    collectedFish.filter { !$0.isVisible }
+    sortedFish.filter { !$0.isVisible }
   }
 
   var body: some View {
@@ -42,7 +83,7 @@ struct FishCollectionView: View {
       headerSection
 
       GeometryReader { geometry in
-        HStack(spacing: 16) {
+        HStack(spacing: 8) {
           statsPanel
           fishGridSection(geometry: geometry)
         }
@@ -57,12 +98,43 @@ struct FishCollectionView: View {
 
   private var headerSection: some View {
     HStack {
-      Text("Your Fish Collection")
+      Text("Fish Collection")
         .font(.title2)
         .fontWeight(.bold)
         .foregroundColor(.white)
         .opacity(0.9)
+
       Spacer()
+
+      HStack(spacing: 8) {
+        Button(action: {
+          sortOption = sortOption == .time ? .rarity : .time
+        }) {
+          HStack(spacing: 4) {
+            Text(sortOption.displayName)
+              .font(.caption)
+              .fontWeight(.medium)
+            Image(systemName: "chevron.left.chevron.right")
+              .font(.caption2)
+          }
+          .foregroundColor(.blue)
+          .frame(width: 60, height: 28)
+          .background(Color.blue.opacity(0.1))
+          .cornerRadius(6)
+        }
+
+        Button(action: {
+          sortDirection = sortDirection == .ascending ? .descending : .ascending
+        }) {
+          Image(systemName: sortDirection.icon)
+            .font(.caption)
+            .foregroundColor(.blue)
+            .frame(width: 28, height: 28)
+            .background(Color.blue.opacity(0.1))
+            .cornerRadius(6)
+        }
+      }
+
       Button("Done") {
         isPresented = false
       }
@@ -73,40 +145,43 @@ struct FishCollectionView: View {
   }
 
   private var statsPanel: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: 16) {
       statsSection
       Spacer(minLength: 0)
     }
-    .frame(width: 100)
+    .frame(width: 120)
     .frame(maxHeight: .infinity, alignment: .top)
     .padding(.leading, 8)
   }
 
   private var statsSection: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text("Stats")
-        .font(.headline)
-        .foregroundColor(.white)
-        .opacity(0.9)
+    VStack(alignment: .leading, spacing: 12) {
+      statRow(title: "Total", value: "\(collectedFish.count)", color: .blue)
 
-      Text("Total: \(collectedFish.count)")
-        .font(.subheadline)
-        .foregroundColor(.white)
-        .opacity(0.8)
+      Divider()
+        .background(Color.white.opacity(0.2))
+        .padding(.vertical, 4)
 
-      Text("Swimming:")
+      statRow(
+        title: "Swimming", value: "\(visibleFish.count)/\(AppConfig.maxSwimmingFish)",
+        color: visibleFish.count >= AppConfig.maxSwimmingFish ? .orange : .green)
+    }
+    .padding(12)
+  }
+
+  private func statRow(title: String, value: String, color: Color) -> some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Text(title)
         .font(.caption)
-        .foregroundColor(.gray.opacity(0.7))
+        .fontWeight(.medium)
+        .foregroundColor(.white.opacity(0.7))
+        .textCase(.uppercase)
+        .tracking(0.5)
 
-      Text("\(visibleFish.count)/\(AppConfig.maxSwimmingFish)")
-        .font(.caption)
-        .foregroundColor(
-          visibleFish.count >= AppConfig.maxSwimmingFish
-            ? .orange.opacity(0.9) : .green.opacity(0.8))
-
-      Text("Hidden: \(hiddenFish.count)")
-        .font(.caption)
-        .foregroundColor(.gray.opacity(0.7))
+      Text(value)
+        .font(.title2)
+        .fontWeight(.bold)
+        .foregroundColor(color)
     }
   }
 
@@ -116,9 +191,9 @@ struct FishCollectionView: View {
         columns: Array(
           repeating: GridItem(.flexible()),
           count: columnCount(for: geometry.size.width - 120)),
-        spacing: 15
+        spacing: 8
       ) {
-        ForEach(collectedFish) { fish in
+        ForEach(sortedFish) { fish in
           FishItemView(
             fish: fish,
             onFishSelected: onFishSelected,
@@ -135,13 +210,11 @@ struct FishCollectionView: View {
 
   private var footerSection: some View {
     VStack(spacing: 4) {
-      Text("👁️ = Swimming in tank | 👁️‍🗨️ = Hidden from tank")
-        .font(.system(size: 10))
-        .foregroundColor(.gray)
       Text("Maximum \(AppConfig.maxSwimmingFish) fish can swim at once")
         .font(.system(size: 10))
         .foregroundColor(.orange)
         .padding(.bottom)
+        .padding(.top, 10)
     }
   }
 
@@ -209,6 +282,7 @@ struct FishItemView: View {
         .font(.system(size: 8))
         .foregroundColor(.gray.opacity(0.7))
     }
+    .frame(width: 80)
     .padding(8)
     .background(fishBackground)
     .opacity(fish.isVisible ? 0.9 : 0.5)

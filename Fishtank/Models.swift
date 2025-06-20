@@ -100,6 +100,16 @@ enum FishRarity: String, CaseIterable, Codable {
   case epic = "Epic"
   case legendary = "Legendary"
 
+  var sortOrder: Int {
+    switch self {
+    case .common: return 0
+    case .uncommon: return 1
+    case .rare: return 2
+    case .epic: return 3
+    case .legendary: return 4
+    }
+  }
+
   var color: Color {
     switch self {
     case .common: return .gray
