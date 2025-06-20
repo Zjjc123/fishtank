@@ -11,6 +11,7 @@ struct ContentView: View {
   @StateObject private var fishTankManager = FishTankManager(bounds: UIScreen.main.bounds)
   @StateObject private var commitmentManager = CommitmentManager()
   @StateObject private var statsManager = GameStatsManager()
+  @StateObject private var bubbleManager = BubbleManager(bounds: UIScreen.main.bounds)
 
   @State private var currentTime = Date()
   @State private var appStartTime = Date()
@@ -28,6 +29,7 @@ struct ContentView: View {
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+  private let bubbleTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
   // Time-based background colors
   private var timeBasedBackground: (topColor: Color, bottomColor: Color) {
@@ -63,6 +65,12 @@ struct ContentView: View {
           endPoint: .bottom
         )
         .ignoresSafeArea()
+
+        // Animated Bubbles
+        ForEach(bubbleManager.bubbles) { bubble in
+          BubbleView(bubble: bubble)
+            .position(x: bubble.x, y: bubble.y)
+        }
 
         // Swimming Fish
         ForEach(fishTankManager.swimmingFish) { fish in
@@ -305,6 +313,9 @@ struct ContentView: View {
     }
     .onReceive(fishTimer) { _ in
       fishTankManager.animateFish()
+    }
+    .onReceive(bubbleTimer) { _ in
+      bubbleManager.animateBubbles()
     }
     .onAppear {
       appStartTime = Date()
