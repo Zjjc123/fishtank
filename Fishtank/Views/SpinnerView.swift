@@ -16,6 +16,7 @@ struct SpinnerView: View {
 
   @State private var wheelOffset: CGFloat = 0
   @State private var isSpinning = false
+  @State private var randomizedFish: [CollectedFish] = []
 
   private let itemWidth: CGFloat = 80
   private let itemSpacing: CGFloat = 20
@@ -54,7 +55,17 @@ struct SpinnerView: View {
     .frame(maxWidth: 350)
     .padding(.horizontal)
     .onAppear {
+      generateRandomizedFish()
       startSpinning()
+    }
+  }
+
+  private func generateRandomizedFish() {
+    // Generate randomized fish for all positions except the winning index
+    randomizedFish = []
+    for _ in 0..<(totalItems - 1) {
+      let rarity = FishRarity.randomRarity(boost: lootboxType.rarityBoost)
+      randomizedFish.append(CollectedFish(rarity: rarity))
     }
   }
 
@@ -64,13 +75,15 @@ struct SpinnerView: View {
       return predeterminedWinner
     }
 
-    // For other positions, cycle through the possible rewards
-    // Skip the winner to avoid duplication at the winning position
-    let availableRewards = possibleRewards.filter { $0.id != predeterminedWinner.id }
-    if availableRewards.isEmpty {
-      return possibleRewards[index % possibleRewards.count]
+    // Guard against accessing an empty array before onAppear populates it.
+    guard !randomizedFish.isEmpty else {
+      // Return a temporary placeholder. It will be updated once onAppear runs.
+      return predeterminedWinner
     }
-    return availableRewards[index % availableRewards.count]
+
+    // Use the pre-generated randomized fish for other positions
+    let fishIndex = index < winningIndex ? index : index - 1
+    return randomizedFish[fishIndex]
   }
 
   private func startSpinning() {

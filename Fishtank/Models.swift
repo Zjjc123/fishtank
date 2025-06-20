@@ -15,23 +15,26 @@ struct AppConfig {
 
 // MARK: - Focus Commitment
 enum FocusCommitment: String, CaseIterable {
-  case short = "10 Minutes"
-  case medium = "1 Hour"
-  case long = "4 Hours"
+  case short = "15 Minutes"
+  case medium = "30 Minutes"
+  case long = "1 Hour"
+  case veryLong = "2 Hours"
 
   var duration: TimeInterval {
     switch self {
-    case .short: return 600
-    case .medium: return 3600
-    case .long: return 14400
+    case .short: return 900
+    case .medium: return 1800
+    case .long: return 3600
+    case .veryLong: return 7200
     }
   }
 
   var lootboxType: LootboxType {
     switch self {
-    case .short: return .silver
-    case .medium: return .gold
-    case .long: return .platinum
+    case .short: return .basic
+    case .medium: return .silver
+    case .long: return .gold
+    case .veryLong: return .platinum
     }
   }
 
@@ -39,7 +42,8 @@ enum FocusCommitment: String, CaseIterable {
     switch self {
     case .short: return "🕐"
     case .medium: return "⏰"
-    case .long: return "🏆"
+    case .long: return "🕰️"
+    case .veryLong: return "🏆"
     }
   }
 }
@@ -72,9 +76,9 @@ enum LootboxType: String, CaseIterable {
   var rarityBoost: Double {
     switch self {
     case .basic: return 1.0
-    case .silver: return 1.5
-    case .gold: return 2.0
-    case .platinum: return 3.0
+    case .silver: return 3
+    case .gold: return 10
+    case .platinum: return 25
     }
   }
 

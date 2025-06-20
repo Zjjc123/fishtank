@@ -206,7 +206,6 @@ struct ContentView: View {
               showRewardMessage("🐠 \(fish.emoji) visibility controls swimming display!")
             },
             onVisibilityToggled: { fish in
-              let wasVisible = fish.isVisible
               let success = statsManager.toggleFishVisibility(
                 fish, fishTankManager: fishTankManager)
               return success
@@ -218,7 +217,8 @@ struct ContentView: View {
         if showSettings {
           SettingsView(
             isPresented: $showSettings,
-            statsManager: statsManager
+            statsManager: statsManager,
+            fishTankManager: fishTankManager
           )
         }
 

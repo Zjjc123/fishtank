@@ -10,6 +10,7 @@ import SwiftUI
 struct SettingsView: View {
   @Binding var isPresented: Bool
   let statsManager: GameStatsManager
+  let fishTankManager: FishTankManager
   @State private var showingClearAlert = false
   @State private var showingExportSheet = false
   @State private var exportData = ""
@@ -97,7 +98,7 @@ struct SettingsView: View {
     .alert("Clear All Fish", isPresented: $showingClearAlert) {
       Button("Cancel", role: .cancel) {}
       Button("Clear All", role: .destructive) {
-        statsManager.clearAllFish()
+        statsManager.clearAllFish(fishTankManager: fishTankManager)
       }
     } message: {
       Text("This will permanently delete all your collected fish. This action cannot be undone.")

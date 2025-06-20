@@ -322,10 +322,14 @@ class GameStatsManager: ObservableObject {
     }
   }
 
-  func clearAllFish() {
+  func clearAllFish(fishTankManager: FishTankManager? = nil) {
     collectedFish.removeAll()
     initializeFishCollection()
     saveToStorage()
+    // Update swimming fish display if manager provided
+    if let manager = fishTankManager {
+      manager.updateSwimmingFish(with: getVisibleFish())
+    }
   }
 
   func toggleFishVisibility(_ fish: CollectedFish, fishTankManager: FishTankManager) -> Bool {
