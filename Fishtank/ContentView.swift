@@ -20,11 +20,11 @@ struct ContentView: View {
   @State private var showSettings = false
   @State private var showReward = false
   @State private var rewardMessage = ""
-  @State private var cancelledCommitment: FocusCommitment?
   @State private var notificationTimer: DispatchWorkItem?
   @State private var showCaseOpening = false
   @State private var caseOpeningLootbox: CommitmentLootbox?
   @State private var caseOpeningRewards: [CollectedFish] = []
+  @State private var showAppRestrictionAlert = false
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
@@ -109,6 +109,26 @@ struct ContentView: View {
                       )
                   )
               }
+            } else {
+              Button(action: {
+                if let cancelled = commitmentManager.cancelCommitment() {
+                  showRewardMessage("🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
+                }
+              }) {
+                Text("❌ Cancel Session")
+                  .font(.headline)
+                  .foregroundColor(.white)
+                  .opacity(0.85)
+                  .padding()
+                  .background(
+                    RoundedRectangle(cornerRadius: 10)
+                      .fill(Color.red.opacity(0.5))
+                      .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                          .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                      )
+                  )
+              }
             }
 
             Button(action: {
@@ -136,8 +156,22 @@ struct ContentView: View {
 
         if showCommitmentSelection {
           CommitmentSelectionView(isPresented: $showCommitmentSelection) { commitment in
+            // Request app restriction authorization first
+            commitmentManager.requestAppRestrictionAuthorization()
+
+            // Start the commitment
             commitmentManager.startCommitment(commitment)
-            showRewardMessage("🎯 \(commitment.rawValue) focus session started!")
+
+            // Show appropriate message based on authorization status
+            if commitmentManager.isAppRestrictionEnabled {
+              showRewardMessage(
+                "🎯 \(commitment.rawValue) focus session started!\n📱 Other apps are now blocked!")
+            } else {
+              showRewardMessage(
+                "🎯 \(commitment.rawValue) focus session started!\n⚠️ App blocking not available - please enable Screen Time permissions"
+              )
+              showAppRestrictionAlert = true
+            }
           }
         }
 
@@ -190,6 +224,18 @@ struct ContentView: View {
         }
       }
     }
+    .alert("Screen Time Permissions Required", isPresented: $showAppRestrictionAlert) {
+      Button("Open Settings") {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+          UIApplication.shared.open(settingsUrl)
+        }
+      }
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(
+        "To block other apps during focus sessions, please enable Screen Time permissions in Settings > Screen Time > App Limits."
+      )
+    }
     .onReceive(timer) { _ in
       currentTime = Date()
       timeSpent = Date().timeIntervalSince(appStartTime)
@@ -197,7 +243,7 @@ struct ContentView: View {
       if let completedCommitment = commitmentManager.checkProgress() {
         fishTankManager.spawnLootbox(type: completedCommitment.lootboxType)
         showRewardMessage(
-          "🏆 \(completedCommitment.rawValue) completed! \(completedCommitment.lootboxType.emoji) \(completedCommitment.lootboxType.rawValue) lootbox earned!"
+          "🏆 \(completedCommitment.rawValue) completed! \(completedCommitment.lootboxType.emoji) \(completedCommitment.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."
         )
       }
     }
@@ -208,25 +254,6 @@ struct ContentView: View {
       appStartTime = Date()
       // Initialize swimming fish with all visible fish
       fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
-    }
-    .onReceive(
-      NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
-    ) { _ in
-      // Cancel focus session when app goes to background (silently)
-      if let cancelled = commitmentManager.cancelCommitment() {
-        cancelledCommitment = cancelled
-      }
-    }
-    .onReceive(
-      NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
-    ) { _ in
-      // Show notification when user returns to app if session was cancelled
-      if let cancelled = cancelledCommitment {
-        showRewardMessage(
-          "🚨 Focus session cancelled - app was backgrounded\n\(cancelled.emoji) \(cancelled.rawValue) session ended"
-        )
-        cancelledCommitment = nil  // Clear the stored cancellation
-      }
     }
   }
 
