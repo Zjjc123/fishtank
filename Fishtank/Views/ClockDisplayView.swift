@@ -13,7 +13,8 @@ struct ClockDisplayView: View {
   var body: some View {
     VStack(spacing: 8) {
       Text(timeString(from: currentTime))
-        .font(.system(size: 48, weight: .bold, design: .monospaced))
+        .font(.custom("Gill Sans", size: 72, relativeTo: .largeTitle))
+        .fontWeight(.regular)
         .foregroundColor(.white)
         .opacity(0.7)
         .shadow(color: .black.opacity(0.2), radius: 2)
@@ -23,7 +24,6 @@ struct ClockDisplayView: View {
         .foregroundColor(.white.opacity(0.5))
         .shadow(color: .black.opacity(0.2), radius: 1)
     }
-    .padding(.top, 50)
   }
 
   private func timeString(from date: Date) -> String {

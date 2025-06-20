@@ -12,8 +12,6 @@ struct SettingsView: View {
   let statsManager: GameStatsManager
   let fishTankManager: FishTankManager
   @State private var showingClearAlert = false
-  @State private var showingExportSheet = false
-  @State private var exportData = ""
 
   var body: some View {
     ZStack {
@@ -38,22 +36,6 @@ struct SettingsView: View {
         .padding()
 
         VStack(spacing: 15) {
-          // Export Collection
-          Button(action: {
-            exportData = statsManager.exportFishCollection()
-            showingExportSheet = true
-          }) {
-            HStack {
-              Image(systemName: "square.and.arrow.up")
-              Text("Export Fish Collection")
-              Spacer()
-            }
-            .padding()
-            .background(Color.blue.opacity(0.2))
-            .cornerRadius(10)
-            .foregroundColor(.white)
-          }
-
           // Clear All Fish
           Button(action: {
             showingClearAlert = true
@@ -102,9 +84,6 @@ struct SettingsView: View {
       }
     } message: {
       Text("This will permanently delete all your collected fish. This action cannot be undone.")
-    }
-    .sheet(isPresented: $showingExportSheet) {
-      ExportView(exportData: exportData)
     }
   }
 }

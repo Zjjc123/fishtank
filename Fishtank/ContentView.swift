@@ -29,12 +29,36 @@ struct ContentView: View {
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
+  // Time-based background colors
+  private var timeBasedBackground: (topColor: Color, bottomColor: Color) {
+    let hour = Calendar.current.component(.hour, from: currentTime)
+
+    switch hour {
+    case 5..<7:  // Early morning (5-7 AM) - Dawn
+      return (Color.orange.opacity(0.6), Color.pink.opacity(0.5))
+    case 7..<10:  // Morning (7-10 AM) - Bright morning
+      return (Color.cyan.opacity(0.7), Color.blue.opacity(0.8))
+    case 10..<16:  // Day (10 AM-4 PM) - Bright day
+      return (Color.cyan.opacity(0.8), Color.blue.opacity(0.9))
+    case 16..<19:  // Afternoon (4-7 PM) - Golden hour
+      return (Color.orange.opacity(0.7), Color.yellow.opacity(0.6))
+    case 19..<21:  // Evening (7-9 PM) - Sunset
+      return (Color.pink.opacity(0.6), Color.orange.opacity(0.7))
+    case 21..<23:  // Night (9-11 PM) - Early night
+      return (Color.purple.opacity(0.6), Color.blue.opacity(0.8))
+    case 23..<5:  // Late night (11 PM-5 AM) - Deep night
+      return (Color.black.opacity(0.7), Color.purple.opacity(0.8))
+    default:
+      return (Color.cyan.opacity(0.5), Color.blue.opacity(0.7))
+    }
+  }
+
   var body: some View {
     GeometryReader { geometry in
       ZStack {
         // Background
         LinearGradient(
-          colors: [Color.cyan.opacity(0.3), Color.blue.opacity(0.6)],
+          colors: [timeBasedBackground.topColor, timeBasedBackground.bottomColor],
           startPoint: .top,
           endPoint: .bottom
         )
@@ -67,7 +91,6 @@ struct ContentView: View {
 
         VStack {
           HStack {
-            ClockDisplayView(currentTime: currentTime)
             Spacer()
             Button(action: {
               showSettings = true
@@ -78,6 +101,14 @@ struct ContentView: View {
                 .opacity(0.4)
             }
             .padding(.trailing)
+            .padding(.top, 20)
+          }
+
+          HStack {
+            ClockDisplayView(currentTime: currentTime)
+            .padding(.leading, 30)
+            .padding(.top, 50)
+            Spacer()
           }
 
           if let commitment = commitmentManager.currentCommitment {
@@ -112,7 +143,8 @@ struct ContentView: View {
             } else {
               Button(action: {
                 if let cancelled = commitmentManager.cancelCommitment() {
-                  showRewardMessage("🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
+                  showRewardMessage(
+                    "🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
                 }
               }) {
                 Text("❌ Cancel Session")
