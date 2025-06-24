@@ -48,7 +48,7 @@ struct ContentView: View {
       return (Color.pink.opacity(0.6), Color.orange.opacity(0.7))
     case 21..<23:  // Night (9-11 PM) - Early night
       return (Color.purple.opacity(0.6), Color.blue.opacity(0.8))
-    case 23..<5:  // Late night (11 PM-5 AM) - Deep night
+    case 23...23, 0..<5:  // Late night (11 PM-5 AM) - Deep night
       return (Color.black.opacity(0.7), Color.purple.opacity(0.8))
     default:
       return (Color.cyan.opacity(0.5), Color.blue.opacity(0.7))
