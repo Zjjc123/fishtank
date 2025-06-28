@@ -1,0 +1,54 @@
+name: Ensure Fastlane Match
+
+# This workflow makes sure that https://github.com/wemakethingstoo/fastlane-match
+# Is up to date with its Matchfile
+
+on:
+  workflow_dispatch:
+    inputs:
+      readonly:
+        description: 'Run in readonly mode'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  match:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        match_type: [development, appstore]
+    
+    steps:
+    - name: Checkout current repository
+      uses: actions/checkout@v4
+      with:
+        path: main-repo
+
+    - name: Clone fastlane-match repository
+      uses: actions/checkout@v4
+      with:
+        repository: wemakethingstoo/fastlane-match
+        path: fastlane-match
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+        bundler-cache: false
+
+    - name: Copy Gemfile to fastlane-match directory
+      run: |
+        cp main-repo/Gemfile fastlane-match/
+        cp main-repo/Gemfile.lock fastlane-match/
+
+    - name: Install dependencies
+      working-directory: fastlane-match
+      run: |
+        bundle install
+
+    - name: Run fastlane match for ${{ matrix.match_type }}
+      working-directory: fastlane-match
+      run: |
+        bundle exec fastlane match ${{ matrix.match_type }}
