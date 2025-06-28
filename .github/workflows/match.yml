@@ -45,6 +45,9 @@ jobs:
       working-directory: fastlane-match
       env:
         MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
       run: |
         git config --global credential.helper store
         echo "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
