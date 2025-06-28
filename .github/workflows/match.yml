@@ -28,7 +28,7 @@ jobs:
       with:
         repository: wemakethingstoo/fastlane-match
         path: fastlane-match
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GH_TOKEN}}
 
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
