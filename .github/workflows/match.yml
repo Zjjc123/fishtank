@@ -44,4 +44,6 @@ jobs:
     - name: Run fastlane match for ${{ matrix.match_type }}
       working-directory: fastlane-match
       run: |
+        git config --global credential.helper store
+        echo "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
         bundle exec fastlane match ${{ matrix.match_type }}
