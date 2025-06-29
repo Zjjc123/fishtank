@@ -66,6 +66,7 @@ platform :ios do
       app_identifier: "dev.jasonzhang.Fishtank",
       team_id: "JAT3GYBPJ4",
       readonly: is_readonly,
+      force: !is_readonly, # force regeneration to include new entitlements
       force_for_new_devices: true,
       profile_name: "match AppStore dev.jasonzhang.Fishtank",
       template_name: "Family Controls" # entitlements for profile
