@@ -16,7 +16,7 @@
 # stub for while setting up first run to allow ci to generate certs
 def is_readonly
   # disable after setting is verified to work
-  return true
+  return false 
   # return is_ci
 end
 
