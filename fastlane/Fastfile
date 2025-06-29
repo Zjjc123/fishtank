@@ -16,8 +16,59 @@
 default_platform(:ios)
 
 platform :ios do
-  desc "Description of what the lane does"
-  lane :custom_lane do
-    # add actions here: https://docs.fastlane.tools/actions
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # Set keychain settings
+    setup_ci
+
+    # Set Xcode path directly
+    xcode_select("/Applications/Xcode_16.4.app")
+
+    update_project_team(
+      path: "Fishtank.xcodeproj",
+      teamid: "JAT3GYBPJ4"
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Fishtank.xcodeproj",
+      team_id: "JAT3GYBPJ4",
+      profile_name: "match AppStore com.anonymous.fishtank",
+      code_sign_identity: "Apple Distribution"
+    )
+
+    app_store_connect_api_key(
+      key_id: "7G4CYP76MH",
+      issuer_id: "0fcfcda0-daff-47cf-b0fa-27234a23c413",
+      key_filepath: "fastlane/AuthKey.p8",
+      duration: 1200, # optional (maximum 1200)
+      in_house: false # optional but may be required if using match/sigh
+    )
+
+    # Regenerate certificates and sync app-store provisioning profile for TestFlight
+    match(
+      type: "appstore",
+      git_url: "https://github.com/wemakethingstoo/fastlane-match",
+      git_branch: "main",
+      app_identifier: "com.anonymous.fishtank",
+      team_id: "JAT3GYBPJ4",
+      readonly: is_ci,
+      force_for_new_devices: true,
+      profile_name: "match AppStore com.anonymous.fishtank",
+    )
+    
+    increment_build_number(xcodeproj: "Fishtank.xcodeproj")
+    build_app(
+      project: "Fishtank.xcodeproj", 
+      scheme: "Fishtank",
+      export_method: "app-store",
+      codesigning_identity: "Apple Distribution",
+      export_options: {
+        provisioningProfiles: { 
+          "com.anonymous.fishtank" => "match AppStore com.anonymous.fishtank",
+        }
+      }
+    )
+    upload_to_testflight
   end
 end
