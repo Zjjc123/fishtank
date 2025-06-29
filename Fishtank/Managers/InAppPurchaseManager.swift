@@ -10,12 +10,12 @@ import SwiftUI
 
 // MARK: - In App Purchase Manager
 @MainActor
-class InAppPurchaseManager: ObservableObject {
+final class InAppPurchaseManager: ObservableObject {
   static let shared = InAppPurchaseManager()
 
-  @Published var isPurchasing = false
-  @Published var isLoadingProducts = false
-  @Published var purchaseError: String?
+  @Published private(set) var isPurchasing = false
+  @Published private(set) var isLoadingProducts = false
+  @Published private(set) var purchaseError: String?
 
   private var products: [Product] = []
   private let skipProductID = "dev.jasonzhang.fishtank.skip"
@@ -49,6 +49,7 @@ class InAppPurchaseManager: ObservableObject {
     isLoadingProducts = false
   }
 
+  @MainActor
   func getSkipPrice(for commitment: FocusCommitment) -> String {
     guard let product = products.first(where: { $0.id == skipProductID }) else {
       return "Loading..."
@@ -57,6 +58,7 @@ class InAppPurchaseManager: ObservableObject {
     return product.displayPrice
   }
 
+  @MainActor
   func purchaseSkip(for commitment: FocusCommitment) async -> Bool {
     guard let product = products.first(where: { $0.id == skipProductID }) else {
       purchaseError = "Skip product not available"
@@ -114,6 +116,7 @@ class InAppPurchaseManager: ObservableObject {
   }
 
   // MARK: - Transaction Management
+  @MainActor
   func checkForUnfinishedTransactions() async {
     for await result in Transaction.currentEntitlements {
       switch result {

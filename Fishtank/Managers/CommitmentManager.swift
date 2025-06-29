@@ -8,11 +8,12 @@
 import SwiftUI
 
 // MARK: - Commitment Manager
-class CommitmentManager: ObservableObject {
+@MainActor
+final class CommitmentManager: ObservableObject {
   @Published var currentCommitment: FocusCommitment?
   @Published var commitmentStartTime: Date?
   private let appRestrictionManager = AppRestrictionManager()
-  let purchaseManager = InAppPurchaseManager.shared
+  private let purchaseManager = InAppPurchaseManager.shared
 
   var progress: Double {
     guard let commitment = currentCommitment,
@@ -54,11 +55,15 @@ class CommitmentManager: ObservableObject {
   }
 
   func getSkipPrice(for commitment: FocusCommitment) -> String {
-    return purchaseManager.getSkipPrice(for: commitment)
+    purchaseManager.getSkipPrice(for: commitment)
   }
 
   func getPurchaseError() -> String? {
-    return purchaseManager.purchaseError
+    purchaseManager.purchaseError
+  }
+
+  func ensureProductsLoaded() async {
+    await purchaseManager.ensureProductsLoaded()
   }
 
   func startCommitment(_ commitment: FocusCommitment) {
@@ -108,7 +113,6 @@ class CommitmentManager: ObservableObject {
   }
 
   // MARK: - Skip functionality
-  @MainActor
   func skipCommitmentWithPurchase() async -> FocusCommitment? {
     guard let commitment = currentCommitment else { return nil }
 

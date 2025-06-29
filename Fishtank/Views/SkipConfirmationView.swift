@@ -10,7 +10,7 @@ import SwiftUI
 struct SkipConfirmationView: View {
     @Binding var isPresented: Bool
     let commitment: FocusCommitment
-    let commitmentManager: CommitmentManager
+    @ObservedObject var commitmentManager: CommitmentManager
     let onSkipConfirmed: (FocusCommitment) -> Void
     
     @State private var showError = false
@@ -129,11 +129,9 @@ struct SkipConfirmationView: View {
             )
             .padding(.horizontal, 30)
         }
-        .onAppear {
+        .task {
             // Ensure products are loaded when view appears
-            Task {
-                await commitmentManager.purchaseManager.ensureProductsLoaded()
-            }
+            await commitmentManager.ensureProductsLoaded()
         }
         .alert("Purchase Failed", isPresented: $showError) {
             Button("OK") { }
