@@ -27,6 +27,8 @@ jobs:
         
     - name: Install dependencies
       run: bundle install
-      
     - name: Run fastlane beta
-      run: bundle exec fastlane beta 
+      run: |
+        git config --global credential.helper store
+        echo "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
+        bundle exec fastlane beta
