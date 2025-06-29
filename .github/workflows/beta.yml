@@ -28,6 +28,8 @@ jobs:
     - name: Install dependencies
       run: bundle install
     - name: Run fastlane beta
+      env:
+        MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       run: |
         git config --global credential.helper store
         echo "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
