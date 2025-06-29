@@ -54,6 +54,7 @@ enum FishRarity: String, CaseIterable, Codable {
         ("Anchovy", "Anchovy"),
         ("Tetra", "Tetra"),
         ("Perch", "Perch"),
+        ("Sardine", "Sardine"),
       ]
     case .uncommon:
       return [
@@ -61,7 +62,7 @@ enum FishRarity: String, CaseIterable, Codable {
         ("Mackerel", "Mackerel"),
         ("Pike", "Pike"),
         ("Salmon", "Salmon"),
-        ("Goldfish", "Goldfish"), // Default for missing uncommon fish
+        ("Guppy", "Guppy"),
       ]
     case .rare:
       return [
