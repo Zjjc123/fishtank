@@ -50,7 +50,7 @@ platform :ios do
     )
 
     api_key = app_store_connect_api_key(
-      key_id: "7G4CYP76MH",
+      key_id: "295GWL5886",
       issuer_id: "0fcfcda0-daff-47cf-b0fa-27234a23c413",
       key_filepath: "fastlane-match/keychain/AuthKey_295GWL5886.p8",
       duration: 1200, # optional (maximum 1200)
