@@ -4,5 +4,9 @@
 <dict>
 	<key>com.apple.developer.family-controls</key>
 	<true/>
+	<key>com.apple.developer.in-app-payments</key>
+	<array>
+		<string>merchant.dev.jasonzhang.fishtank</string>
+	</array>
 </dict>
 </plist>

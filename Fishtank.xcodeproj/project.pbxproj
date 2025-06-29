@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		961C4B9B2E10FE08004FCA1E /* Fishtank - Focus App.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 961C4B9A2E10FE08004FCA1E /* Fishtank - Focus App.storekit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		96C2BF922E04094900B253A7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		961C4B9A2E10FE08004FCA1E /* Fishtank - Focus App.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Fishtank - Focus App.storekit"; sourceTree = "<group>"; };
 		96C2BF812E04094700B253A7 /* Fishtank.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fishtank.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96C2BF912E04094900B253A7 /* FishtankTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FishtankTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		96C2BF9B2E04094900B253A7 /* FishtankUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FishtankUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,6 +80,7 @@
 		96C2BF782E04094700B253A7 = {
 			isa = PBXGroup;
 			children = (
+				961C4B9A2E10FE08004FCA1E /* Fishtank - Focus App.storekit */,
 				96C2BF832E04094700B253A7 /* Fishtank */,
 				96C2BF942E04094900B253A7 /* FishtankTests */,
 				96C2BF9E2E04094900B253A7 /* FishtankUITests */,
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				961C4B9B2E10FE08004FCA1E /* Fishtank - Focus App.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -400,6 +407,8 @@
 				DEVELOPMENT_TEAM = JAT3GYBPJ4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Fishtank;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -435,6 +444,8 @@
 				DEVELOPMENT_TEAM = JAT3GYBPJ4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Fishtank;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -12,6 +12,7 @@ class CommitmentManager: ObservableObject {
   @Published var currentCommitment: FocusCommitment?
   @Published var commitmentStartTime: Date?
   private let appRestrictionManager = AppRestrictionManager()
+  let purchaseManager = InAppPurchaseManager.shared
 
   var progress: Double {
     guard let commitment = currentCommitment,
@@ -37,6 +38,27 @@ class CommitmentManager: ObservableObject {
 
   var isAppRestrictionEnabled: Bool {
     appRestrictionManager.isAuthorized
+  }
+
+  // MARK: - Purchase-related computed properties
+  var isPurchasing: Bool {
+    purchaseManager.isPurchasing
+  }
+
+  var isLoadingProducts: Bool {
+    purchaseManager.isLoadingProducts
+  }
+
+  var purchaseError: String? {
+    purchaseManager.purchaseError
+  }
+
+  func getSkipPrice(for commitment: FocusCommitment) -> String {
+    return purchaseManager.getSkipPrice(for: commitment)
+  }
+
+  func getPurchaseError() -> String? {
+    return purchaseManager.purchaseError
   }
 
   func startCommitment(_ commitment: FocusCommitment) {
@@ -83,6 +105,28 @@ class CommitmentManager: ObservableObject {
 
   func requestAppRestrictionAuthorization() {
     appRestrictionManager.requestAuthorization()
+  }
+
+  // MARK: - Skip functionality
+  @MainActor
+  func skipCommitmentWithPurchase() async -> FocusCommitment? {
+    guard let commitment = currentCommitment else { return nil }
+
+    let success = await purchaseManager.purchaseSkip(for: commitment)
+    
+    if success {
+      // Purchase successful, complete the commitment
+      let skippedCommitment = commitment
+      currentCommitment = nil
+      commitmentStartTime = nil
+
+      // Stop app restriction
+      appRestrictionManager.stopAppRestriction()
+
+      return skippedCommitment
+    }
+
+    return nil
   }
 
   func debugFinishCommitment() -> FocusCommitment? {

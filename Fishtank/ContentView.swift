@@ -26,6 +26,7 @@ struct ContentView: View {
   @State private var caseOpeningLootbox: CommitmentLootbox?
   @State private var caseOpeningRewards: [CollectedFish] = []
   @State private var showAppRestrictionAlert = false
+  @State private var showSkipConfirmation = false
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
@@ -172,6 +173,24 @@ struct ContentView: View {
               }
 
               Button(action: {
+                showSkipConfirmation = true
+              }) {
+                Text("💳 Skip Session")
+                  .font(.headline)
+                  .foregroundColor(.white)
+                  .opacity(0.85)
+                  .padding()
+                  .background(
+                    RoundedRectangle(cornerRadius: 10)
+                      .fill(Color.green.opacity(0.5))
+                      .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                          .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                      )
+                  )
+              }
+
+              Button(action: {
                 if let completed = commitmentManager.debugFinishCommitment() {
                   fishTankManager.spawnLootbox(type: completed.lootboxType)
                   showRewardMessage(
@@ -284,6 +303,20 @@ struct ContentView: View {
             // Reset state
             caseOpeningLootbox = nil
             caseOpeningRewards = []
+          }
+        }
+
+        if showSkipConfirmation, let commitment = commitmentManager.currentCommitment {
+          SkipConfirmationView(
+            isPresented: $showSkipConfirmation,
+            commitment: commitment,
+            commitmentManager: commitmentManager
+          ) { skippedCommitment in
+            // Handle successful skip
+            fishTankManager.spawnLootbox(type: skippedCommitment.lootboxType)
+            showRewardMessage(
+              "💳 \(skippedCommitment.rawValue) skipped! \(skippedCommitment.lootboxType.emoji) \(skippedCommitment.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."
+            )
           }
         }
       }
