@@ -12,6 +12,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Clone fastlane-match repository
+      uses: actions/checkout@v4
+      with:
+        repository: wemakethingstoo/fastlane-match
+        path: fastlane-match
+        token: ${{ secrets.GH_TOKEN}}
+      
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
