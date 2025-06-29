@@ -37,9 +37,9 @@ struct ContentView: View {
 
     switch hour {
     case 5..<7:  // Early morning (5-7 AM) - Dawn
-      return (Color.orange.opacity(0.6), Color.pink.opacity(0.5))
+      return (Color.orange.opacity(0.3), Color.pink.opacity(0.25))
     case 7..<10:  // Morning (7-10 AM) - Bright morning
-      return (Color.cyan.opacity(0.7), Color.blue.opacity(0.8))
+      return (Color.cyan.opacity(0.35), Color.blue.opacity(0.4))
     case 10..<16:  // Day (10 AM-4 PM) - Bright day
       return (Color.cyan.opacity(0.8), Color.blue.opacity(0.9))
     case 16..<19:  // Afternoon (4-7 PM) - Golden hour
@@ -49,9 +49,9 @@ struct ContentView: View {
     case 21..<23:  // Night (9-11 PM) - Early night
       return (Color.purple.opacity(0.6), Color.blue.opacity(0.8))
     case 23...23, 0..<5:  // Late night (11 PM-5 AM) - Deep night
-      return (Color.black.opacity(0.7), Color.purple.opacity(0.8))
+      return (Color.black.opacity(0.35), Color.purple.opacity(0.4))
     default:
-      return (Color.cyan.opacity(0.5), Color.blue.opacity(0.7))
+      return (Color.cyan.opacity(0.25), Color.blue.opacity(0.35))
     }
   }
 
