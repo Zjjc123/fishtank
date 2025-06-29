@@ -198,7 +198,7 @@ struct Triangle: Shape {
 // MARK: - Bubble View
 struct BubbleView: View {
   let bubble: Bubble
-  
+
   var body: some View {
     ZStack {
       // Main bubble circle
@@ -209,13 +209,13 @@ struct BubbleView: View {
           Circle()
             .stroke(Color.white.opacity(bubble.opacity * 0.6), lineWidth: 1)
         )
-      
+
       // Highlight reflection
       Circle()
         .fill(Color.white.opacity(bubble.opacity * 0.4))
         .frame(width: bubble.size * 0.3, height: bubble.size * 0.3)
         .offset(x: -bubble.size * 0.2, y: -bubble.size * 0.2)
-      
+
       // Secondary reflection
       Circle()
         .fill(Color.white.opacity(bubble.opacity * 0.2))

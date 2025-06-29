@@ -79,7 +79,25 @@ struct SwimmingFish: Identifiable {
     self.collectedFish = collectedFish
     self.x = CGFloat.random(in: 0...bounds.width)
     self.y = CGFloat.random(in: bounds.height * 0.2...bounds.height * 0.8)
-    self.size = CGFloat.random(in: 15...30)
+    
+    // Size scales with rarity - rarer fish are larger
+    let baseSize: CGFloat
+    let sizeVariation: CGFloat = 5.0 // Random variation within rarity
+    
+    switch collectedFish.rarity {
+    case .common:
+      baseSize = 25.0
+    case .uncommon:
+      baseSize = 35.0
+    case .rare:
+      baseSize = 45.0
+    case .epic:
+      baseSize = 55.0
+    case .legendary:
+      baseSize = 70.0
+    }
+    
+    self.size = baseSize + CGFloat.random(in: -sizeVariation...sizeVariation)
     self.speed = CGFloat.random(in: 0.5...2.0)
     self.direction = CGFloat.random(in: -1...1)
   }

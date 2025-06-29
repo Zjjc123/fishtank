@@ -49,43 +49,39 @@ enum FishRarity: String, CaseIterable, Codable {
     switch self {
     case .common:
       return [
-        ("Goldfish", "Goldfish"),
         ("Minnow", "Minnow"),
         ("Anchovy", "Anchovy"),
         ("Tetra", "Tetra"),
         ("Perch", "Perch"),
         ("Sardine", "Sardine"),
+        ("Mackerel", "Mackerel"),
       ]
     case .uncommon:
       return [
         ("Cod", "Cod"),
-        ("Mackerel", "Mackerel"),
         ("Pike", "Pike"),
         ("Salmon", "Salmon"),
         ("Guppy", "Guppy"),
+        ("Goldfish", "Goldfish"),
       ]
     case .rare:
       return [
-        ("Goldfish", "Goldfish"), // Default for missing rare fish
-        ("Goldfish", "Goldfish"),
-        ("Goldfish", "Goldfish"),
-        ("Goldfish", "Goldfish"),
-        ("Goldfish", "Goldfish"),
+        ("Sturgeon", "Sturgeon"),
+        ("Tuna", "Tuna"),
+        ("Marlin", "Marlin"),
+        ("Barracuda", "Barracuda"),
       ]
     case .epic:
       return [
-        ("Goldfish", "Goldfish"), // Default for missing epic fish
-        ("Goldfish", "Goldfish"),
-        ("Goldfish", "Goldfish"),
-        ("Goldfish", "Goldfish"),
-        ("Goldfish", "Goldfish"),
+        ("Shark", "Shark"),
+        ("Dolphin", "Dolphin"),
       ]
     case .legendary:
       return [
-        ("Goldfish", "Goldfish"), // Default for missing legendary fish
-        ("Goldfish", "Goldfish"),
-        ("Goldfish", "Goldfish"),
-        ("Goldfish", "Goldfish"),
+        ("Manta Ray", "Manta Ray"),
+        ("Blue Whale", "Blue Whale"),
+        ("Orca", "Orca"),
+        ("Narwhal", "Narwhal"),
       ]
     }
   }
