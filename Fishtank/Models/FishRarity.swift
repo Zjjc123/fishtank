@@ -45,53 +45,52 @@ enum FishRarity: String, CaseIterable, Codable {
     }
   }
 
-  var fishOptions: [(name: String, emoji: String)] {
+  var fishOptions: [(name: String, imageName: String)] {
     switch self {
     case .common:
       return [
-        ("Goldfish", "🐟"),
-        ("Minnow", "🐠"),
-        ("Guppy", "🐟"),
-        ("Tetra", "🐠"),
-        ("Danio", "🐟"),
+        ("Goldfish", "Goldfish"),
+        ("Minnow", "Minnow"),
+        ("Anchovy", "Anchovy"),
+        ("Tetra", "Tetra"),
+        ("Perch", "Perch"),
       ]
     case .uncommon:
       return [
-        ("Pufferfish", "🐡"),
-        ("Shark", "🦈"),
-        ("Barracuda", "🦈"),
-        ("Tuna", "🐟"),
-        ("Mackerel", "🐟"),
+        ("Cod", "Cod"),
+        ("Mackerel", "Mackerel"),
+        ("Pike", "Pike"),
+        ("Salmon", "Salmon"),
+        ("Goldfish", "Goldfish"), // Default for missing uncommon fish
       ]
     case .rare:
       return [
-        ("Octopus", "🐙"),
-        ("Squid", "🦑"),
-        ("Cuttlefish", "🦑"),
-        ("Nautilus", "🐙"),
-        ("Jellyfish", "🦑"),
+        ("Goldfish", "Goldfish"), // Default for missing rare fish
+        ("Goldfish", "Goldfish"),
+        ("Goldfish", "Goldfish"),
+        ("Goldfish", "Goldfish"),
+        ("Goldfish", "Goldfish"),
       ]
     case .epic:
       return [
-        ("Whale", "🐳"),
-        ("Seal", "🦭"),
-        ("Dolphin", "🐬"),
-        ("Orca", "🐳"),
-        ("Narwhal", "🦄"),
+        ("Goldfish", "Goldfish"), // Default for missing epic fish
+        ("Goldfish", "Goldfish"),
+        ("Goldfish", "Goldfish"),
+        ("Goldfish", "Goldfish"),
+        ("Goldfish", "Goldfish"),
       ]
     case .legendary:
       return [
-        ("Dragon", "🐉"),
-        ("Unicorn", "🦄"),
-        ("Phoenix", "🦅"),
-        ("Kraken", "🐙"),
-        ("Leviathan", "🐋"),
+        ("Goldfish", "Goldfish"), // Default for missing legendary fish
+        ("Goldfish", "Goldfish"),
+        ("Goldfish", "Goldfish"),
+        ("Goldfish", "Goldfish"),
       ]
     }
   }
 
-  var emojis: [String] {
-    fishOptions.map { $0.emoji }
+  var imageNames: [String] {
+    fishOptions.map { $0.imageName }
   }
 
   var names: [String] {

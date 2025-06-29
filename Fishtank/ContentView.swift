@@ -244,7 +244,7 @@ struct ContentView: View {
             collectedFish: statsManager.collectedFish,
             onFishSelected: { fish in
               // Fish selection no longer adds to swimming - visibility controls this
-              showRewardMessage("🐠 \(fish.emoji) visibility controls swimming display!")
+              showRewardMessage("🐠 \(fish.name) visibility controls swimming display!")
             },
             onVisibilityToggled: { fish in
               let success = statsManager.toggleFishVisibility(
@@ -274,7 +274,7 @@ struct ContentView: View {
             fishTankManager.removeLootbox(lootbox)
             statsManager.addFishes(selectedFishes, fishTankManager: fishTankManager)
 
-            let fishMessages = selectedFishes.map { "\($0.rarity.rawValue) \($0.emoji)" }
+            let fishMessages = selectedFishes.map { "\($0.rarity.rawValue) \($0.name)" }
             let hiddenCount = selectedFishes.filter { !$0.isVisible }.count
             let hiddenMessage = hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
             showRewardMessage(

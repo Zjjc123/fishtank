@@ -11,7 +11,7 @@ import SwiftUI
 struct CollectedFish: Identifiable, Hashable, Codable {
   let id: UUID
   let rarity: FishRarity
-  let emoji: String
+  let imageName: String
   let name: String
   let dateCaught: Date
   var isSwimming: Bool = false
@@ -21,21 +21,21 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     self.id = UUID()
     self.rarity = rarity
     let fishOption = rarity.fishOptions.randomElement()!
-    self.emoji = fishOption.emoji
+    self.imageName = fishOption.imageName
     self.name = fishOption.name
     self.dateCaught = Date()
   }
 
   // Custom Codable implementation to handle UUID properly
   enum CodingKeys: String, CodingKey {
-    case id, rarity, emoji, name, dateCaught, isSwimming, isVisible
+    case id, rarity, imageName, name, dateCaught, isSwimming, isVisible
   }
 
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     id = try container.decode(UUID.self, forKey: .id)
     rarity = try container.decode(FishRarity.self, forKey: .rarity)
-    emoji = try container.decode(String.self, forKey: .emoji)
+    imageName = try container.decode(String.self, forKey: .imageName)
     name = try container.decode(String.self, forKey: .name)
     dateCaught = try container.decode(Date.self, forKey: .dateCaught)
     isSwimming = try container.decodeIfPresent(Bool.self, forKey: .isSwimming) ?? false
@@ -46,7 +46,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(id, forKey: .id)
     try container.encode(rarity, forKey: .rarity)
-    try container.encode(emoji, forKey: .emoji)
+    try container.encode(imageName, forKey: .imageName)
     try container.encode(name, forKey: .name)
     try container.encode(dateCaught, forKey: .dateCaught)
     try container.encode(isSwimming, forKey: .isSwimming)
@@ -73,7 +73,7 @@ struct SwimmingFish: Identifiable {
 
   var color: Color { collectedFish.rarity.color }
   var rarity: FishRarity { collectedFish.rarity }
-  var emoji: String { collectedFish.emoji }
+  var imageName: String { collectedFish.imageName }
 
   init(collectedFish: CollectedFish, in bounds: CGRect) {
     self.collectedFish = collectedFish

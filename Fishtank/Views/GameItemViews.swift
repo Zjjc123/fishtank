@@ -12,8 +12,11 @@ struct SwimmingFishView: View {
   let fish: SwimmingFish
 
   var body: some View {
-    Text(fish.emoji)
-      .font(.system(size: fish.size))
+    Image(fish.imageName)
+      .resizable()
+      .interpolation(.none)
+      .aspectRatio(contentMode: .fit)
+      .frame(width: fish.size, height: fish.size)
       .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
       .shadow(color: .black.opacity(0.3), radius: 2)
   }
@@ -145,8 +148,10 @@ struct RewardItemView: View {
 
   var body: some View {
     VStack(spacing: 5) {
-      Text(fish.emoji)
-        .font(.title)
+      Image(fish.imageName)
+        .resizable()
+        .interpolation(.none)
+        .aspectRatio(contentMode: .fit)
         .frame(width: 65, height: 35)
 
       Text(fish.name)

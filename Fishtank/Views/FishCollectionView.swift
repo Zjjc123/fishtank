@@ -272,8 +272,10 @@ struct FishItemView: View {
 
   private var fishContent: some View {
     VStack {
-      Text(fish.emoji)
-        .font(.title)
+      Image(fish.imageName)
+        .resizable()
+        .interpolation(.none)
+        .aspectRatio(contentMode: .fit)
         .frame(width: 40, height: 40)
       Text(fish.name)
         .font(.caption2)
