@@ -19,12 +19,47 @@ final class InAppPurchaseManager: ObservableObject {
 
   private var products: [Product] = []
   private let skipProductID = "dev.jasonzhang.fishtank.skip"
+  private var transactionListener: Task<Void, Error>?
 
   private init() {
+    // Start listening for transactions
+    startTransactionListener()
+
     // Load products when manager is initialized
     Task {
       await loadProducts()
     }
+  }
+
+  deinit {
+    // Cancel the transaction listener when the manager is deallocated
+    transactionListener?.cancel()
+  }
+
+  private func startTransactionListener() {
+    // Start listening for transactions
+    transactionListener = Task.detached {
+      // Iterate through any pending transactions
+      for await result in StoreKit.Transaction.updates {
+        do {
+          let transaction = try await result.payloadValue
+          // Handle the transaction
+          await self.handle(transaction: transaction)
+
+          // Finish the transaction
+          await transaction.finish()
+        } catch {
+          print("Failed to verify transaction: \(error)")
+        }
+      }
+    }
+  }
+
+  private func handle(transaction: StoreKit.Transaction) async {
+    // Here you can add any additional transaction handling logic
+    // For example, you might want to store the transaction ID
+    // or update some user entitlements
+    print("Handling transaction: \(transaction.id)")
   }
 
   func ensureProductsLoaded() async {
@@ -77,6 +112,7 @@ final class InAppPurchaseManager: ObservableObject {
         switch verification {
         case .verified(let transaction):
           // Handle successful purchase
+          await handle(transaction: transaction)
           await transaction.finish()
           print("Skip purchase successful for \(commitment.rawValue)")
           isPurchasing = false
@@ -118,10 +154,11 @@ final class InAppPurchaseManager: ObservableObject {
   // MARK: - Transaction Management
   @MainActor
   func checkForUnfinishedTransactions() async {
-    for await result in Transaction.currentEntitlements {
+    for await result in StoreKit.Transaction.currentEntitlements {
       switch result {
       case .verified(let transaction):
         // Handle any unfinished transactions
+        await handle(transaction: transaction)
         await transaction.finish()
         print("Finished pending transaction: \(transaction.id)")
 
