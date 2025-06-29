@@ -13,10 +13,22 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
+# stub for while setting up first run to allow ci to generate certs
+def is_readonly
+  # disable after setting is verified to work
+  return true
+  # return is_ci
+end
+
 default_platform(:ios)
 
 platform :ios do
+
+  
+
   desc "Push a new beta build to TestFlight"
+
+
   lane :beta do
     # Set keychain settings
     setup_ci
@@ -52,7 +64,7 @@ platform :ios do
       git_branch: "main",
       app_identifier: "com.anonymous.fishtank",
       team_id: "JAT3GYBPJ4",
-      readonly: is_ci,
+      readonly: is_readonly,
       force_for_new_devices: true,
       profile_name: "match AppStore com.anonymous.fishtank",
     )
