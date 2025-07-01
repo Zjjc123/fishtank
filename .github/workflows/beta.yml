@@ -7,6 +7,9 @@ on:
 jobs:
   beta:
     runs-on: macos-15
+    permissions:
+      contents: write
+      actions: write
     
     steps:
     - name: Checkout code
