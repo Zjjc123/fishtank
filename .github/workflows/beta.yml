@@ -27,6 +27,7 @@ jobs:
         
     - name: Install dependencies
       run: bundle install
+      continue-on-error: true
     - name: Run fastlane beta
       env:
         MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
@@ -37,3 +38,22 @@ jobs:
         git config --global credential.helper store
         echo "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
         bundle exec fastlane beta
+
+  
+    - name: Commit Incremented Version Back
+      run: |
+        # Get the new version from project.pbxproj
+        NEW_VERSION=$(grep -m 1 "MARKETING_VERSION = " Meter.xcodeproj/project.pbxproj | sed 's/.*MARKETING_VERSION = \([^;]*\);.*/\1/')
+        echo "New version: $NEW_VERSION"
+        
+        # Configure git
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        
+        # Add and commit the version change
+        git add Fishtank.xcodeproj
+        git commit -m "Bump iOS version to $NEW_VERSION [skip ci]"
+        git pull origin main --rebase
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
