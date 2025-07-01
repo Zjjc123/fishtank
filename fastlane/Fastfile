@@ -82,7 +82,6 @@ platform :ios do
       template_name: "Family Controls" # entitlements for profile
     )
     
-    increment_build_number(xcodeproj: "Fishtank.xcodeproj")
     build_app(
       project: "Fishtank.xcodeproj", 
       scheme: "Fishtank",
