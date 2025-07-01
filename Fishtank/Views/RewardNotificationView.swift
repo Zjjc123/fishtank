@@ -12,21 +12,21 @@ struct RewardNotificationView: View {
   let isVisible: Bool
 
   var body: some View {
-    if isVisible {
-      VStack(spacing: 8) {
-        Text(message)
-          .font(.title2)
-          .fontWeight(.bold)
-          .foregroundColor(.white)
-          .opacity(0.9)
-          .multilineTextAlignment(.center)
-          .padding(.horizontal, 20)
-          .padding(.vertical, 16)
-      }
-      .background(notificationBackground)
-      .padding(.horizontal, 20)
-      .transition(.scale.combined(with: .opacity))
+    VStack(spacing: 8) {
+      Text(message)
+        .font(.title2)
+        .fontWeight(.bold)
+        .foregroundColor(.white)
+        .opacity(0.9)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
     }
+    .background(notificationBackground)
+    .padding(.horizontal, 20)
+    .opacity(isVisible ? 1 : 0)
+    .scaleEffect(isVisible ? 1 : 0.8)
+    .animation(.spring(), value: isVisible)
   }
 
   private var notificationBackground: some View {
