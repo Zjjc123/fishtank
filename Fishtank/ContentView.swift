@@ -30,7 +30,7 @@ struct ContentView: View {
   @State private var showCancelConfirmation = false
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-  private let fishTimer = Timer.publish(every: 1.0/60.0, on: .main, in: .common).autoconnect() // 60 FPS
+  private let fishTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
   private let bubbleTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
   // Time-based background colors
@@ -215,22 +215,22 @@ struct ContentView: View {
 
         if showCommitmentSelection {
           CommitmentSelectionView(isPresented: $showCommitmentSelection) { commitment in
-            // Request app restriction authorization first
-            commitmentManager.requestAppRestrictionAuthorization()
+            // Check if Screen Time permissions are enabled
+            if !commitmentManager.isAppRestrictionEnabled {
+              // Request authorization first
+              commitmentManager.requestAppRestrictionAuthorization()
 
-            // Start the commitment
-            commitmentManager.startCommitment(commitment)
-
-            // Show appropriate message based on authorization status
-            if commitmentManager.isAppRestrictionEnabled {
-              showRewardMessage(
-                "🎯 \(commitment.rawValue) focus session started!\n📱 Other apps are now blocked!")
-            } else {
-              showRewardMessage(
-                "🎯 \(commitment.rawValue) focus session started!\n⚠️ App blocking not available - please enable Screen Time permissions"
-              )
-              showAppRestrictionAlert = true
+              // Show alert if still not authorized after request
+              if !commitmentManager.isAppRestrictionEnabled {
+                showAppRestrictionAlert = true
+                return
+              }
             }
+
+            // Start the commitment only if permissions are enabled
+            commitmentManager.startCommitment(commitment)
+            showRewardMessage(
+              "🎯 \(commitment.rawValue) focus session started!\n📱 Other apps are now blocked!")
           }
         }
 
@@ -296,18 +296,6 @@ struct ContentView: View {
           }
         }
       }
-    }
-    .alert("Screen Time Permissions Required", isPresented: $showAppRestrictionAlert) {
-      Button("Open Settings") {
-        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-          UIApplication.shared.open(settingsUrl)
-        }
-      }
-      Button("OK", role: .cancel) {}
-    } message: {
-      Text(
-        "To block other apps during focus sessions, please enable Screen Time permissions in Settings > Screen Time > App Limits."
-      )
     }
     .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
       Button("Yes", role: .destructive) {

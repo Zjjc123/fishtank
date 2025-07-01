@@ -56,9 +56,11 @@ struct SettingsView: View {
             Text("Storage Information")
               .font(.headline)
               .foregroundColor(.white)
-            Text("Fish are automatically saved to your device")
-              .font(.caption)
-              .foregroundColor(.gray)
+            Text(
+              "Fish are automatically saved to your device. Deleting your app will delete your fish."
+            )
+            .font(.caption)
+            .foregroundColor(.gray)
             Text("Total fish: \(statsManager.fishCount)")
               .font(.caption)
               .foregroundColor(.gray)
