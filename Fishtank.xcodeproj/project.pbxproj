@@ -403,7 +403,7 @@
 				CODE_SIGN_ENTITLEMENTS = Fishtank/Fishtank.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_ASSET_PATHS = "\"Fishtank/Preview Content\"";
 				DEVELOPMENT_TEAM = JAT3GYBPJ4;
 				ENABLE_PREVIEWS = YES;
@@ -442,7 +442,7 @@
 				CODE_SIGN_ENTITLEMENTS = Fishtank/Fishtank.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_ASSET_PATHS = "\"Fishtank/Preview Content\"";
 				DEVELOPMENT_TEAM = JAT3GYBPJ4;
 				ENABLE_PREVIEWS = YES;
