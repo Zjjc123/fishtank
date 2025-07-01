@@ -14,6 +14,7 @@ final class CommitmentManager: ObservableObject {
   @Published var commitmentStartTime: Date?
   private let appRestrictionManager = AppRestrictionManager()
   private let purchaseManager = InAppPurchaseManager.shared
+  private let notificationManager = NotificationManager.shared
 
   var progress: Double {
     guard let commitment = currentCommitment,
@@ -74,6 +75,10 @@ final class CommitmentManager: ObservableObject {
     if appRestrictionManager.isAuthorized {
       appRestrictionManager.startAppRestriction()
     }
+
+    // Schedule completion notification
+    let completionTime = Date().addingTimeInterval(commitment.duration)
+    notificationManager.scheduleCompletionNotification(for: commitment, at: completionTime)
   }
 
   func cancelCommitment() -> FocusCommitment? {
@@ -83,6 +88,9 @@ final class CommitmentManager: ObservableObject {
 
     // Stop app restriction
     appRestrictionManager.stopAppRestriction()
+
+    // Cancel any pending notifications
+    notificationManager.cancelAllPendingNotifications()
 
     return cancelledCommitment
   }
@@ -101,6 +109,9 @@ final class CommitmentManager: ObservableObject {
 
       // Stop app restriction when commitment is completed
       appRestrictionManager.stopAppRestriction()
+
+      // Cancel any pending notifications since we completed
+      notificationManager.cancelAllPendingNotifications()
 
       return completedCommitment
     }
@@ -126,6 +137,9 @@ final class CommitmentManager: ObservableObject {
 
       // Stop app restriction
       appRestrictionManager.stopAppRestriction()
+
+      // Cancel any pending notifications
+      notificationManager.cancelAllPendingNotifications()
 
       return skippedCommitment
     }
