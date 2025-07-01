@@ -320,8 +320,8 @@ struct ContentView: View {
     .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
       Button("Yes", role: .destructive) {
         if let cancelled = commitmentManager.cancelCommitment() {
-          // Get a random visible fish
-          if let randomFish = statsManager.getVisibleFish().randomElement() {
+          // Get a random fish from all collected fish
+          if let randomFish = statsManager.collectedFish.randomElement() {
             // Remove the fish from collection and update swimming fish
             statsManager.removeFish(randomFish)
             fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
