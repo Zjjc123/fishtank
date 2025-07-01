@@ -94,7 +94,7 @@ struct SwimmingFish: Identifiable {
     case .epic:
       baseSize = 55.0
     case .legendary:
-      baseSize = 70.0
+      baseSize = 80.0
     }
     
     self.size = baseSize + CGFloat.random(in: -sizeVariation...sizeVariation)

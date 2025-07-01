@@ -103,7 +103,7 @@ enum FishRarity: String, CaseIterable, Codable {
       case .common:
         return max(0.1, rarity.probability / boost)
       case .legendary:
-        return min(0.3, rarity.probability * boost)
+        return min(0.01, rarity.probability * boost)
       default:
         return min(0.4, rarity.probability * (1 + (boost - 1) * 0.5))
       }

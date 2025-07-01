@@ -34,10 +34,10 @@ enum LootboxType: String, CaseIterable {
 
   var rarityBoost: Double {
     switch self {
-    case .basic: return 1.0
+    case .basic: return 1
     case .silver: return 3
-    case .gold: return 10
-    case .platinum: return 25
+    case .gold: return 8
+    case .platinum: return 15
     }
   }
 
