@@ -37,11 +37,11 @@ enum FishRarity: String, CaseIterable, Codable {
 
   var probability: Double {
     switch self {
-    case .common: return 0.50
-    case .uncommon: return 0.30
-    case .rare: return 0.15
-    case .epic: return 0.04
-    case .legendary: return 0.01
+    case .common: return 0.60
+    case .uncommon: return 0.20
+    case .rare: return 0.14
+    case .epic: return 0.055
+    case .legendary: return 0.005
     }
   }
 
@@ -103,9 +103,9 @@ enum FishRarity: String, CaseIterable, Codable {
       case .common:
         return max(0.1, rarity.probability / boost)
       case .legendary:
-        return min(0.01, rarity.probability * boost)
+        return min(0.02, rarity.probability * boost)
       default:
-        return min(0.4, rarity.probability * (1 + (boost - 1) * 0.5))
+        return min(0.3, rarity.probability * (1 + (boost - 1) * 0.5))
       }
     }
 
