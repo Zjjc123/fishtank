@@ -27,8 +27,9 @@ jobs:
         
     - name: Install dependencies
       run: bundle install
-      continue-on-error: true
+      
     - name: Run fastlane beta
+      continue-on-error: true
       env:
         MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
         ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
