@@ -27,6 +27,7 @@ struct ContentView: View {
   @State private var caseOpeningRewards: [CollectedFish] = []
   @State private var showAppRestrictionAlert = false
   @State private var showSkipConfirmation = false
+  @State private var showCancelConfirmation = false
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
@@ -152,10 +153,7 @@ struct ContentView: View {
               }
             } else {
               Button(action: {
-                if let cancelled = commitmentManager.cancelCommitment() {
-                  showRewardMessage(
-                    "🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
-                }
+                showCancelConfirmation = true
               }) {
                 Text("❌ Cancel Session")
                   .font(.headline)
@@ -310,6 +308,27 @@ struct ContentView: View {
       Text(
         "To block other apps during focus sessions, please enable Screen Time permissions in Settings > Screen Time > App Limits."
       )
+    }
+    .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
+      Button("Yes", role: .destructive) {
+        if let cancelled = commitmentManager.cancelCommitment() {
+          // Get a random visible fish
+          if let randomFish = statsManager.getVisibleFish().randomElement() {
+            // Remove the fish from collection and update swimming fish
+            statsManager.removeFish(randomFish)
+            fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
+            showRewardMessage(
+              "🚨 \(cancelled.rawValue) session cancelled.\n😢 \(randomFish.name) swam away forever!\nApp restrictions removed."
+            )
+          } else {
+            showRewardMessage(
+              "🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
+          }
+        }
+      }
+      Button("No", role: .cancel) {}
+    } message: {
+      Text("If you cancel, one of your fish will swim away FOREVER! Are you sure?")
     }
     .onReceive(timer) { _ in
       currentTime = Date()
