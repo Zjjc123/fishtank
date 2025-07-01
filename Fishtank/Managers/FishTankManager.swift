@@ -88,7 +88,7 @@ class FishTankManager: ObservableObject {
       }
 
       // Update position
-      swimmingFish[i].x += swimmingFish[i].speed * swimmingFish[i].direction
+      swimmingFish[i].x -= swimmingFish[i].speed * swimmingFish[i].direction
 
       // Handle vertical movement for startled fish
       if swimmingFish[i].isStartled {
