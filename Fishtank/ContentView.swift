@@ -190,28 +190,6 @@ struct ContentView: View {
                   )
               }
 
-              Button(action: {
-                if let completed = commitmentManager.debugFinishCommitment() {
-                  fishTankManager.spawnLootbox(type: completed.lootboxType)
-                  showRewardMessage(
-                    "🔧 DEBUG: \(completed.rawValue) instantly completed! \(completed.lootboxType.emoji) \(completed.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."
-                  )
-                }
-              }) {
-                Text("🔧 Debug Finish")
-                  .font(.headline)
-                  .foregroundColor(.white)
-                  .opacity(0.85)
-                  .padding()
-                  .background(
-                    RoundedRectangle(cornerRadius: 10)
-                      .fill(Color.orange.opacity(0.5))
-                      .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                          .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                      )
-                  )
-              }
             }
 
             Button(action: {

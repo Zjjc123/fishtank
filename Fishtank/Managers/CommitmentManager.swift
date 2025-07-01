@@ -133,13 +133,5 @@ final class CommitmentManager: ObservableObject {
     return nil
   }
 
-  func debugFinishCommitment() -> FocusCommitment? {
-    guard let commitment = currentCommitment else { return nil }
 
-    // Set start time to a point in the past that would make the commitment complete
-    commitmentStartTime = Date().addingTimeInterval(-commitment.duration - 1)
-
-    // Check progress immediately to trigger completion
-    return checkProgress()
-  }
 } 
