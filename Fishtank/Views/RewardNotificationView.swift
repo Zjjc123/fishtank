@@ -14,33 +14,33 @@ struct RewardNotificationView: View {
   var body: some View {
     VStack(spacing: 8) {
       Text(message)
-        .font(.title2)
-        .fontWeight(.bold)
+        .font(.system(.title3, design: .rounded))
+        .fontWeight(.medium)
         .foregroundColor(.white)
-        .opacity(0.9)
+        .opacity(0.95)
         .multilineTextAlignment(.center)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
     }
     .background(notificationBackground)
-    .padding(.horizontal, 20)
+    .padding(.horizontal, 25)
     .opacity(isVisible ? 1 : 0)
     .scaleEffect(isVisible ? 1 : 0.8)
-    .animation(.spring(), value: isVisible)
+    .blur(radius: isVisible ? 0 : 5)
+    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isVisible)
   }
 
   private var notificationBackground: some View {
-    RoundedRectangle(cornerRadius: 12)
-      .fill(.regularMaterial)
+    RoundedRectangle(cornerRadius: 16)
+      .fill(.ultraThinMaterial)
       .overlay(
-        RoundedRectangle(cornerRadius: 12)
-          .fill(Color.green.opacity(0.3))
+        RoundedRectangle(cornerRadius: 16)
+          .fill(Color.green.opacity(0.15))
       )
       .overlay(
-        RoundedRectangle(cornerRadius: 12)
-          .stroke(Color.green.opacity(0.5), lineWidth: 1.5)
+        RoundedRectangle(cornerRadius: 16)
+          .stroke(Color.white.opacity(0.3), lineWidth: 1)
       )
-      .shadow(color: Color.green.opacity(0.3), radius: 8, x: 0, y: 4)
-      .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
+      .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
   }
 }

@@ -39,21 +39,21 @@ struct ContentView: View {
 
     switch hour {
     case 5..<7:  // Early morning (5-7 AM) - Dawn
-      return (Color.orange.opacity(0.3), Color.pink.opacity(0.25))
+      return (Color.orange.opacity(0.2), Color.pink.opacity(0.15))
     case 7..<10:  // Morning (7-10 AM) - Bright morning
-      return (Color.cyan.opacity(0.35), Color.blue.opacity(0.4))
+      return (Color.cyan.opacity(0.25), Color.blue.opacity(0.3))
     case 10..<16:  // Day (10 AM-4 PM) - Bright day
-      return (Color.cyan.opacity(0.8), Color.blue.opacity(0.9))
+      return (Color.cyan.opacity(0.6), Color.blue.opacity(0.7))
     case 16..<19:  // Afternoon (4-7 PM) - Golden hour
-      return (Color.orange.opacity(0.7), Color.yellow.opacity(0.6))
+      return (Color.orange.opacity(0.5), Color.yellow.opacity(0.4))
     case 19..<21:  // Evening (7-9 PM) - Sunset
-      return (Color.pink.opacity(0.6), Color.orange.opacity(0.7))
+      return (Color.pink.opacity(0.4), Color.orange.opacity(0.5))
     case 21..<23:  // Night (9-11 PM) - Early night
-      return (Color.purple.opacity(0.6), Color.blue.opacity(0.8))
+      return (Color.purple.opacity(0.4), Color.blue.opacity(0.6))
     case 23...23, 0..<5:  // Late night (11 PM-5 AM) - Deep night
-      return (Color.black.opacity(0.35), Color.purple.opacity(0.4))
+      return (Color.black.opacity(0.25), Color.purple.opacity(0.3))
     default:
-      return (Color.cyan.opacity(0.25), Color.blue.opacity(0.35))
+      return (Color.cyan.opacity(0.2), Color.blue.opacity(0.25))
     }
   }
 
@@ -100,114 +100,134 @@ struct ContentView: View {
         }
 
         VStack {
+          // Top Bar
           HStack {
+            ClockDisplayView(currentTime: currentTime)
+              .padding(.leading, 25)
+              .padding(.top, 40)
+
             Spacer()
+
             Button(action: {
               showSettings = true
             }) {
               Image(systemName: "gearshape.fill")
                 .font(.title2)
                 .foregroundColor(.white)
-                .opacity(0.4)
+                .opacity(0.6)
+                .padding(12)
+                .background(.ultraThinMaterial)
+                .clipShape(Circle())
             }
-            .padding(.trailing)
-            .padding(.top, 20)
+            .padding(.trailing, 25)
           }
+          .padding(.top, 20)
 
-          HStack {
-            ClockDisplayView(currentTime: currentTime)
-              .padding(.leading, 30)
-              .padding(.top, 50)
-              .allowsHitTesting(false)
-            Spacer()
-          }
-
+          // Commitment Progress
           if let commitment = commitmentManager.currentCommitment {
             CommitmentProgressView(
               commitment: commitment,
               progress: commitmentManager.progress,
               timeRemaining: commitmentManager.timeRemaining
             )
+            .padding(.top, 35)
           }
 
           Spacer()
 
-          HStack(spacing: 15) {
+          // Bottom Action Buttons
+          HStack(spacing: 12) {
             if !commitmentManager.isActive {
               Button(action: {
                 showCommitmentSelection = true
               }) {
-                Text("🎯 Start Focus Session")
-                  .font(.headline)
-                  .foregroundColor(.white)
-                  .opacity(0.85)
-                  .padding()
-                  .background(
-                    RoundedRectangle(cornerRadius: 10)
-                      .fill(.ultraThinMaterial)
-                      .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                          .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                      )
-                  )
+                HStack(spacing: 8) {
+                  Image(systemName: "target")
+                    .font(.title3)
+                  Text("Focus")
+                    .font(.headline)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                  RoundedRectangle(cornerRadius: 16)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                )
               }
             } else {
               Button(action: {
                 showCancelConfirmation = true
               }) {
-                Text("❌ Cancel Session")
-                  .font(.headline)
-                  .foregroundColor(.white)
-                  .opacity(0.85)
-                  .padding()
-                  .background(
-                    RoundedRectangle(cornerRadius: 10)
-                      .fill(Color.red.opacity(0.5))
-                      .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                          .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                      )
-                  )
+                HStack(spacing: 8) {
+                  Image(systemName: "xmark.circle")
+                    .font(.title3)
+                  Text("Cancel")
+                    .font(.headline)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                  RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.red.opacity(0.3))
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.red.opacity(0.2), lineWidth: 1)
+                    )
+                )
               }
 
               Button(action: {
                 showSkipConfirmation = true
               }) {
-                Text("💳 Skip Session")
-                  .font(.headline)
-                  .foregroundColor(.white)
-                  .opacity(0.85)
-                  .padding()
-                  .background(
-                    RoundedRectangle(cornerRadius: 10)
-                      .fill(Color.green.opacity(0.5))
-                      .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                          .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                      )
-                  )
+                HStack(spacing: 8) {
+                  Image(systemName: "creditcard")
+                    .font(.title3)
+                  Text("Skip")
+                    .font(.headline)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                  RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.green.opacity(0.3))
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.green.opacity(0.2), lineWidth: 1)
+                    )
+                )
               }
-
             }
 
             Button(action: {
               showFishCollection = true
             }) {
-              Text("🐠 View Collection")
-                .font(.headline)
-                .foregroundColor(.white)
-                .opacity(0.85)
-                .padding()
-                .background(
-                  RoundedRectangle(cornerRadius: 10)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                )
+              HStack(spacing: 8) {
+                Image(systemName: "fish")
+                  .font(.title3)
+                Text("Collection")
+                  .font(.headline)
+              }
+              .foregroundColor(.white)
+              .frame(maxWidth: .infinity)
+              .frame(height: 50)
+              .background(
+                RoundedRectangle(cornerRadius: 16)
+                  .fill(.ultraThinMaterial)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                      .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                  )
+              )
             }
           }
+          .padding(.horizontal, 25)
           .padding(.bottom, 30)
         }
 
@@ -238,8 +258,8 @@ struct ContentView: View {
           FishCollectionView(
             collectedFish: statsManager.collectedFish,
             onFishSelected: { fish in
-              // Fish selection no longer adds to swimming - visibility controls this
-              showRewardMessage("🐠 \(fish.name) visibility controls swimming display!")
+              // toggle visibility
+              statsManager.toggleFishVisibility(fish, fishTankManager: fishTankManager)
             },
             onVisibilityToggled: { fish in
               let success = statsManager.toggleFishVisibility(

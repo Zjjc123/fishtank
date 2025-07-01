@@ -24,6 +24,7 @@ struct ClockDisplayView: View {
         .foregroundColor(.white.opacity(0.5))
         .shadow(color: .black.opacity(0.2), radius: 1)
     }
+    .allowsHitTesting(false)
   }
 
   private func timeString(from date: Date) -> String {
