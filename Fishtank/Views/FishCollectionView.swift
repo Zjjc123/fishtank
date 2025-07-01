@@ -257,7 +257,7 @@ struct FishCollectionView: View {
               .stroke(Color.white.opacity(0.1), lineWidth: 1)
           )
       )
-      .padding(.horizontal, 40)
+      .padding(.horizontal, 80)
       .padding(.bottom, 30)
       .padding(.top, 30)
     }
