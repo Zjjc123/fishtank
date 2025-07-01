@@ -30,7 +30,7 @@ struct ContentView: View {
   @State private var showCancelConfirmation = false
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-  private let fishTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+  private let fishTimer = Timer.publish(every: 1.0/60.0, on: .main, in: .common).autoconnect() // 60 FPS
   private let bubbleTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
   // Time-based background colors
@@ -76,7 +76,7 @@ struct ContentView: View {
 
         // Swimming Fish
         ForEach(fishTankManager.swimmingFish) { fish in
-          SwimmingFishView(fish: fish)
+          SwimmingFishView(fish: fish, fishTankManager: fishTankManager)
             .position(x: fish.x, y: fish.y)
         }
 

@@ -70,6 +70,9 @@ struct SwimmingFish: Identifiable {
   var size: CGFloat
   var speed: CGFloat
   var direction: CGFloat
+  var isStartled: Bool = false
+  var startledTime: Date?
+  var originalSpeed: CGFloat = 0
 
   var color: Color { collectedFish.rarity.color }
   var rarity: FishRarity { collectedFish.rarity }
@@ -98,7 +101,8 @@ struct SwimmingFish: Identifiable {
     }
     
     self.size = baseSize + CGFloat.random(in: -sizeVariation...sizeVariation)
-    self.speed = CGFloat.random(in: 0.5...2.0)
+    self.speed = CGFloat.random(in: 0.1...0.4)
+    self.originalSpeed = self.speed
     self.direction = CGFloat.random(in: -1...1)
   }
 }

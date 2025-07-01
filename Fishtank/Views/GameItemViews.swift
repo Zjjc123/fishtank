@@ -10,6 +10,7 @@ import SwiftUI
 // MARK: - Swimming Fish View
 struct SwimmingFishView: View {
   let fish: SwimmingFish
+  @ObservedObject var fishTankManager: FishTankManager
 
   var body: some View {
     Image(fish.imageName)
@@ -19,6 +20,16 @@ struct SwimmingFishView: View {
       .frame(width: fish.size, height: fish.size)
       .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
       .shadow(color: .black.opacity(0.3), radius: 2)
+      .opacity(fish.isStartled ? 0.7 : 1.0)
+      .animation(.interpolatingSpring(stiffness: 300, damping: 15), value: fish.direction)
+      .animation(.easeInOut(duration: 0.2), value: fish.isStartled)
+      .animation(.linear(duration: 0.016), value: fish.x) // Smooth position updates
+      .animation(.linear(duration: 0.016), value: fish.y)
+      .onTapGesture { location in
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+          fishTankManager.startleFish(fish, tapLocation: location)
+        }
+      }
   }
 }
 
