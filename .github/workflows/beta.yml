@@ -58,7 +58,7 @@ jobs:
         
         # Add and commit the version change
         git add Fishtank.xcodeproj
-        git commit -m "Bump iOS version to $VERSION_TAG build $BUILD_NUMBER [skip ci]"
+        git commit -m "Bump iOS version $BUILD_VERSION build $BUILD_NUMBER [skip ci]"
         git pull origin main --rebase
         git push origin main
       env:
