@@ -6,9 +6,15 @@
 //
 
 import SwiftUI
+import BackgroundTasks
 
 @main
 struct FishtankApp: App {
+  init() {
+    // Initialize background tasks
+    _ = BackgroundTaskManager.shared
+  }
+  
   var body: some Scene {
     WindowGroup {
       ContentView()

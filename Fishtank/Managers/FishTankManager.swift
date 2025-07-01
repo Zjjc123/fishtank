@@ -8,10 +8,12 @@
 import SwiftUI
 
 // MARK: - Fish Tank Manager
-class FishTankManager: ObservableObject {
+@MainActor
+final class FishTankManager: ObservableObject {
+  static let shared = FishTankManager(bounds: UIScreen.main.bounds)
+  
   @Published var swimmingFish: [SwimmingFish] = []
   @Published var commitmentLootboxes: [CommitmentLootbox] = []
-
   private let bounds: CGRect
   private let startleDuration: TimeInterval = 3  // Duration of startled state
   private let startledSpeedMultiplier: CGFloat = 15.0  // How much faster fish swim when startled
@@ -19,6 +21,34 @@ class FishTankManager: ObservableObject {
 
   init(bounds: CGRect) {
     self.bounds = bounds
+    loadState()
+  }
+
+  private func loadState() {
+    // Load any saved state (lootboxes, etc.)
+    if let savedLootboxes = UserDefaults.standard.array(forKey: "SavedLootboxes") as? [[String: Any]] {
+      commitmentLootboxes = savedLootboxes.compactMap { dict in
+        guard let typeRawValue = dict["type"] as? String,
+              let type = LootboxType(rawValue: typeRawValue),
+              let x = dict["x"] as? CGFloat,
+              let y = dict["y"] as? CGFloat
+        else { return nil }
+        
+        return CommitmentLootbox(type: type, x: x, y: y)
+      }
+    }
+  }
+  
+  private func saveState() {
+    // Save current state (lootboxes, etc.)
+    let lootboxDicts = commitmentLootboxes.map { lootbox -> [String: Any] in
+      return [
+        "type": lootbox.type.rawValue,
+        "x": lootbox.x,
+        "y": lootbox.y
+      ]
+    }
+    UserDefaults.standard.set(lootboxDicts, forKey: "SavedLootboxes")
   }
 
   func startleFish(_ targetFish: SwimmingFish, tapLocation: CGPoint) {
@@ -113,17 +143,20 @@ class FishTankManager: ObservableObject {
   }
 
   func spawnLootbox(type: LootboxType) {
-    let lootbox = CommitmentLootbox(
-      type: type,
-      x: CGFloat.random(in: 50...bounds.width - 50),
-      y: CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
-    )
+    let x = CGFloat.random(in: bounds.width * 0.2...bounds.width * 0.8)
+    let y = CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
+    
+    let lootbox = CommitmentLootbox(type: type, x: x, y: y)
     commitmentLootboxes.append(lootbox)
+    
+    // Save state after adding lootbox
+    saveState()
   }
 
   func removeLootbox(_ lootbox: CommitmentLootbox) {
-    if let index = commitmentLootboxes.firstIndex(where: { $0.id == lootbox.id }) {
-      commitmentLootboxes.remove(at: index)
-    }
+    commitmentLootboxes.removeAll { $0.id == lootbox.id }
+    
+    // Save state after removing lootbox
+    saveState()
   }
 }

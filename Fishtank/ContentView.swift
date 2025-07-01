@@ -8,10 +8,10 @@
 import SwiftUI
 
 struct ContentView: View {
-  @StateObject private var fishTankManager = FishTankManager(bounds: UIScreen.main.bounds)
-  @StateObject private var commitmentManager = CommitmentManager()
-  @StateObject private var statsManager = GameStatsManager()
-  @StateObject private var bubbleManager = BubbleManager(bounds: UIScreen.main.bounds)
+  @StateObject private var fishTankManager = FishTankManager.shared
+  @StateObject private var commitmentManager = CommitmentManager.shared
+  @StateObject private var statsManager = GameStatsManager.shared
+  @StateObject private var bubbleManager = BubbleManager.shared
 
   @State private var currentTime = Date()
   @State private var appStartTime = Date()
@@ -322,7 +322,8 @@ struct ContentView: View {
       currentTime = Date()
       timeSpent = Date().timeIntervalSince(appStartTime)
 
-      if let completedCommitment = commitmentManager.checkProgress() {
+      // Check progress in foreground
+      if let completedCommitment = commitmentManager.checkBackgroundProgress() {
         fishTankManager.spawnLootbox(type: completedCommitment.lootboxType)
         showRewardMessage(
           "🏆 \(completedCommitment.rawValue) completed! \(completedCommitment.lootboxType.emoji) \(completedCommitment.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."

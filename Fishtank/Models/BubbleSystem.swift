@@ -29,11 +29,15 @@ struct Bubble: Identifiable {
   }
 }
 
-class BubbleManager: ObservableObject {
+@MainActor
+final class BubbleManager: ObservableObject {
+  static let shared = BubbleManager(bounds: UIScreen.main.bounds)
+  
   @Published var bubbles: [Bubble] = []
   private let bounds: CGRect
-  private let maxBubbles = 20  // Slightly more bubbles since they're smaller
-
+  private let maxBubbles = 20
+  private let bubbleSpawnChance = 0.1 // 10% chance to spawn a new bubble each animation frame
+  
   init(bounds: CGRect) {
     self.bounds = bounds
     spawnInitialBubbles()

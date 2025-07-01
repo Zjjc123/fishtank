@@ -8,16 +8,19 @@
 import SwiftUI
 
 // MARK: - Game Stats Manager
-class GameStatsManager: ObservableObject {
-  @Published var collectedFish: [CollectedFish] = []
-  @Published var fishCollection: [FishRarity: Int] = [:]
+@MainActor
+final class GameStatsManager: ObservableObject {
+  static let shared = GameStatsManager()
+  
+  @Published private(set) var collectedFish: [CollectedFish] = []
+  @Published private(set) var fishCollection: [FishRarity: Int] = [:]
+  
+  private init() {
+    loadFromStorage()
+  }
 
   var fishCount: Int {
     collectedFish.count
-  }
-
-  init() {
-    loadFromStorage()
   }
 
   private func loadFromStorage() {

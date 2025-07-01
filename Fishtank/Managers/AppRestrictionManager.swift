@@ -9,14 +9,19 @@ import DeviceActivity
 import FamilyControls
 import ManagedSettings
 import SwiftUI
+import UIKit
 
 // MARK: - App Restriction Manager
-class AppRestrictionManager: ObservableObject {
-  @Published var isRestrictionActive = false
+@MainActor
+final class AppRestrictionManager: ObservableObject {
+  static let shared = AppRestrictionManager()
+  
+  @Published private(set) var isRestrictionActive = false
   private let store = ManagedSettingsStore()
   private let center = AuthorizationCenter.shared
+  private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
-  init() {
+  private init() {
     // Request authorization when the manager is initialized
     requestAuthorization()
   }
@@ -46,12 +51,27 @@ class AppRestrictionManager: ObservableObject {
   }
 
   func stopAppRestriction() {
+    // Start background task to ensure we have time to remove restrictions
+    backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
+      self?.endBackgroundTask()
+    }
+
     // Remove all restrictions
     store.shield.applicationCategories = nil
     store.shield.applications = nil
 
     isRestrictionActive = false
     print("App restriction stopped")
+
+    // End background task
+    endBackgroundTask()
+  }
+
+  private func endBackgroundTask() {
+    if backgroundTask != .invalid {
+      UIApplication.shared.endBackgroundTask(backgroundTask)
+      backgroundTask = .invalid
+    }
   }
 
   var isAuthorized: Bool {
