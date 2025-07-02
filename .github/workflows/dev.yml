@@ -1,0 +1,47 @@
+name: Dev Build
+
+on:
+  push:
+    branches: [ "*" ]
+
+jobs:
+  dev:
+    runs-on: macos-15
+    concurrency:
+      group: dev-build-group
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Clone fastlane-match repository
+      uses: actions/checkout@v4
+      with:
+        repository: wemakethingstoo/fastlane-match
+        path: fastlane-match
+        token: ${{ secrets.GH_TOKEN}}
+      
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+        bundler-cache: true
+        
+    - name: Install dependencies
+      run: bundle install
+      
+    - name: Run fastlane dev
+      id: fastlane_dev
+      env:
+        MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      run: |
+        git config --global credential.helper store
+        echo "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
+        bundle exec fastlane dev
