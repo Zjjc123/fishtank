@@ -5,7 +5,7 @@ on:
     branches: [ "*" ]
 
 jobs:
-  beta:
+  dev:
     runs-on: macos-15
     concurrency:
       group: dev-build-group
