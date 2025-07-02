@@ -24,8 +24,6 @@ default_platform(:ios)
 
 platform :ios do
 
-  
-
   desc "Push a new beta build to TestFlight"
 
 
@@ -94,5 +92,62 @@ platform :ios do
       }
     )
     upload_to_testflight
+  end
+
+  desc "Build development version for local testing"
+  lane :dev do
+    # Set Xcode path directly
+    xcode_select("/Applications/Xcode_16.4.app")
+
+    update_project_team(
+      path: "Fishtank.xcodeproj",
+      teamid: "JAT3GYBPJ4"
+    )
+
+    # Skip build increment for dev builds - keep version consistent during development
+    
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Fishtank.xcodeproj",
+      team_id: "JAT3GYBPJ4",
+      profile_name: "match Development dev.jasonzhang.Fishtank",
+      code_sign_identity: "Apple Development"
+    )
+
+    api_key = app_store_connect_api_key(
+      key_id: "295GWL5886",
+      issuer_id: "0fcfcda0-daff-47cf-b0fa-27234a23c413",
+      key_filepath: "fastlane-match/keychain/AuthKey_295GWL5886.p8",
+      duration: 1200, # optional (maximum 1200)
+      in_house: false # optional but may be required if using match/sigh
+    )
+
+    # Get development certificates and provisioning profile
+    match(
+      api_key: api_key,
+      type: "development",
+      git_url: "https://github.com/wemakethingstoo/fastlane-match",
+      git_branch: "main",
+      app_identifier: "dev.jasonzhang.Fishtank",
+      team_id: "JAT3GYBPJ4",
+      readonly: is_readonly,
+      force: !is_readonly,
+      force_for_new_devices: true,
+      profile_name: "match Development dev.jasonzhang.Fishtank",
+      template_name: "Family Controls"
+    )
+    
+    build_app(
+      project: "Fishtank.xcodeproj", 
+      scheme: "Fishtank",
+      export_method: "development",
+      codesigning_identity: "Apple Development",
+      export_options: {
+        provisioningProfiles: { 
+          "dev.jasonzhang.Fishtank" => "match Development dev.jasonzhang.Fishtank",
+        }
+      }
+    )
+    # No TestFlight upload for dev builds - just build for local testing
   end
 end
