@@ -35,6 +35,7 @@ jobs:
       run: bundle install
       
     - name: Run fastlane beta
+      id: fastlane_beta
       continue-on-error: true
       env:
         MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
@@ -66,3 +67,9 @@ jobs:
         git push origin main
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Fail if fastlane beta failed
+      if: steps.fastlane_beta.outcome == 'failure'
+      run: |
+        echo "Fastlane beta step failed. Failing the entire pipeline."
+        exit 1
