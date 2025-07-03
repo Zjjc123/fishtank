@@ -96,6 +96,9 @@ platform :ios do
 
   desc "Build development version for local testing"
   lane :dev do
+    # configure CI keychain
+    setup_ci
+
     # Set Xcode path directly
     xcode_select("/Applications/Xcode_16.4.app")
 
