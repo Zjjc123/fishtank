@@ -10,5 +10,5 @@ import Foundation
 // MARK: - Configuration
 struct AppConfig {
   static let rewardDisplayDuration: TimeInterval = 2
-  static let maxSwimmingFish = 100
+  static let maxSwimmingFish = 20
 }

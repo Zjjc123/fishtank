@@ -88,7 +88,7 @@ struct ContentView: View {
               // Generate possible rewards for the wheel
               var possibleRewards: [CollectedFish] = []
               for _ in 0..<(lootbox.type.fishCount * 10) {  // Generate more options for variety
-                let rarity = FishRarity.randomRarity(boost: lootbox.type.rarityBoost)
+                let rarity = FishRarity.randomRarity(from: lootbox.type)
                 let fish = CollectedFish(rarity: rarity)
                 possibleRewards.append(fish)
               }

@@ -35,16 +35,6 @@ enum FishRarity: String, CaseIterable, Codable {
     }
   }
 
-  var probability: Double {
-    switch self {
-    case .common: return 0.60
-    case .uncommon: return 0.20
-    case .rare: return 0.14
-    case .epic: return 0.055
-    case .legendary: return 0.005
-    }
-  }
-
   var fishOptions: [(name: String, imageName: String)] {
     switch self {
     case .common:
@@ -94,30 +84,28 @@ enum FishRarity: String, CaseIterable, Codable {
     fishOptions.map { $0.name }
   }
 
-  static func randomRarity(boost: Double = 1.0) -> FishRarity {
+  static func randomRarity(from lootbox: LootboxType, isSpinner: Bool = false) -> FishRarity {
     let random = Double.random(in: 0...1)
     var cumulative = 0.0
 
-    let boostedProbabilities = FishRarity.allCases.map { rarity in
-      switch rarity {
-      case .common:
-        return max(0.1, rarity.probability / boost)
-      case .legendary:
-        return min(0.02, rarity.probability * boost)
-      default:
-        return min(0.3, rarity.probability * (1 + (boost - 1) * 0.5))
-      }
+    var probabilities = lootbox.rarityProbabilities
+
+    // If the rarity is a spinner (not winner), we want to increase the chances of getting a legendary or epic fish
+    if isSpinner {
+      var adjustedProbabilities = probabilities
+      adjustedProbabilities[.legendary] = (probabilities[.legendary] ?? 0) * 2
+      adjustedProbabilities[.epic] = (probabilities[.epic] ?? 0) * 2
+      adjustedProbabilities[.uncommon] = (probabilities[.uncommon] ?? 0) * 0.5
+      adjustedProbabilities[.common] = (probabilities[.common] ?? 0) * 0.5
+      probabilities = adjustedProbabilities
     }
 
-    let total = boostedProbabilities.reduce(0, +)
-    let normalizedProbabilities = boostedProbabilities.map { $0 / total }
-
-    for (index, probability) in normalizedProbabilities.enumerated() {
-      cumulative += probability
+    for rarity in FishRarity.allCases {
+      cumulative += probabilities[rarity] ?? 0
       if random <= cumulative {
-        return FishRarity.allCases[index]
+        return rarity
       }
     }
-    return .common
+    return .common  // Fallback just in case
   }
 }

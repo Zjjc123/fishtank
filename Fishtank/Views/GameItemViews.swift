@@ -147,7 +147,7 @@ struct CaseOpeningWheelView: View {
 
   private func determineWinner() -> CollectedFish {
     // Generate a winning fish based on the lootbox's rarity boost
-    let winningRarity = FishRarity.randomRarity(boost: lootboxType.rarityBoost)
+    let winningRarity = FishRarity.randomRarity(from: lootboxType)
     return CollectedFish(rarity: winningRarity)
   }
 }
