@@ -95,15 +95,25 @@ struct CommitmentSelectionView: View {
         Button(action: {
           isPresented = false
         }) {
-          HStack(spacing: 3) {
+          HStack(spacing: 4) {
             Image(systemName: "xmark.circle")
-              .font(.subheadline)
+              .font(.caption)
             Text("Cancel")
-              .font(.system(.subheadline, design: .rounded))
+              .font(.system(.caption, design: .rounded))
           }
           .foregroundColor(.white.opacity(0.7))
-          .padding(.vertical, 8)
+          .frame(maxWidth: .infinity)
+          .frame(height: 28)
+          .background(
+            RoundedRectangle(cornerRadius: 8)
+              .fill(.ultraThinMaterial)
+              .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                  .stroke(Color.white.opacity(0.2), lineWidth: 1)
+              )
+          )
         }
+        .padding(.horizontal, 12)
         .padding(.top, 4)
         .padding(.bottom, 12)
       }
