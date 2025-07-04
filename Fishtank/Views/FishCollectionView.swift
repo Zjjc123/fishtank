@@ -97,43 +97,6 @@ struct FishCollectionView: View {
             .foregroundColor(.white)
 
           Spacer()
-
-          // Sort Controls
-          if selectedTab == 0 {
-            HStack(spacing: 6) {
-              Button(action: {
-                sortOption = sortOption == .time ? .rarity : .time
-              }) {
-                HStack(spacing: 4) {
-                  Text(sortOption.displayName)
-                    .font(.system(.caption2, design: .rounded))
-                    .fontWeight(.medium)
-                  Image(systemName: "chevron.left.chevron.right")
-                    .font(.caption2)
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 6)
-                .frame(height: 24)
-                .background(
-                  RoundedRectangle(cornerRadius: 6)
-                    .fill(.ultraThinMaterial)
-                )
-              }
-
-              Button(action: {
-                sortDirection = sortDirection == .ascending ? .descending : .ascending
-              }) {
-                Image(systemName: sortDirection.icon)
-                  .font(.caption2)
-                  .foregroundColor(.white)
-                  .frame(width: 24, height: 24)
-                  .background(
-                    RoundedRectangle(cornerRadius: 6)
-                      .fill(.ultraThinMaterial)
-                  )
-              }
-            }
-          }
         }
         .padding(.top, 4)
 
@@ -155,6 +118,8 @@ struct FishCollectionView: View {
               onFishSelected: onFishSelected,
               onVisibilityToggled: onVisibilityToggled,
               showLimitAlert: $showLimitAlert,
+              sortOption: $sortOption,
+              sortDirection: $sortDirection,
               geometry: geometry
             )
           } else {
@@ -221,6 +186,8 @@ struct CollectionTabView: View {
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Bool
   @Binding var showLimitAlert: Bool
+  @Binding var sortOption: FishCollectionView.SortOption
+  @Binding var sortDirection: FishCollectionView.SortDirection
   let geometry: GeometryProxy
 
   var body: some View {
@@ -293,6 +260,42 @@ struct CollectionTabView: View {
                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
             )
         )
+
+        // Sort Controls
+        HStack(spacing: 6) {
+          Button(action: {
+            sortOption = sortOption == .time ? .rarity : .time
+          }) {
+            HStack(spacing: 4) {
+              Text(sortOption.displayName)
+                .font(.system(.caption2, design: .rounded))
+                .fontWeight(.medium)
+              Image(systemName: "chevron.left.chevron.right")
+                .font(.caption2)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 6)
+            .frame(height: 24)
+            .background(
+              RoundedRectangle(cornerRadius: 6)
+                .fill(.ultraThinMaterial)
+            )
+          }
+
+          Button(action: {
+            sortDirection = sortDirection == .ascending ? .descending : .ascending
+          }) {
+            Image(systemName: sortDirection.icon)
+              .font(.caption2)
+              .foregroundColor(.white)
+              .frame(width: 24, height: 24)
+              .background(
+                RoundedRectangle(cornerRadius: 6)
+                  .fill(.ultraThinMaterial)
+              )
+          }
+        }
+        .frame(maxWidth: .infinity)
       }
 
       // Fish Grid
