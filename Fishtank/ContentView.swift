@@ -152,7 +152,7 @@ struct ContentView: View {
                 .frame(height: 50)
                 .background(
                   RoundedRectangle(cornerRadius: 16)
-                    .fill(.ultraThinMaterial)
+                    .fill(.ultraThinMaterial.opacity(0.4))
                     .overlay(
                       RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -174,7 +174,7 @@ struct ContentView: View {
                 .frame(height: 50)
                 .background(
                   RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.red.opacity(0.3))
+                    .fill(Color.red.opacity(0.2))
                     .overlay(
                       RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.red.opacity(0.2), lineWidth: 1)
@@ -196,7 +196,7 @@ struct ContentView: View {
                 .frame(height: 50)
                 .background(
                   RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.green.opacity(0.3))
+                    .fill(Color.green.opacity(0.2))
                     .overlay(
                       RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.green.opacity(0.2), lineWidth: 1)
@@ -219,7 +219,7 @@ struct ContentView: View {
               .frame(height: 50)
               .background(
                 RoundedRectangle(cornerRadius: 16)
-                  .fill(.ultraThinMaterial)
+                  .fill(.ultraThinMaterial.opacity(0.4))
                   .overlay(
                     RoundedRectangle(cornerRadius: 16)
                       .stroke(Color.white.opacity(0.2), lineWidth: 1)

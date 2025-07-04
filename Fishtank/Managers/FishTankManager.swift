@@ -132,13 +132,13 @@ final class FishTankManager: ObservableObject {
       }
 
       // Bounce off walls
-      if swimmingFish[i].x <= 0 || swimmingFish[i].x >= bounds.width {
+      if swimmingFish[i].x <= 0 || swimmingFish[i].x >= bounds.width * 0.9 {
         swimmingFish[i].direction *= -1
         // Slightly reduce speed on bounce for natural feel
         swimmingFish[i].speed *= 0.9
       }
 
-      swimmingFish[i].x = max(0, min(bounds.width, swimmingFish[i].x))
+      swimmingFish[i].x = max(0, min(bounds.width * 0.9, swimmingFish[i].x))
     }
   }
 
