@@ -60,4 +60,15 @@ class PersistentStorageManager {
     UserDefaults.standard.removeObject(forKey: collectedFishKey)
     UserDefaults.standard.removeObject(forKey: fishCollectionKey)
   }
+  
+  static func renameFish(id: UUID, newName: String) -> [CollectedFish] {
+    var fishCollection = loadFish()
+    
+    if let index = fishCollection.firstIndex(where: { $0.id == id }) {
+      fishCollection[index].name = newName
+      saveFish(fishCollection)
+    }
+    
+    return fishCollection
+  }
 } 

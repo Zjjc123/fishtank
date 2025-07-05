@@ -158,4 +158,10 @@ final class GameStatsManager: ObservableObject {
       return "Export error: \(error)"
     }
   }
+  
+  func updateFishCollection(_ updatedFish: [CollectedFish]) {
+    collectedFish = updatedFish
+    recalculateFishCollection()
+    saveToStorage()
+  }
 } 

@@ -12,7 +12,8 @@ struct CollectedFish: Identifiable, Hashable, Codable {
   let id: UUID
   let rarity: FishRarity
   let imageName: String
-  let name: String
+  let species: String
+  var name: String
   let dateCaught: Date
   var isSwimming: Bool = false
   var isVisible: Bool = true
@@ -22,13 +23,14 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     self.rarity = rarity
     let fishOption = rarity.fishOptions.randomElement()!
     self.imageName = fishOption.imageName
-    self.name = fishOption.name
+    self.species = fishOption.name
+    self.name = fishOption.name // Default name is the species name
     self.dateCaught = Date()
   }
 
   // Custom Codable implementation to handle UUID properly
   enum CodingKeys: String, CodingKey {
-    case id, rarity, imageName, name, dateCaught, isSwimming, isVisible
+    case id, rarity, imageName, species, name, dateCaught, isSwimming, isVisible
   }
 
   init(from decoder: Decoder) throws {
@@ -36,6 +38,14 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     id = try container.decode(UUID.self, forKey: .id)
     rarity = try container.decode(FishRarity.self, forKey: .rarity)
     imageName = try container.decode(String.self, forKey: .imageName)
+    
+    // Handle backward compatibility - if species doesn't exist, use name for both
+    if container.contains(.species) {
+      species = try container.decode(String.self, forKey: .species)
+    } else {
+      species = try container.decode(String.self, forKey: .name)
+    }
+    
     name = try container.decode(String.self, forKey: .name)
     dateCaught = try container.decode(Date.self, forKey: .dateCaught)
     isSwimming = try container.decodeIfPresent(Bool.self, forKey: .isSwimming) ?? false
@@ -47,6 +57,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     try container.encode(id, forKey: .id)
     try container.encode(rarity, forKey: .rarity)
     try container.encode(imageName, forKey: .imageName)
+    try container.encode(species, forKey: .species)
     try container.encode(name, forKey: .name)
     try container.encode(dateCaught, forKey: .dateCaught)
     try container.encode(isSwimming, forKey: .isSwimming)
@@ -64,7 +75,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
 
 struct SwimmingFish: Identifiable {
   let id = UUID()
-  let collectedFish: CollectedFish
+  var collectedFish: CollectedFish
   var x: CGFloat
   var y: CGFloat
   var size: CGFloat

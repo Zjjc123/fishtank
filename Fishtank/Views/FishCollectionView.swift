@@ -11,11 +11,14 @@ struct FishCollectionView: View {
   let collectedFish: [CollectedFish]
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Bool
+  let onFishRenamed: (UUID, String) -> Void
   @Binding var isPresented: Bool
   @State private var showLimitAlert = false
   @AppStorage("FishCollectionSortOption") private var sortOption: SortOption = .time
   @AppStorage("FishCollectionSortDirection") private var sortDirection: SortDirection = .descending
   @State private var selectedTab = 0
+  @State private var fishToRename: CollectedFish? = nil
+  @State private var showRenameView = false
 
   enum SortOption: String, CaseIterable {
     case time = "Time"
@@ -71,7 +74,7 @@ struct FishCollectionView: View {
       if discovered[fish.rarity] == nil {
         discovered[fish.rarity] = []
       }
-      discovered[fish.rarity]?.insert(fish.name)
+      discovered[fish.rarity]?.insert(fish.species)
     }
     return discovered
   }
@@ -117,6 +120,10 @@ struct FishCollectionView: View {
               sortedFish: sortedFish,
               onFishSelected: onFishSelected,
               onVisibilityToggled: onVisibilityToggled,
+              onRenamePressed: { fish in
+                fishToRename = fish
+                showRenameView = true
+              },
               showLimitAlert: $showLimitAlert,
               sortOption: $sortOption,
               sortDirection: $sortDirection,
@@ -167,6 +174,29 @@ struct FishCollectionView: View {
       .padding(.horizontal, 80)
       .padding(.bottom, 30)
       .padding(.top, 30)
+
+      // Rename popup
+      if showRenameView, let fish = fishToRename {
+        ZStack {
+          Color.black.opacity(0.6)
+            .ignoresSafeArea()
+            .onTapGesture {
+              // Tap outside to dismiss
+              showRenameView = false
+            }
+
+          FishDetailsView(
+            fish: fish,
+            onRename: { newName in
+              onFishRenamed(fish.id, newName)
+              showRenameView = false
+            },
+            onCancel: {
+              showRenameView = false
+            }
+          )
+        }
+      }
     }
   }
 
@@ -185,6 +215,7 @@ struct CollectionTabView: View {
   let sortedFish: [CollectedFish]
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Bool
+  let onRenamePressed: (CollectedFish) -> Void
   @Binding var showLimitAlert: Bool
   @Binding var sortOption: FishCollectionView.SortOption
   @Binding var sortDirection: FishCollectionView.SortDirection
@@ -312,6 +343,7 @@ struct CollectionTabView: View {
               fish: fish,
               onFishSelected: onFishSelected,
               onVisibilityToggled: onVisibilityToggled,
+              onRenamePressed: onRenamePressed,
               showLimitAlert: $showLimitAlert
             )
           }
@@ -397,7 +429,7 @@ struct FishDexTabView: View {
                 ForEach(rarity.fishOptions, id: \.name) { fish in
                   let isDiscovered = discoveredFishByRarity[rarity]?.contains(fish.name) ?? false
                   FishDexItemView(
-                    name: fish.name,
+                    species: fish.name,
                     imageName: fish.imageName,
                     rarity: rarity,
                     isDiscovered: isDiscovered
@@ -432,7 +464,7 @@ struct FishDexTabView: View {
 
 // MARK: - FishDex Item View
 struct FishDexItemView: View {
-  let name: String
+  let species: String
   let imageName: String
   let rarity: FishRarity
   let isDiscovered: Bool
@@ -451,7 +483,7 @@ struct FishDexItemView: View {
           .foregroundColor(.gray.opacity(0.5))
       }
 
-      Text(isDiscovered ? name : "???")
+      Text(isDiscovered ? species : "???")
         .font(.system(.caption2, design: .rounded))
         .fontWeight(.medium)
         .foregroundColor(isDiscovered ? .white : .gray)
@@ -479,12 +511,13 @@ struct FishItemView: View {
   let fish: CollectedFish
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Bool
+  let onRenamePressed: (CollectedFish) -> Void
   @Binding var showLimitAlert: Bool
 
   var body: some View {
     VStack(spacing: 2) {
       Button(action: {
-        onFishSelected(fish)
+        onRenamePressed(fish)
       }) {
         VStack(spacing: 2) {
           Image(fish.imageName)
@@ -493,11 +526,20 @@ struct FishItemView: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: 32, height: 32)
 
-          Text(fish.name)
-            .font(.system(.caption2, design: .rounded))
-            .fontWeight(.medium)
-            .foregroundColor(.white)
-            .lineLimit(1)
+          // Show name if custom, otherwise show species
+          if fish.name != fish.species {
+            Text(fish.name)
+              .font(.system(.caption2, design: .rounded))
+              .fontWeight(.medium)
+              .foregroundColor(.yellow)
+              .lineLimit(1)
+          } else {
+            Text(fish.species)
+              .font(.system(.caption2, design: .rounded))
+              .fontWeight(.medium)
+              .foregroundColor(.white)
+              .lineLimit(1)
+          }
 
           Text(fish.rarity.rawValue)
             .font(.system(.caption2, design: .rounded))
@@ -520,25 +562,21 @@ struct FishItemView: View {
         .opacity(fish.isVisible ? 1 : 0.6)
       }
 
+      // Visibility toggle button
       Button(action: {
         let success = onVisibilityToggled(fish)
         if !success {
           showLimitAlert = true
         }
       }) {
-        HStack(spacing: 2) {
-          Image(systemName: fish.isVisible ? "eye.fill" : "eye.slash.fill")
-            .font(.caption2)
-          Text(fish.isVisible ? "Hide" : "Show")
-            .font(.system(.caption2, design: .rounded))
-        }
-        .foregroundColor(fish.isVisible ? .green : .red)
-        .padding(.horizontal, 4)
-        .padding(.vertical, 2)
-        .background(
-          RoundedRectangle(cornerRadius: 4)
-            .fill(.ultraThinMaterial)
-        )
+        Image(systemName: fish.isVisible ? "eye.fill" : "eye.slash.fill")
+          .font(.caption2)
+          .foregroundColor(fish.isVisible ? .green : .red)
+          .frame(width: 24, height: 24)
+          .background(
+            RoundedRectangle(cornerRadius: 4)
+              .fill(.ultraThinMaterial)
+          )
       }
     }
   }
@@ -548,5 +586,185 @@ struct FishItemView: View {
     formatter.dateStyle = .short
     formatter.timeStyle = .none
     return formatter.string(from: date)
+  }
+}
+
+// MARK: - Fish Details View
+struct FishDetailsView: View {
+  let fish: CollectedFish
+  let onRename: (String) -> Void
+  let onCancel: () -> Void
+  @State private var newName: String
+  @FocusState private var isTextFieldFocused: Bool
+  @ObservedObject private var statsManager = GameStatsManager.shared
+
+  init(fish: CollectedFish, onRename: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+    self.fish = fish
+    self.onRename = onRename
+    self.onCancel = onCancel
+    let currentName =
+      GameStatsManager.shared.collectedFish.first(where: { $0.id == fish.id })?.name ?? fish.name
+    self._newName = State(initialValue: currentName)
+  }
+
+  // Computed property to get the current fish name from the stats manager
+  private var currentFishName: String {
+    statsManager.collectedFish.first(where: { $0.id == fish.id })?.name ?? fish.name
+  }
+
+  var body: some View {
+    HStack(spacing: 16) {
+      // Left side - Fish image and info
+      VStack(spacing: 12) {
+        Image(fish.imageName)
+          .resizable()
+          .interpolation(.none)
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 60, height: 60)
+          .padding(8)
+          .background(
+            Circle()
+              .fill(.ultraThinMaterial)
+              .overlay(
+                Circle()
+                  .stroke(fish.rarity.color.opacity(0.6), lineWidth: 2)
+              )
+          )
+
+        VStack(spacing: 4) {
+          Text("Species: \(fish.species)")
+            .font(.system(.caption, design: .rounded))
+            .foregroundColor(.white.opacity(0.8))
+
+          Text(fish.rarity.rawValue)
+            .font(.system(.caption2, design: .rounded))
+            .fontWeight(.medium)
+            .foregroundColor(fish.rarity.color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(
+              Capsule()
+                .fill(fish.rarity.color.opacity(0.2))
+            )
+        }
+      }
+
+      // Right side - Input and buttons
+      VStack(spacing: 12) {
+        // Header
+        HStack {
+          Image(systemName: "fish.fill")
+            .font(.subheadline)
+            .foregroundColor(.white.opacity(0.9))
+
+          Text("Fish Details")
+            .font(.system(.subheadline, design: .rounded))
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+        }
+
+        // Text field for new name
+        VStack(alignment: .leading, spacing: 4) {
+          Text("New Name")
+            .font(.system(.caption2, design: .rounded))
+            .foregroundColor(.white.opacity(0.7))
+
+          TextField("Enter name", text: $newName)
+            .font(.system(.body, design: .rounded))
+            .padding(10)
+            .background(
+              RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white.opacity(0.15))
+                .overlay(
+                  RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
+            )
+            .foregroundColor(.white)
+            .focused($isTextFieldFocused)
+            .onAppear {
+              newName = currentFishName
+            }
+        }
+
+        // Reset to species name button
+        Button(action: {
+          newName = fish.species
+        }) {
+          HStack(spacing: 4) {
+            Image(systemName: "arrow.uturn.backward")
+              .font(.caption2)
+            Text("Reset to species")
+              .font(.system(.caption2, design: .rounded))
+          }
+          .foregroundColor(.white.opacity(0.7))
+          .padding(.horizontal, 8)
+          .padding(.vertical, 4)
+          .background(
+            Capsule()
+              .fill(.ultraThinMaterial)
+          )
+        }
+
+        // Action Buttons
+        HStack(spacing: 8) {
+          Button(action: onCancel) {
+            HStack(spacing: 4) {
+              Image(systemName: "xmark.circle")
+                .font(.caption2)
+              Text("Cancel")
+                .font(.system(.caption, design: .rounded))
+            }
+            .foregroundColor(.white.opacity(0.7))
+            .frame(maxWidth: .infinity)
+            .frame(height: 36)
+            .background(
+              RoundedRectangle(cornerRadius: 8)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
+            )
+          }
+
+          Button(action: {
+            if !newName.isEmpty {
+              onRename(newName)
+            }
+          }) {
+            HStack(spacing: 4) {
+              Image(systemName: "checkmark.circle")
+                .font(.caption2)
+              Text("Save")
+                .font(.system(.caption, design: .rounded))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 36)
+            .background(
+              RoundedRectangle(cornerRadius: 8)
+                .fill(Color.blue.opacity(0.6))
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                )
+            )
+          }
+          .disabled(newName.isEmpty)
+          .opacity(newName.isEmpty ? 0.5 : 1)
+        }
+      }
+    }
+    .padding(16)
+    .background(
+      RoundedRectangle(cornerRadius: 16)
+        .fill(.ultraThinMaterial)
+        .overlay(
+          RoundedRectangle(cornerRadius: 16)
+            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+        )
+    )
+    .frame(width: 400)
   }
 }

@@ -159,4 +159,19 @@ final class FishTankManager: ObservableObject {
     // Save state after removing lootbox
     saveState()
   }
+  
+  func renameFish(id: UUID, newName: String) {
+    if let index = swimmingFish.firstIndex(where: { $0.collectedFish.id == id }) {
+      // We need to create a new instance since CollectedFish is inside SwimmingFish
+      var updatedCollectedFish = swimmingFish[index].collectedFish
+      updatedCollectedFish.name = newName
+      
+      // Create a new SwimmingFish with the updated CollectedFish
+      var updatedSwimmingFish = swimmingFish[index]
+      updatedSwimmingFish.collectedFish = updatedCollectedFish
+      
+      // Replace the fish in the array
+      swimmingFish[index] = updatedSwimmingFish
+    }
+  }
 }
