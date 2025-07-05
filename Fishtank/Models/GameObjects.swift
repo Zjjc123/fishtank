@@ -81,6 +81,8 @@ struct SwimmingFish: Identifiable {
   var size: CGFloat
   var speed: CGFloat
   var direction: CGFloat
+  var verticalDirection: CGFloat = 0  // -1 for up, 0 for neutral, 1 for down
+  var verticalSpeed: CGFloat = 0  // Current vertical speed
   var isStartled: Bool = false
   var startledTime: Date?
   var originalSpeed: CGFloat = 0
@@ -115,6 +117,10 @@ struct SwimmingFish: Identifiable {
     self.speed = CGFloat.random(in: 0.1...0.4)
     self.originalSpeed = self.speed
     self.direction = CGFloat.random(in: -1...1)
+    
+    // Initialize vertical movement properties
+    self.verticalDirection = CGFloat.random(in: -1...1)
+    self.verticalSpeed = CGFloat.random(in: 0.05...0.15)
   }
 }
 

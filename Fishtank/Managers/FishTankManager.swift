@@ -11,13 +11,15 @@ import SwiftUI
 @MainActor
 final class FishTankManager: ObservableObject {
   static let shared = FishTankManager(bounds: UIScreen.main.bounds)
-  
+
   @Published var swimmingFish: [SwimmingFish] = []
   @Published var commitmentLootboxes: [CommitmentLootbox] = []
   private let bounds: CGRect
   private let startleDuration: TimeInterval = 3  // Duration of startled state
   private let startledSpeedMultiplier: CGFloat = 15.0  // How much faster fish swim when startled
   private let speedDecayRate: CGFloat = 0.985  // How quickly speed decays (multiply per frame)
+  private let verticalChangeChance: CGFloat = 0.02  // Chance to change vertical direction per frame
+  private let maxVerticalSpeed: CGFloat = 0.8  // Maximum vertical speed
 
   init(bounds: CGRect) {
     self.bounds = bounds
@@ -26,26 +28,28 @@ final class FishTankManager: ObservableObject {
 
   private func loadState() {
     // Load any saved state (lootboxes, etc.)
-    if let savedLootboxes = UserDefaults.standard.array(forKey: "SavedLootboxes") as? [[String: Any]] {
+    if let savedLootboxes = UserDefaults.standard.array(forKey: "SavedLootboxes")
+      as? [[String: Any]]
+    {
       commitmentLootboxes = savedLootboxes.compactMap { dict in
         guard let typeRawValue = dict["type"] as? String,
-              let type = LootboxType(rawValue: typeRawValue),
-              let x = dict["x"] as? CGFloat,
-              let y = dict["y"] as? CGFloat
+          let type = LootboxType(rawValue: typeRawValue),
+          let x = dict["x"] as? CGFloat,
+          let y = dict["y"] as? CGFloat
         else { return nil }
-        
+
         return CommitmentLootbox(type: type, x: x, y: y)
       }
     }
   }
-  
+
   private func saveState() {
     // Save current state (lootboxes, etc.)
     let lootboxDicts = commitmentLootboxes.map { lootbox -> [String: Any] in
       return [
         "type": lootbox.type.rawValue,
         "x": lootbox.x,
-        "y": lootbox.y
+        "y": lootbox.y,
       ]
     }
     UserDefaults.standard.set(lootboxDicts, forKey: "SavedLootboxes")
@@ -117,18 +121,45 @@ final class FishTankManager: ObservableObject {
         }
       }
 
-      // Update position
+      // Update horizontal position
       swimmingFish[i].x -= swimmingFish[i].speed * swimmingFish[i].direction
 
-      // Handle vertical movement for startled fish
+      // Handle vertical movement
       if swimmingFish[i].isStartled {
+        // Erratic vertical movement when startled
         let time = Date().timeIntervalSinceReferenceDate
         let verticalMovement = sin(time * 4) * 0.5  // Slower, gentler vertical movement
         swimmingFish[i].y += verticalMovement
+      } else {
+        // Natural vertical movement with gradual direction changes
+        if CGFloat.random(in: 0...1) < verticalChangeChance {
+          // Occasionally change vertical direction
+          swimmingFish[i].verticalDirection = CGFloat.random(in: -1...1)
+          swimmingFish[i].verticalSpeed = CGFloat.random(in: 0.05...0.15)
+        }
 
-        // Keep within bounds with smooth clamping
-        let targetY = max(bounds.height * 0.2, min(bounds.height * 0.8, swimmingFish[i].y))
-        swimmingFish[i].y = swimmingFish[i].y * 0.9 + targetY * 0.1  // Smooth transition to bounds
+        // Apply vertical movement with momentum
+        let verticalMovement = swimmingFish[i].verticalSpeed * swimmingFish[i].verticalDirection
+        swimmingFish[i].y += verticalMovement
+
+        // Gradually slow down vertical speed for natural feel
+        swimmingFish[i].verticalSpeed *= 0.995
+        if swimmingFish[i].verticalSpeed < 0.01 {
+          swimmingFish[i].verticalSpeed = 0.01
+        }
+      }
+
+      // Keep fish within vertical bounds and handle bouncing
+      let minY = bounds.height * 0.1
+      let maxY = bounds.height * 0.9
+      if swimmingFish[i].y < minY {
+        swimmingFish[i].y = minY
+        swimmingFish[i].verticalDirection = 1  // Bounce down
+        swimmingFish[i].verticalSpeed *= 0.8  // Reduce speed on bounce
+      } else if swimmingFish[i].y > maxY {
+        swimmingFish[i].y = maxY
+        swimmingFish[i].verticalDirection = -1  // Bounce up
+        swimmingFish[i].verticalSpeed *= 0.8  // Reduce speed on bounce
       }
 
       // Bounce off walls
@@ -138,6 +169,7 @@ final class FishTankManager: ObservableObject {
         swimmingFish[i].speed *= 0.9
       }
 
+      // Keep fish within horizontal bounds
       swimmingFish[i].x = max(0, min(bounds.width * 0.9, swimmingFish[i].x))
     }
   }
@@ -145,31 +177,31 @@ final class FishTankManager: ObservableObject {
   func spawnLootbox(type: LootboxType) {
     let x = CGFloat.random(in: bounds.width * 0.2...bounds.width * 0.8)
     let y = CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
-    
+
     let lootbox = CommitmentLootbox(type: type, x: x, y: y)
     commitmentLootboxes.append(lootbox)
-    
+
     // Save state after adding lootbox
     saveState()
   }
 
   func removeLootbox(_ lootbox: CommitmentLootbox) {
     commitmentLootboxes.removeAll { $0.id == lootbox.id }
-    
+
     // Save state after removing lootbox
     saveState()
   }
-  
+
   func renameFish(id: UUID, newName: String) {
     if let index = swimmingFish.firstIndex(where: { $0.collectedFish.id == id }) {
       // We need to create a new instance since CollectedFish is inside SwimmingFish
       var updatedCollectedFish = swimmingFish[index].collectedFish
       updatedCollectedFish.name = newName
-      
+
       // Create a new SwimmingFish with the updated CollectedFish
       var updatedSwimmingFish = swimmingFish[index]
       updatedSwimmingFish.collectedFish = updatedCollectedFish
-      
+
       // Replace the fish in the array
       swimmingFish[index] = updatedSwimmingFish
     }
