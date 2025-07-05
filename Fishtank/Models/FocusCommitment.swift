@@ -32,12 +32,12 @@ enum FocusCommitment: String, CaseIterable {
     }
   }
 
-  var emoji: String {
+  var iconName: String {
     switch self {
-    case .short: return "🕐"
-    case .medium: return "⏰"
-    case .long: return "🕰️"
-    case .veryLong: return "🏆"
+    case .short: return "timer"
+    case .medium: return "alarm"
+    case .long: return "clock"
+    case .veryLong: return "clock.badge"
     }
   }
 }

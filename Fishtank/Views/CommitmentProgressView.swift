@@ -15,10 +15,16 @@ struct CommitmentProgressView: View {
   var body: some View {
     VStack(spacing: 8) {
       HStack {
-        Text("\(commitment.emoji) \(commitment.rawValue)")
-          .font(.headline)
-          .foregroundColor(.white)
-          .opacity(0.8)
+        HStack(spacing: 6) {
+          Image(systemName: commitment.iconName)
+            .font(.headline)
+            .foregroundColor(.white)
+            .opacity(0.8)
+          Text(commitment.rawValue)
+            .font(.headline)
+            .foregroundColor(.white)
+            .opacity(0.8)
+        }
         Spacer()
         Text(formatCommitmentTime(timeRemaining))
           .font(.headline)

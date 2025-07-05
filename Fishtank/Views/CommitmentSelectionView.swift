@@ -35,49 +35,38 @@ struct CommitmentSelectionView: View {
         .padding(.top, 16)
         .padding(.bottom, 6)
 
-        // Commitment Options
-        LazyVGrid(columns: [GridItem(.flexible())], spacing: 8) {
+        // Commitment Options - 4 Horizontal Squares
+        HStack(spacing: 8) {
           ForEach(FocusCommitment.allCases, id: \.self) { commitment in
             Button(action: {
               onCommitmentSelected(commitment)
               isPresented = false
             }) {
-              HStack(spacing: 6) {
-                // Duration emoji in circle
-                Text(commitment.emoji)
-                  .font(.headline)
-                  .padding(6)
-                  .background(
-                    Circle()
-                      .fill(.ultraThinMaterial)
-                  )
+              VStack(spacing: 8) {
+                // Duration icon
+                Image(systemName: commitment.iconName)
+                  .font(.title2)
+                  .foregroundColor(.white)
 
-                // Commitment details
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(commitment.rawValue)
-                    .font(.system(.subheadline, design: .rounded))
-                    .foregroundColor(.white)
-                    .opacity(0.9)
+                // Commitment duration
+                Text(commitment.rawValue)
+                  .font(.system(.subheadline, design: .rounded))
+                  .foregroundColor(.white)
+                  .opacity(0.9)
+                  .multilineTextAlignment(.center)
 
-                  HStack(spacing: 2) {
-                    Image(systemName: "gift")
-                      .font(.caption2)
-                      .foregroundColor(.yellow.opacity(0.8))
-                    Text("\(commitment.lootboxType.emoji) \(commitment.lootboxType.rawValue)")
-                      .font(.system(.caption2, design: .rounded))
-                      .foregroundColor(.yellow.opacity(0.8))
-                  }
+                // Lootbox type
+                VStack(spacing: 2) {
+                  Text(commitment.lootboxType.emoji)
+                    .font(.caption)
+                    .foregroundColor(.yellow.opacity(0.8))
+                  Text(commitment.lootboxType.rawValue)
+                    .font(.system(.caption2, design: .rounded))
+                    .foregroundColor(.yellow.opacity(0.8))
                 }
-
-                Spacer()
-
-                // Arrow indicator
-                Image(systemName: "chevron.right")
-                  .font(.caption2)
-                  .foregroundColor(.white.opacity(0.4))
               }
-              .padding(.horizontal, 12)
-              .padding(.vertical, 8)
+              .frame(maxWidth: .infinity)
+              .frame(height: 100)
               .background(
                 RoundedRectangle(cornerRadius: 12)
                   .fill(.ultraThinMaterial)
