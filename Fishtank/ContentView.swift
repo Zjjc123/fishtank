@@ -88,9 +88,9 @@ struct ContentView: View {
               // Generate possible rewards for the wheel
               var possibleRewards: [CollectedFish] = []
               for _ in 0..<(lootbox.type.fishCount * 10) {  // Generate more options for variety
-                let rarity = FishRarity.randomRarity(from: lootbox.type)
-                let fish = CollectedFish(rarity: rarity)
-                possibleRewards.append(fish)
+                let fish = FishDatabase.randomFish(from: lootbox.type)
+                let collectedFish = CollectedFish(fish: fish)
+                possibleRewards.append(collectedFish)
               }
 
               caseOpeningLootbox = lootbox
@@ -281,10 +281,10 @@ struct ContentView: View {
               
               // Show confirmation message
               if let fish = renamedFish {
-                if newName == fish.species {
+                if newName == fish.fish.name {
                   showRewardMessage("🐠 Name reset to species: \(newName)")
                 } else {
-                  showRewardMessage("🐠 \(newName) the \(fish.species) renamed!")
+                  showRewardMessage("🐠 \(newName) the \(fish.fish.name) renamed!")
                 }
               }
             },

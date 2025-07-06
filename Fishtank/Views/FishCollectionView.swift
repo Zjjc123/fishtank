@@ -70,7 +70,7 @@ struct FishCollectionView: View {
       if discovered[fish.rarity] == nil {
         discovered[fish.rarity] = []
       }
-      discovered[fish.rarity]?.insert(fish.species)
+      discovered[fish.rarity]?.insert(fish.fish.name)
     }
     return discovered
   }
@@ -401,7 +401,7 @@ struct FishDexTabView: View {
       // Stats Panel
       HStack(spacing: 8) {
         ForEach(FishRarity.allCases, id: \.self) { rarity in
-          let totalInRarity = rarity.fishOptions.count
+          let totalInRarity = FishDatabase.fishByRarity(rarity).count
           let discoveredCount = discoveredFishByRarity[rarity]?.count ?? 0
 
           HStack(spacing: 4) {
@@ -447,7 +447,7 @@ struct FishDexTabView: View {
                 ),
                 spacing: 8
               ) {
-                ForEach(rarity.fishOptions, id: \.name) { fish in
+                ForEach(FishDatabase.fishByRarity(rarity), id: \.id) { fish in
                   let isDiscovered = discoveredFishByRarity[rarity]?.contains(fish.name) ?? false
                   FishDexItemView(
                     species: fish.name,
@@ -548,14 +548,14 @@ struct FishItemView: View {
             .frame(width: 32, height: 32)
 
           // Show name if custom, otherwise show species
-          if fish.name != fish.species {
+          if fish.name != fish.fish.name {
             Text(fish.name)
               .font(.system(.caption2, design: .rounded))
               .fontWeight(.medium)
               .foregroundColor(.yellow)
               .lineLimit(1)
           } else {
-            Text(fish.species)
+            Text(fish.fish.name)
               .font(.system(.caption2, design: .rounded))
               .fontWeight(.medium)
               .foregroundColor(.white)
@@ -653,7 +653,7 @@ struct FishDetailsView: View {
           )
 
         VStack(spacing: 4) {
-          Text("Species: \(fish.species)")
+          Text("Species: \(fish.fish.name)")
             .font(.system(.caption, design: .rounded))
             .foregroundColor(.white.opacity(0.8))
 
@@ -710,7 +710,7 @@ struct FishDetailsView: View {
 
         // Reset to species name button
         Button(action: {
-          newName = fish.species
+          newName = fish.fish.name
         }) {
           HStack(spacing: 4) {
             Image(systemName: "arrow.uturn.backward")

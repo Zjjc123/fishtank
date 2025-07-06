@@ -64,8 +64,8 @@ struct SpinnerView: View {
     // Generate randomized fish for all positions except the winning index
     randomizedFish = []
     for _ in 0..<(totalItems - 1) {
-      let rarity = FishRarity.randomRarity(from: lootboxType, isSpinner: true)
-      randomizedFish.append(CollectedFish(rarity: rarity))
+      let fish = FishDatabase.randomFish(from: lootboxType, isSpinner: true)
+      randomizedFish.append(CollectedFish(fish: fish))
     }
   }
 
