@@ -19,6 +19,7 @@ struct FishCollectionView: View {
   @State private var selectedTab = 0
   @State private var fishToRename: CollectedFish? = nil
   @State private var showRenameView = false
+  @State private var showOnlySwimmingFish = false
 
   enum SortOption: String, CaseIterable {
     case time = "Time"
@@ -43,28 +44,23 @@ struct FishCollectionView: View {
     }
   }
 
-  private var sortedFish: [CollectedFish] {
-    let sorted =
-      switch sortOption {
-      case .time:
-        collectedFish.sorted { $0.dateCaught > $1.dateCaught }
-      case .rarity:
-        collectedFish.sorted { $0.rarity.sortOrder > $1.rarity.sortOrder }
-      }
-
-    if sortDirection == .ascending {
-      return sorted.reversed()
-    } else {
-      return sorted
+  private func sortedFish(_ fishList: [CollectedFish]) -> [CollectedFish] {
+    let sorted: [CollectedFish]
+    switch sortOption {
+    case .time:
+      sorted = fishList.sorted { $0.dateCaught > $1.dateCaught }
+    case .rarity:
+      sorted = fishList.sorted { $0.rarity.sortOrder > $1.rarity.sortOrder }
     }
+    return sortDirection == .ascending ? Array(sorted.reversed()) : sorted
   }
 
   private var visibleFish: [CollectedFish] {
-    sortedFish.filter { $0.isVisible }
+    sortedFish(collectedFish).filter { $0.isVisible }
   }
 
   private var hiddenFish: [CollectedFish] {
-    sortedFish.filter { !$0.isVisible }
+    sortedFish(collectedFish).filter { !$0.isVisible }
   }
 
   // Create a dictionary of discovered fish names by rarity
@@ -114,10 +110,11 @@ struct FishCollectionView: View {
         GeometryReader { geometry in
           if selectedTab == 0 {
             // Collection View
+            let fishToShow = showOnlySwimmingFish ? visibleFish : collectedFish
             CollectionTabView(
               collectedFish: collectedFish,
               visibleFish: visibleFish,
-              sortedFish: sortedFish,
+              sortedFish: sortedFish(fishToShow),
               onFishSelected: onFishSelected,
               onVisibilityToggled: onVisibilityToggled,
               onRenamePressed: { fish in
@@ -127,6 +124,7 @@ struct FishCollectionView: View {
               showLimitAlert: $showLimitAlert,
               sortOption: $sortOption,
               sortDirection: $sortDirection,
+              showOnlySwimmingFish: $showOnlySwimmingFish,
               geometry: geometry
             )
           } else {
@@ -219,6 +217,7 @@ struct CollectionTabView: View {
   @Binding var showLimitAlert: Bool
   @Binding var sortOption: FishCollectionView.SortOption
   @Binding var sortDirection: FishCollectionView.SortDirection
+  @Binding var showOnlySwimmingFish: Bool
   let geometry: GeometryProxy
 
   var body: some View {
@@ -292,8 +291,8 @@ struct CollectionTabView: View {
             )
         )
 
-        // Sort Controls
-        HStack(spacing: 6) {
+        // Sort & Filter Controls (Cohesive, Compact)
+        HStack(spacing: 4) {
           Button(action: {
             sortOption = sortOption == .time ? .rarity : .time
           }) {
@@ -305,12 +304,10 @@ struct CollectionTabView: View {
                 .font(.caption2)
             }
             .foregroundColor(.white)
-            .padding(.horizontal, 6)
-            .frame(height: 24)
-            .background(
-              RoundedRectangle(cornerRadius: 6)
-                .fill(.ultraThinMaterial)
-            )
+            .frame(height: 28)
+            .padding(.horizontal, 10)
+            .background(sortOption == .time ? Color.blue.opacity(0.18) : Color.purple.opacity(0.18))
+            .clipShape(Capsule())
           }
 
           Button(action: {
@@ -319,14 +316,38 @@ struct CollectionTabView: View {
             Image(systemName: sortDirection.icon)
               .font(.caption2)
               .foregroundColor(.white)
-              .frame(width: 24, height: 24)
-              .background(
-                RoundedRectangle(cornerRadius: 6)
-                  .fill(.ultraThinMaterial)
-              )
+              .frame(height: 28)
+              .padding(.horizontal, 10)
+              .background(Color.gray.opacity(0.18))
+              .clipShape(Capsule())
+          }
+
+          Button(action: {
+            showOnlySwimmingFish.toggle()
+          }) {
+            HStack(spacing: 4) {
+              Image(systemName: showOnlySwimmingFish ? "figure.water.fitness" : "fish")
+                .font(.caption2)
+              Text(showOnlySwimmingFish ? "Swimming" : "All Fishes")
+                .font(.system(.caption2, design: .rounded))
+                .fontWeight(.medium)
+            }
+            .foregroundColor(showOnlySwimmingFish ? .green : .white)
+            .frame(height: 28)
+            .padding(.horizontal, 10)
+            .background(showOnlySwimmingFish ? Color.green.opacity(0.18) : Color.gray.opacity(0.18))
+            .clipShape(Capsule())
           }
         }
-        .frame(maxWidth: .infinity)
+        .padding(2)
+        .background(
+          Capsule()
+            .fill(.ultraThinMaterial)
+            .overlay(
+              Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+        )
+        .frame(minWidth: 280, maxWidth: .infinity)
       }
 
       // Fish Grid
