@@ -60,7 +60,24 @@ class SupabaseManager: ObservableObject {
       isLoading = false
       return true
     } catch {
-      errorMessage = error.localizedDescription
+      // Provide more user-friendly error messages
+      let errorString = error.localizedDescription.lowercased()
+      
+      if errorString.contains("invalid") && errorString.contains("credentials") {
+        errorMessage = "Invalid email or password. Please try again."
+      } else if errorString.contains("email") && errorString.contains("confirmed") {
+        errorMessage = "Please check your email and confirm your account."
+      } else if errorString.contains("weak") && errorString.contains("password") {
+        errorMessage = "Password is too weak. Please use at least 6 characters."
+      } else if errorString.contains("already") && errorString.contains("use") {
+        errorMessage = "An account with this email already exists."
+      } else if errorString.contains("invalid") && errorString.contains("email") {
+        errorMessage = "Please enter a valid email address."
+      } else if errorString.contains("network") || errorString.contains("connection") {
+        errorMessage = "Connection failed. Please check your internet and try again."
+      } else {
+        errorMessage = "Authentication failed. Please try again."
+      }
       isLoading = false
       return false
     }
@@ -94,7 +111,24 @@ class SupabaseManager: ObservableObject {
       isLoading = false
       return true
     } catch {
-      errorMessage = error.localizedDescription
+      // Provide more user-friendly error messages
+      let errorString = error.localizedDescription.lowercased()
+      
+      if errorString.contains("invalid") && errorString.contains("credentials") {
+        errorMessage = "Invalid email or password. Please try again."
+      } else if errorString.contains("email") && errorString.contains("confirmed") {
+        errorMessage = "Please check your email and confirm your account."
+      } else if errorString.contains("weak") && errorString.contains("password") {
+        errorMessage = "Password is too weak. Please use at least 6 characters."
+      } else if errorString.contains("already") && errorString.contains("use") {
+        errorMessage = "An account with this email already exists."
+      } else if errorString.contains("invalid") && errorString.contains("email") {
+        errorMessage = "Please enter a valid email address."
+      } else if errorString.contains("network") || errorString.contains("connection") {
+        errorMessage = "Connection failed. Please check your internet and try again."
+      } else {
+        errorMessage = "Authentication failed. Please try again."
+      }
       isLoading = false
       return false
     }
