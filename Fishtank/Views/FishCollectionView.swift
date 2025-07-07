@@ -534,53 +534,113 @@ struct FishItemView: View {
   let onVisibilityToggled: (CollectedFish) -> Bool
   let onRenamePressed: (CollectedFish) -> Void
   @Binding var showLimitAlert: Bool
+  @State private var glowOpacity: Double = 0.3
 
   var body: some View {
     VStack(spacing: 2) {
       Button(action: {
         onRenamePressed(fish)
       }) {
-        VStack(spacing: 2) {
-          Image(fish.imageName)
-            .resizable()
-            .interpolation(.none)
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 32, height: 32)
+        ZStack {
+          // Glow effect for shiny fish
+          if fish.isShiny {
+            VStack(spacing: 2) {
+              Image(fish.imageName)
+                .resizable()
+                .interpolation(.none)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 32, height: 32)
+                .blur(radius: 3)
+                .foregroundColor(.yellow)
+                .opacity(glowOpacity)
+                .animation(
+                  Animation.easeInOut(duration: 1.5)
+                    .repeatForever(autoreverses: true),
+                  value: glowOpacity
+                )
+                .onAppear {
+                  glowOpacity = 0.7
+                }
 
-          // Show name if custom, otherwise show species
-          if fish.name != fish.fish.name {
-            Text(fish.name)
-              .font(.system(.caption2, design: .rounded))
-              .fontWeight(.medium)
-              .foregroundColor(.yellow)
-              .lineLimit(1)
-          } else {
-            Text(fish.fish.name)
-              .font(.system(.caption2, design: .rounded))
-              .fontWeight(.medium)
-              .foregroundColor(.white)
-              .lineLimit(1)
-          }
+              // Show name if custom, otherwise show species
+              if fish.name != fish.fish.name {
+                Text(fish.name)
+                  .font(.system(.caption2, design: .rounded))
+                  .fontWeight(.medium)
+                  .foregroundColor(fish.isShiny ? .yellow : .white)
+                  .lineLimit(1)
+              } else {
+                Text(fish.fish.name)
+                  .font(.system(.caption2, design: .rounded))
+                  .fontWeight(.medium)
+                  .foregroundColor(fish.isShiny ? .yellow : .white)
+                  .lineLimit(1)
+              }
 
-          Text(fish.rarity.rawValue)
-            .font(.system(.caption2, design: .rounded))
-            .foregroundColor(fish.rarity.color.opacity(0.9))
+              Text(fish.rarity.rawValue)
+                .font(.system(.caption2, design: .rounded))
+                .foregroundColor(fish.rarity.color.opacity(0.9))
 
-          Text(formatDate(fish.dateCaught))
-            .font(.system(.caption2, design: .rounded))
-            .foregroundColor(.gray.opacity(0.7))
-        }
-        .frame(width: 70)
-        .padding(4)
-        .background(
-          RoundedRectangle(cornerRadius: 8)
-            .fill(.ultraThinMaterial)
-            .overlay(
+              Text(formatDate(fish.dateCaught))
+                .font(.system(.caption2, design: .rounded))
+                .foregroundColor(.gray.opacity(0.7))
+            }
+            .frame(width: 70)
+            .padding(4)
+            .background(
               RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                )
             )
-        )
-        .opacity(fish.isVisible ? 1 : 0.6)
+            .opacity(fish.isVisible ? 1 : 0.6)
+          }
+          
+          // Main fish display
+          VStack(spacing: 2) {
+            Image(fish.imageName)
+              .resizable()
+              .interpolation(.none)
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 32, height: 32)
+
+            // Show name if custom, otherwise show species
+            if fish.name != fish.fish.name {
+              Text(fish.name)
+                .font(.system(.caption2, design: .rounded))
+                .fontWeight(.medium)
+                .foregroundColor(fish.isShiny ? .yellow : .white)
+                .lineLimit(1)
+            } else {
+              Text(fish.fish.name)
+                .font(.system(.caption2, design: .rounded))
+                .fontWeight(.medium)
+                .foregroundColor(fish.isShiny ? .yellow : .white)
+                .lineLimit(1)
+            }
+
+            Text(fish.rarity.rawValue)
+              .font(.system(.caption2, design: .rounded))
+              .foregroundColor(fish.rarity.color.opacity(0.9))
+
+            Text(formatDate(fish.dateCaught))
+              .font(.system(.caption2, design: .rounded))
+              .foregroundColor(.gray.opacity(0.7))
+          }
+          .frame(width: 70)
+          .padding(4)
+          .background(
+            RoundedRectangle(cornerRadius: 8)
+              .fill(.ultraThinMaterial)
+              .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                  .stroke(Color.white.opacity(0.15), lineWidth: 1)
+              )
+          )
+          .opacity(fish.isVisible ? 1 : 0.6)
+        }
       }
 
       // Visibility toggle button
@@ -637,36 +697,70 @@ struct FishDetailsView: View {
     HStack(spacing: 16) {
       // Left side - Fish image and info
       VStack(spacing: 12) {
-        Image(fish.imageName)
-          .resizable()
-          .interpolation(.none)
-          .aspectRatio(contentMode: .fit)
-          .frame(width: 60, height: 60)
-          .padding(8)
-          .background(
-            Circle()
-              .fill(.ultraThinMaterial)
-              .overlay(
-                Circle()
-                  .stroke(fish.rarity.color.opacity(0.6), lineWidth: 2)
-              )
-          )
+        ZStack {
+          // Glow effect for shiny fish
+          if fish.isShiny {
+            Image(fish.imageName)
+              .resizable()
+              .interpolation(.none)
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 60, height: 60)
+              .blur(radius: 6)
+              .foregroundColor(.yellow)
+              .opacity(0.6)
+          }
+          
+          Image(fish.imageName)
+            .resizable()
+            .interpolation(.none)
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 60, height: 60)
+            .padding(8)
+            .background(
+              Circle()
+                .fill(.ultraThinMaterial)
+                .overlay(
+                  Circle()
+                    .stroke(fish.rarity.color.opacity(0.6), lineWidth: 2)
+                )
+            )
+        }
 
         VStack(spacing: 4) {
           Text("Species: \(fish.fish.name)")
             .font(.system(.caption, design: .rounded))
             .foregroundColor(.white.opacity(0.8))
 
-          Text(fish.rarity.rawValue)
-            .font(.system(.caption2, design: .rounded))
-            .fontWeight(.medium)
-            .foregroundColor(fish.rarity.color)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .background(
-              Capsule()
-                .fill(fish.rarity.color.opacity(0.2))
-            )
+          HStack(spacing: 8) {
+            Text(fish.rarity.rawValue)
+              .font(.system(.caption2, design: .rounded))
+              .fontWeight(.medium)
+              .foregroundColor(fish.rarity.color)
+              .padding(.horizontal, 8)
+              .padding(.vertical, 2)
+              .background(
+                Capsule()
+                  .fill(fish.rarity.color.opacity(0.2))
+              )
+            
+            if fish.isShiny {
+              HStack(spacing: 4) {
+                Image(systemName: "sparkles")
+                  .font(.caption2)
+                  .foregroundColor(.yellow)
+                Text("Shiny")
+                  .font(.system(.caption2, design: .rounded))
+                  .fontWeight(.medium)
+                  .foregroundColor(.yellow)
+              }
+              .padding(.horizontal, 8)
+              .padding(.vertical, 2)
+              .background(
+                Capsule()
+                  .fill(Color.yellow.opacity(0.2))
+              )
+            }
+          }
         }
       }
 

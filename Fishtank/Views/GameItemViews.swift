@@ -11,25 +11,66 @@ import SwiftUI
 struct SwimmingFishView: View {
   let fish: SwimmingFish
   @ObservedObject var fishTankManager: FishTankManager
+  @State private var glowOpacity: Double = 0.3
 
   var body: some View {
-    Image(fish.imageName)
-      .resizable()
-      .interpolation(.none)
-      .aspectRatio(contentMode: .fit)
-      .frame(width: fish.size, height: fish.size)
-      .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
-      .shadow(color: .black.opacity(0.3), radius: 2)
-      .opacity(fish.isStartled ? 0.7 : 1.0)
-      .animation(.interpolatingSpring(stiffness: 300, damping: 15), value: fish.direction)
-      .animation(.easeInOut(duration: 0.2), value: fish.isStartled)
-      .animation(.linear(duration: 0.016), value: fish.x) // Smooth position updates
-      .animation(.linear(duration: 0.016), value: fish.y)
-      .onTapGesture { location in
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-          fishTankManager.startleFish(fish, tapLocation: location)
-        }
+    ZStack {
+      // Glow effect for shiny fish
+      if fish.collectedFish.isShiny {
+        Image(fish.imageName)
+          .resizable()
+          .interpolation(.none)
+          .aspectRatio(contentMode: .fit)
+          .frame(width: fish.size, height: fish.size)
+          .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
+          .blur(radius: 6)
+          .foregroundColor(.yellow)
+          .opacity(glowOpacity)
+          .animation(
+            Animation.easeInOut(duration: 1.5)
+              .repeatForever(autoreverses: true),
+            value: glowOpacity
+          )
+          .onAppear {
+            glowOpacity = 1.0
+          }
+        
+        // Additional brighter glow layer
+        Image(fish.imageName)
+          .resizable()
+          .interpolation(.none)
+          .aspectRatio(contentMode: .fit)
+          .frame(width: fish.size, height: fish.size)
+          .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
+          .blur(radius: 12)
+          .foregroundColor(.yellow)
+          .opacity(glowOpacity * 0.6)
+          .animation(
+            Animation.easeInOut(duration: 1.5)
+              .repeatForever(autoreverses: true),
+            value: glowOpacity
+          )
       }
+      
+      // Main fish image
+      Image(fish.imageName)
+        .resizable()
+        .interpolation(.none)
+        .aspectRatio(contentMode: .fit)
+        .frame(width: fish.size, height: fish.size)
+        .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
+        .shadow(color: .black.opacity(0.3), radius: 2)
+        .opacity(fish.isStartled ? 0.7 : 1.0)
+        .animation(.interpolatingSpring(stiffness: 300, damping: 15), value: fish.direction)
+        .animation(.easeInOut(duration: 0.2), value: fish.isStartled)
+        .animation(.linear(duration: 0.016), value: fish.x) // Smooth position updates
+        .animation(.linear(duration: 0.016), value: fish.y)
+        .onTapGesture { location in
+          withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            fishTankManager.startleFish(fish, tapLocation: location)
+          }
+        }
+    }
   }
 }
 
@@ -156,41 +197,93 @@ struct CaseOpeningWheelView: View {
 struct RewardItemView: View {
   let fish: CollectedFish
   let isSelected: Bool
+  @State private var glowOpacity: Double = 0.3
 
   var body: some View {
-    VStack(spacing: 5) {
-      Image(fish.imageName)
-        .resizable()
-        .interpolation(.none)
-        .aspectRatio(contentMode: .fit)
-        .frame(width: 65, height: 35)
+    ZStack {
+      // Glow effect for shiny fish
+      if fish.isShiny {
+        VStack(spacing: 5) {
+          Image(fish.imageName)
+            .resizable()
+            .interpolation(.none)
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 65, height: 35)
+            .blur(radius: 4)
+            .foregroundColor(.yellow)
+            .opacity(glowOpacity)
+            .animation(
+              Animation.easeInOut(duration: 1.5)
+                .repeatForever(autoreverses: true),
+              value: glowOpacity
+            )
+            .onAppear {
+              glowOpacity = 0.6
+            }
 
-      Text(fish.name)
-        .font(.caption2)
-        .fontWeight(.medium)
-        .foregroundColor(.white)
-        .lineLimit(1)
+          Text(fish.name)
+            .font(.caption2)
+            .fontWeight(.medium)
+            .foregroundColor(.white)
+            .lineLimit(1)
 
-      Text(fish.rarity.rawValue)
-        .font(.caption2)
-        .fontWeight(.light)
-        .foregroundColor(fish.rarity.color)
-        .lineLimit(1)
-    }
-    .padding(8)
-    .frame(width: 80)
-    .background(
-      RoundedRectangle(cornerRadius: 10)
-        .fill(fish.rarity.color.opacity(0.2))
-        .overlay(
+          Text(fish.rarity.rawValue)
+            .font(.caption2)
+            .fontWeight(.light)
+            .foregroundColor(fish.rarity.color)
+            .lineLimit(1)
+        }
+        .padding(8)
+        .frame(width: 80)
+        .background(
           RoundedRectangle(cornerRadius: 10)
-            .stroke(
-              fish.rarity.color.opacity(isSelected ? 1.0 : 0.5), lineWidth: isSelected ? 3 : 1)
+            .fill(fish.rarity.color.opacity(0.2))
+            .overlay(
+              RoundedRectangle(cornerRadius: 10)
+                .stroke(
+                  fish.rarity.color.opacity(isSelected ? 1.0 : 0.5), lineWidth: isSelected ? 3 : 1)
+            )
         )
-    )
-    .scaleEffect(isSelected ? 1.1 : 1.0)
-    .shadow(
-      color: isSelected ? fish.rarity.color.opacity(0.8) : .clear, radius: isSelected ? 10 : 0)
+        .scaleEffect(isSelected ? 1.1 : 1.0)
+        .shadow(
+          color: isSelected ? fish.rarity.color.opacity(0.8) : .clear, radius: isSelected ? 10 : 0)
+      }
+      
+      // Main fish display
+      VStack(spacing: 5) {
+        Image(fish.imageName)
+          .resizable()
+          .interpolation(.none)
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 65, height: 35)
+
+        Text(fish.name)
+          .font(.caption2)
+          .fontWeight(.medium)
+          .foregroundColor(.white)
+          .lineLimit(1)
+
+        Text(fish.rarity.rawValue)
+          .font(.caption2)
+          .fontWeight(.light)
+          .foregroundColor(fish.rarity.color)
+          .lineLimit(1)
+      }
+      .padding(8)
+      .frame(width: 80)
+      .background(
+        RoundedRectangle(cornerRadius: 10)
+          .fill(fish.rarity.color.opacity(0.2))
+          .overlay(
+            RoundedRectangle(cornerRadius: 10)
+              .stroke(
+                fish.rarity.color.opacity(isSelected ? 1.0 : 0.5), lineWidth: isSelected ? 3 : 1)
+          )
+      )
+      .scaleEffect(isSelected ? 1.1 : 1.0)
+      .shadow(
+        color: isSelected ? fish.rarity.color.opacity(0.8) : .clear, radius: isSelected ? 10 : 0)
+    }
   }
 }
 

@@ -281,10 +281,11 @@ struct ContentView: View {
               
               // Show confirmation message
               if let fish = renamedFish {
+                let shinyIndicator = fish.isShiny ? " ✨" : ""
                 if newName == fish.fish.name {
-                  showRewardMessage("🐠 Name reset to species: \(newName)")
+                  showRewardMessage("🐠 Name reset to species: \(newName)\(shinyIndicator)")
                 } else {
-                  showRewardMessage("🐠 \(newName) the \(fish.fish.name) renamed!")
+                  showRewardMessage("🐠 \(newName) the \(fish.fish.name) renamed!\(shinyIndicator)")
                 }
               }
             },
@@ -311,11 +312,16 @@ struct ContentView: View {
             fishTankManager.removeLootbox(lootbox)
             statsManager.addFishes(selectedFishes, fishTankManager: fishTankManager)
 
-            let fishMessages = selectedFishes.map { "\($0.rarity.rawValue) \($0.name)" }
+            let fishMessages = selectedFishes.map { fish in
+              let shinyIndicator = fish.isShiny ? " ✨" : ""
+              return "\(fish.rarity.rawValue) \(fish.name)\(shinyIndicator)"
+            }
             let hiddenCount = selectedFishes.filter { !$0.isVisible }.count
             let hiddenMessage = hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
+            let shinyCount = selectedFishes.filter { $0.isShiny }.count
+            let shinyMessage = shinyCount > 0 ? "\n✨ \(shinyCount) shiny fish!" : ""
             showRewardMessage(
-              "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(selectedFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))\(hiddenMessage)"
+              "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(selectedFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))\(hiddenMessage)\(shinyMessage)"
             )
 
             // Reset state
@@ -347,8 +353,9 @@ struct ContentView: View {
             // Remove the fish from collection and update swimming fish
             statsManager.removeFish(randomFish)
             fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
+            let shinyIndicator = randomFish.isShiny ? " ✨" : ""
             showRewardMessage(
-              "🚨 \(cancelled.rawValue) session cancelled.\n😢 \(randomFish.name) swam away forever!\nApp restrictions removed."
+              "🚨 \(cancelled.rawValue) session cancelled.\n😢 \(randomFish.name) swam away forever!\(shinyIndicator)\nApp restrictions removed."
             )
           } else {
             showRewardMessage(
