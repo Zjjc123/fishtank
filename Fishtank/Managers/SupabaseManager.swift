@@ -52,6 +52,11 @@ class SupabaseManager: ObservableObject {
       )
       self.isAuthenticated = true
 
+      // Trigger fish collection sync after successful sign up
+      Task {
+        await GameStatsManager.shared.triggerSupabaseSync()
+      }
+
       isLoading = false
       return true
     } catch {
@@ -80,6 +85,12 @@ class SupabaseManager: ObservableObject {
         updatedAt: user.updatedAt
       )
       self.isAuthenticated = true
+      
+      // Trigger fish collection sync after successful sign in
+      Task {
+        await GameStatsManager.shared.triggerSupabaseSync()
+      }
+      
       isLoading = false
       return true
     } catch {
@@ -112,6 +123,11 @@ class SupabaseManager: ObservableObject {
         updatedAt: user.updatedAt
       )
       self.isAuthenticated = true
+      
+      // Trigger fish collection sync if user is authenticated
+      Task {
+        await GameStatsManager.shared.triggerSupabaseSync()
+      }
     } catch {
       // User is not signed in
       self.isAuthenticated = false

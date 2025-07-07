@@ -5,21 +5,34 @@
 //  Created by Jiajun Zhang on 6/19/25.
 //
 
-import SwiftUI
+import Combine
 import Supabase
+import SwiftUI
 
 // MARK: - Game Stats Manager
 @MainActor
 final class GameStatsManager: ObservableObject {
   static let shared = GameStatsManager()
-  
+
   @Published private(set) var collectedFish: [CollectedFish] = []
   @Published private(set) var fishCollection: [FishRarity: Int] = [:]
-  
+
   private let supabaseManager = SupabaseManager.shared
-  
+  private var cancellables = Set<AnyCancellable>()
+
   private init() {
     loadFromStorage()
+
+    // Listen for authentication state changes
+    supabaseManager.$isAuthenticated
+      .sink { [weak self] isAuthenticated in
+        if isAuthenticated {
+          Task {
+            await self?.triggerSupabaseSync()
+          }
+        }
+      }
+      .store(in: &cancellables)
   }
 
   var fishCount: Int {
@@ -37,11 +50,11 @@ final class GameStatsManager: ObservableObject {
     } else if fishCollection.isEmpty {
       initializeFishCollection()
     }
-    
+
     // If user is authenticated, sync with Supabase
     if supabaseManager.isAuthenticated {
       Task {
-        await syncWithSupabase()
+        await triggerSupabaseSync()
       }
     }
   }
@@ -49,7 +62,7 @@ final class GameStatsManager: ObservableObject {
   private func saveToStorage() {
     PersistentStorageManager.saveFish(collectedFish)
     PersistentStorageManager.saveFishCollection(fishCollection)
-    
+
     // If user is authenticated, save to Supabase
     if supabaseManager.isAuthenticated {
       Task {
@@ -176,23 +189,36 @@ final class GameStatsManager: ObservableObject {
       return "Export error: \(error)"
     }
   }
-  
+
   func updateFishCollection(_ updatedFish: [CollectedFish]) {
     collectedFish = updatedFish
     recalculateFishCollection()
     saveToStorage()
+
+    // Sync with Supabase if authenticated
+    if supabaseManager.isAuthenticated {
+      Task {
+        await supabaseManager.saveFishCollection(collectedFish)
+      }
+    }
   }
-  
+
+  // MARK: - Public Sync Methods
+
+  func triggerSupabaseSync() async {
+    await syncWithSupabase()
+  }
+
   // MARK: - Supabase Integration
-  
+
   private func syncWithSupabase() async {
     let supabaseFish = await supabaseManager.loadFishCollection()
-    
+
     // Merge local and remote data, preferring the most recent
     var mergedFish: [CollectedFish] = []
     var localFishDict: [UUID: CollectedFish] = [:]
     var remoteFishDict: [UUID: CollectedFish] = [:]
-    
+
     // Create dictionaries for easy lookup
     for fish in collectedFish {
       localFishDict[fish.id] = fish
@@ -200,14 +226,14 @@ final class GameStatsManager: ObservableObject {
     for fish in supabaseFish {
       remoteFishDict[fish.id] = fish
     }
-    
+
     // Merge fish collections
     let allIds = Set(localFishDict.keys).union(Set(remoteFishDict.keys))
-    
+
     for id in allIds {
       let localFish = localFishDict[id]
       let remoteFish = remoteFishDict[id]
-      
+
       if let local = localFish, let remote = remoteFish {
         // Both exist - use the most recent
         mergedFish.append(local.dateCaught > remote.dateCaught ? local : remote)
@@ -219,12 +245,14 @@ final class GameStatsManager: ObservableObject {
         mergedFish.append(remote)
       }
     }
-    
+
     // Update the collection
     await MainActor.run {
       collectedFish = mergedFish
       recalculateFishCollection()
-      saveToStorage()
+      // Save to local storage only, not to Supabase to avoid infinite loop
+      PersistentStorageManager.saveFish(collectedFish)
+      PersistentStorageManager.saveFishCollection(fishCollection)
     }
   }
-} 
+}

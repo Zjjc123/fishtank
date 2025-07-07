@@ -204,6 +204,11 @@ final class FishTankManager: ObservableObject {
 
       // Replace the fish in the array
       swimmingFish[index] = updatedSwimmingFish
+      
+      // Sync with Supabase
+      Task {
+        await SupabaseManager.shared.saveFishCollection(GameStatsManager.shared.collectedFish)
+      }
     }
   }
 }
