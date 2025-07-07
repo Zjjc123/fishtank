@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 // MARK: - Game Stats Manager
 @MainActor
@@ -14,6 +15,8 @@ final class GameStatsManager: ObservableObject {
   
   @Published private(set) var collectedFish: [CollectedFish] = []
   @Published private(set) var fishCollection: [FishRarity: Int] = [:]
+  
+  private let supabaseManager = SupabaseManager.shared
   
   private init() {
     loadFromStorage()
@@ -24,6 +27,7 @@ final class GameStatsManager: ObservableObject {
   }
 
   private func loadFromStorage() {
+    // Load from local storage first for immediate access
     collectedFish = PersistentStorageManager.loadFish()
     fishCollection = PersistentStorageManager.loadFishCollection()
 
@@ -33,11 +37,25 @@ final class GameStatsManager: ObservableObject {
     } else if fishCollection.isEmpty {
       initializeFishCollection()
     }
+    
+    // If user is authenticated, sync with Supabase
+    if supabaseManager.isAuthenticated {
+      Task {
+        await syncWithSupabase()
+      }
+    }
   }
 
   private func saveToStorage() {
     PersistentStorageManager.saveFish(collectedFish)
     PersistentStorageManager.saveFishCollection(fishCollection)
+    
+    // If user is authenticated, save to Supabase
+    if supabaseManager.isAuthenticated {
+      Task {
+        await supabaseManager.saveFishCollection(collectedFish)
+      }
+    }
   }
 
   private func initializeFishCollection() {
@@ -163,5 +181,50 @@ final class GameStatsManager: ObservableObject {
     collectedFish = updatedFish
     recalculateFishCollection()
     saveToStorage()
+  }
+  
+  // MARK: - Supabase Integration
+  
+  private func syncWithSupabase() async {
+    let supabaseFish = await supabaseManager.loadFishCollection()
+    
+    // Merge local and remote data, preferring the most recent
+    var mergedFish: [CollectedFish] = []
+    var localFishDict: [UUID: CollectedFish] = [:]
+    var remoteFishDict: [UUID: CollectedFish] = [:]
+    
+    // Create dictionaries for easy lookup
+    for fish in collectedFish {
+      localFishDict[fish.id] = fish
+    }
+    for fish in supabaseFish {
+      remoteFishDict[fish.id] = fish
+    }
+    
+    // Merge fish collections
+    let allIds = Set(localFishDict.keys).union(Set(remoteFishDict.keys))
+    
+    for id in allIds {
+      let localFish = localFishDict[id]
+      let remoteFish = remoteFishDict[id]
+      
+      if let local = localFish, let remote = remoteFish {
+        // Both exist - use the most recent
+        mergedFish.append(local.dateCaught > remote.dateCaught ? local : remote)
+      } else if let local = localFish {
+        // Only local exists
+        mergedFish.append(local)
+      } else if let remote = remoteFish {
+        // Only remote exists
+        mergedFish.append(remote)
+      }
+    }
+    
+    // Update the collection
+    await MainActor.run {
+      collectedFish = mergedFish
+      recalculateFishCollection()
+      saveToStorage()
+    }
   }
 } 

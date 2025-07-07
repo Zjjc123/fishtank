@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import Supabase
 
 struct SettingsView: View {
   @Binding var isPresented: Bool
   let statsManager: GameStatsManager
   let fishTankManager: FishTankManager
+  @StateObject private var supabaseManager = SupabaseManager.shared
   @State private var showingClearAlert = false
+  @State private var showingSignOutAlert = false
 
   var body: some View {
     ZStack {
@@ -60,10 +63,17 @@ struct SettingsView: View {
               Image(systemName: "info.circle.fill")
                 .font(.caption)
                 .foregroundColor(.blue.opacity(0.8))
-              Text("Fish are automatically saved to your device")
-                .font(.system(.caption, design: .rounded))
-                .foregroundColor(.blue.opacity(0.8))
-                .multilineTextAlignment(.leading)
+              if supabaseManager.isAuthenticated {
+                Text("Fish are synced to your account")
+                  .font(.system(.caption, design: .rounded))
+                  .foregroundColor(.blue.opacity(0.8))
+                  .multilineTextAlignment(.leading)
+              } else {
+                Text("Fish are saved locally on your device")
+                  .font(.system(.caption, design: .rounded))
+                  .foregroundColor(.blue.opacity(0.8))
+                  .multilineTextAlignment(.leading)
+              }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 2)
@@ -81,6 +91,36 @@ struct SettingsView: View {
 
         // Buttons
         VStack(spacing: 8) {
+          // Account Section (if authenticated)
+          if supabaseManager.isAuthenticated {
+            VStack(spacing: 8) {
+              HStack(spacing: 8) {
+                Image(systemName: "person.circle.fill")
+                  .font(.title3)
+                  .foregroundColor(.green.opacity(0.9))
+
+                Text("Account")
+                  .font(.system(.subheadline, design: .rounded))
+                  .foregroundColor(.white.opacity(0.8))
+
+                Spacer()
+
+                Text(supabaseManager.currentUser?.email ?? "")
+                  .font(.system(.caption, design: .rounded))
+                  .foregroundColor(.green.opacity(0.8))
+              }
+              .padding(12)
+              .background(
+                RoundedRectangle(cornerRadius: 12)
+                  .fill(.ultraThinMaterial)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                      .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                  )
+              )
+            }
+          }
+
           Button(action: {
             showingClearAlert = true
           }) {
@@ -101,6 +141,31 @@ struct SettingsView: View {
                     .stroke(Color.red.opacity(0.3), lineWidth: 1)
                 )
             )
+          }
+
+          // Sign Out Button (if authenticated)
+          if supabaseManager.isAuthenticated {
+            Button(action: {
+              showingSignOutAlert = true
+            }) {
+              HStack(spacing: 8) {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                  .font(.subheadline)
+                Text("Sign Out")
+                  .font(.system(.subheadline, design: .rounded))
+              }
+              .foregroundColor(.white)
+              .frame(maxWidth: .infinity)
+              .frame(height: 40)
+              .background(
+                RoundedRectangle(cornerRadius: 12)
+                  .fill(Color.orange.opacity(0.7))
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                      .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                  )
+              )
+            }
           }
 
           Button(action: {
@@ -144,6 +209,16 @@ struct SettingsView: View {
       }
     } message: {
       Text("This will permanently delete all your collected fish. This action cannot be undone.")
+    }
+    .alert("Sign Out", isPresented: $showingSignOutAlert) {
+      Button("Cancel", role: .cancel) {}
+      Button("Sign Out", role: .destructive) {
+        Task {
+          await supabaseManager.signOut()
+        }
+      }
+    } message: {
+      Text("Are you sure you want to sign out? Your fish collection will remain saved to your account.")
     }
   }
 }

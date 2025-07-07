@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - Game Objects
 struct CollectedFish: Identifiable, Hashable, Codable {
-  let id: UUID
+  var id: UUID
   let fish: Fish
   var name: String
   let dateCaught: Date
@@ -23,6 +23,15 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     self.name = fish.name
     self.dateCaught = Date()
     self.isShiny = Double.random(in: 0...1) < 0.01
+  }
+  
+  init(id: UUID, fish: Fish, name: String, dateCaught: Date, isVisible: Bool = true, isShiny: Bool) {
+    self.id = id
+    self.fish = fish
+    self.name = name
+    self.dateCaught = dateCaught
+    self.isVisible = isVisible
+    self.isShiny = isShiny
   }
 
   // Custom Codable implementation to handle UUID properly

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import BackgroundTasks
+import Supabase
 
 @main
 struct FishtankApp: App {
@@ -17,7 +18,7 @@ struct FishtankApp: App {
   
   var body: some Scene {
     WindowGroup {
-      ContentView()
+      MainView()
         .onAppear {
           // Initialize InAppPurchaseManager and check for unfinished transactions
           Task {
