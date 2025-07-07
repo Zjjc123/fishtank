@@ -84,7 +84,6 @@ platform :ios do
       project: "Fishtank.xcodeproj", 
       scheme: "Fishtank",
       export_method: "app-store",
-      codesigning_identity: "Apple Distribution",
       export_options: {
         provisioningProfiles: { 
           "dev.jasonzhang.Fishtank" => "match AppStore dev.jasonzhang.Fishtank",
@@ -144,7 +143,6 @@ platform :ios do
       project: "Fishtank.xcodeproj", 
       scheme: "Fishtank",
       export_method: "development",
-      codesigning_identity: "Apple Development",
       export_options: {
         provisioningProfiles: { 
           "dev.jasonzhang.Fishtank" => "match Development dev.jasonzhang.Fishtank",
