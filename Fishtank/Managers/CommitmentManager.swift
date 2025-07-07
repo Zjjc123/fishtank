@@ -195,6 +195,9 @@ final class CommitmentManager: ObservableObject {
       // Cancel any pending notifications
       notificationManager.cancelAllPendingNotifications()
 
+      // Save state to persist the skipped session
+      saveState()
+
       return skippedCommitment
     }
 

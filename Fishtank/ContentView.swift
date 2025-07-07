@@ -269,16 +269,16 @@ struct ContentView: View {
             onFishRenamed: { fishId, newName in
               // Update fish name in persistent storage
               let updatedFish = PersistentStorageManager.renameFish(id: fishId, newName: newName)
-              
+
               // Find the fish in the updated collection for the confirmation message
               let renamedFish = updatedFish.first(where: { $0.id == fishId })
-              
+
               // Update the fish in the stats manager
               statsManager.updateFishCollection(updatedFish)
-              
+
               // Update swimming fish with the new name
               fishTankManager.renameFish(id: fishId, newName: newName)
-              
+
               // Show confirmation message
               if let fish = renamedFish {
                 let shinyIndicator = fish.isShiny ? " ✨" : ""
