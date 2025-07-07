@@ -52,9 +52,6 @@ class SupabaseManager: ObservableObject {
       )
       self.isAuthenticated = true
 
-      // Create user profile
-      await createUserProfile(userId: user.id.uuidString, email: email)
-
       isLoading = false
       return true
     } catch {
@@ -128,20 +125,6 @@ class SupabaseManager: ObservableObject {
     let email: String
     let total_focus_time: Double
     let total_fish_caught: Int
-  }
-
-  private func createUserProfile(userId: String, email: String) async {
-    do {
-      let profile = UserProfileInsert(
-        id: userId,
-        email: email,
-        total_focus_time: 0,
-        total_fish_caught: 0
-      )
-      _ = try await client.from("user_profiles").insert(profile).execute()
-    } catch {
-      print("Failed to create user profile: \(error)")
-    }
   }
 
   // MARK: - Fish Database Operations
