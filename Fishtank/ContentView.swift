@@ -36,107 +36,32 @@ struct ContentView: View {
   private let bubbleTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
   private let dataRefreshTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()  // Refresh every 5 minutes
 
-  // Time-based background colors
-  private var timeBasedBackground: (topColor: Color, bottomColor: Color) {
-    let hour = Calendar.current.component(.hour, from: currentTime)
-    return getBackgroundColors(for: hour)
-  }
-
-  private func getBackgroundColors(for hour: Int) -> (topColor: Color, bottomColor: Color) {
-    switch hour {
-    case 5..<7:  // Early morning (5-7 AM) - Dawn
-      return (Color.orange.opacity(0.2), Color.pink.opacity(0.15))
-    case 7..<10:  // Morning (7-10 AM) - Bright morning
-      return (Color.cyan.opacity(0.25), Color.blue.opacity(0.3))
-    case 10..<16:  // Day (10 AM-4 PM) - Bright day
-      return (Color.cyan.opacity(0.6), Color.blue.opacity(0.7))
-    case 16..<19:  // Afternoon (4-7 PM) - Golden hour
-      return (Color.orange.opacity(0.5), Color.yellow.opacity(0.4))
-    case 19..<21:  // Evening (7-9 PM) - Sunset
-      return (Color.pink.opacity(0.4), Color.orange.opacity(0.5))
-    case 21..<23:  // Night (9-11 PM) - Early night
-      return (Color.purple.opacity(0.4), Color.blue.opacity(0.6))
-    case 23...23, 0..<5:  // Late night (11 PM-5 AM) - Deep night
-      return (Color.black.opacity(0.25), Color.purple.opacity(0.3))
-    default:
-      return (Color.cyan.opacity(0.2), Color.blue.opacity(0.25))
-    }
-  }
-
   var body: some View {
     GeometryReader { geometry in
       ZStack {
         // Background
-        LinearGradient(
-          colors: [timeBasedBackground.topColor, timeBasedBackground.bottomColor],
-          startPoint: .top,
-          endPoint: .bottom
+        FishTankBackgroundView(currentTime: currentTime)
+
+        // Fish tank environment (bubbles, fish, lootboxes)
+        FishTankEnvironmentView(
+          fishTankManager: fishTankManager,
+          bubbleManager: bubbleManager,
+          onLootboxTapped: { lootbox, rewards in
+            caseOpeningLootbox = lootbox
+            caseOpeningRewards = rewards
+            showCaseOpening = true
+          }
         )
-        .ignoresSafeArea()
-
-        // Animated Bubbles
-        ForEach(bubbleManager.bubbles) { bubble in
-          BubbleView(bubble: bubble)
-            .position(x: bubble.x, y: bubble.y)
-        }
-
-        // Swimming Fish
-        ForEach(fishTankManager.swimmingFish) { fish in
-          SwimmingFishView(fish: fish, fishTankManager: fishTankManager)
-            .position(x: fish.x, y: fish.y)
-        }
-
-        // Commitment Lootboxes
-        ForEach(fishTankManager.commitmentLootboxes) { lootbox in
-          LootboxView(type: lootbox.type)
-            .position(x: lootbox.x, y: lootbox.y)
-            .onTapGesture {
-              // Generate possible rewards for the wheel
-              var possibleRewards: [CollectedFish] = []
-              for _ in 0..<(lootbox.type.fishCount * 10) {  // Generate more options for variety
-                let fish = FishDatabase.randomFish(from: lootbox.type)
-                let collectedFish = CollectedFish(fish: fish)
-                possibleRewards.append(collectedFish)
-              }
-
-              caseOpeningLootbox = lootbox
-              caseOpeningRewards = possibleRewards
-              showCaseOpening = true
-            }
-        }
 
         VStack {
           // Top Bar
-          HStack {
-            ClockDisplayView(currentTime: currentTime)
-              .padding(.leading, 25)
-              .padding(.top, 40)
-
-            Spacer()
-
-            // Sync indicator
-            if statsManager.isSyncing {
-              ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                .scaleEffect(0.8)
-                .opacity(0.6)
-                .padding(.trailing, 10)
-            }
-
-            Button(action: {
+          TopBarView(
+            currentTime: currentTime,
+            isSyncing: statsManager.isSyncing,
+            onSettingsTapped: {
               showSettings = true
-            }) {
-              Image(systemName: "gearshape.fill")
-                .font(.title2)
-                .foregroundColor(.white)
-                .opacity(0.6)
-                .padding(12)
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
             }
-            .padding(.trailing, 25)
-          }
-          .padding(.top, 20)
+          )
 
           // Commitment Progress
           if let commitment = commitmentManager.currentCommitment {
@@ -151,76 +76,18 @@ struct ContentView: View {
           Spacer()
 
           // Bottom Action Buttons
-          HStack(spacing: 12) {
-            if !commitmentManager.isActive {
-              Button(action: {
-                showCommitmentSelection = true
-              }) {
-                HStack(spacing: 8) {
-                  Image(systemName: "target")
-                    .font(.title3)
-                  Text("Focus")
-                    .font(.headline)
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(
-                  RoundedRectangle(cornerRadius: 16)
-                    .fill(.ultraThinMaterial.opacity(0.4))
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                )
-              }
-            } else {
-              Button(action: {
-                showCancelConfirmation = true
-              }) {
-                HStack(spacing: 8) {
-                  Image(systemName: "xmark.circle")
-                    .font(.title3)
-                  Text("Cancel")
-                    .font(.headline)
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(
-                  RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.red.opacity(0.2))
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.red.opacity(0.2), lineWidth: 1)
-                    )
-                )
-              }
-
-              Button(action: {
-                showSkipConfirmation = true
-              }) {
-                HStack(spacing: 8) {
-                  Image(systemName: "creditcard")
-                    .font(.title3)
-                  Text("Skip")
-                    .font(.headline)
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(
-                  RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.green.opacity(0.2))
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.green.opacity(0.2), lineWidth: 1)
-                    )
-                )
-              }
-            }
-
-            Button(action: {
+          BottomActionBarView(
+            isCommitmentActive: commitmentManager.isActive,
+            onFocusTapped: {
+              showCommitmentSelection = true
+            },
+            onCancelTapped: {
+              showCancelConfirmation = true
+            },
+            onSkipTapped: {
+              showSkipConfirmation = true
+            },
+            onCollectionTapped: {
               // Refresh data from Supabase before showing collection
               if supabaseManager.isAuthenticated && !statsManager.isSyncing {
                 Task {
@@ -228,34 +95,27 @@ struct ContentView: View {
                 }
               }
               showFishCollection = true
-            }) {
-              HStack(spacing: 8) {
-                Image(systemName: "fish")
-                  .font(.title3)
-                Text("Collection")
-                  .font(.headline)
-              }
-              .foregroundColor(.white)
-              .frame(maxWidth: .infinity)
-              .frame(height: 50)
-              .background(
-                RoundedRectangle(cornerRadius: 16)
-                  .fill(.ultraThinMaterial.opacity(0.4))
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                      .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                  )
-              )
             }
-          }
-          .padding(.horizontal, 25)
-          .padding(.bottom, 30)
+          )
         }
 
+        // Reward notification
         RewardNotificationView(message: rewardMessage, isVisible: showReward)
 
-        if showCommitmentSelection {
-          CommitmentSelectionView(isPresented: $showCommitmentSelection) { commitment in
+        // Modals container
+        ModalsContainerView(
+          commitmentManager: commitmentManager,
+          statsManager: statsManager,
+          fishTankManager: fishTankManager,
+          supabaseManager: supabaseManager,
+          showCommitmentSelection: $showCommitmentSelection,
+          showFishCollection: $showFishCollection,
+          showSettings: $showSettings,
+          showCaseOpening: $showCaseOpening,
+          showSkipConfirmation: $showSkipConfirmation,
+          caseOpeningLootbox: $caseOpeningLootbox,
+          caseOpeningRewards: $caseOpeningRewards,
+          onCommitmentSelected: { commitment in
             // Check if Screen Time permissions are enabled
             if !commitmentManager.isAppRestrictionEnabled {
               // Request authorization first
@@ -272,111 +132,46 @@ struct ContentView: View {
             commitmentManager.startCommitment(commitment)
             showRewardMessage(
               "🎯 \(commitment.rawValue) focus session started!\n📱 Other apps are now blocked!")
-          }
-        }
-
-        if showFishCollection {
-          FishCollectionView(
-            collectedFish: statsManager.collectedFish,
-            onFishSelected: { fish in
-              // toggle visibility
-              statsManager.toggleFishVisibility(fish, fishTankManager: fishTankManager)
-            },
-            onVisibilityToggled: { fish in
-              let success = statsManager.toggleFishVisibility(
-                fish, fishTankManager: fishTankManager)
-              return success
-            },
-            onFishRenamed: { fishId, newName in
-              // Update fish name in in-memory collection and Supabase
-              Task {
-                if let index = statsManager.collectedFish.firstIndex(where: { $0.id == fishId }) {
-                  statsManager.collectedFish[index].name = newName
-                  await statsManager.updateFishCollection(statsManager.collectedFish)
-                }
-
-                // Update swimming fish with the new name
-                fishTankManager.renameFish(id: fishId, newName: newName)
-
-                // If authenticated, update the name in Supabase directly
-                if supabaseManager.isAuthenticated {
-                  Task {
-                    await supabaseManager.updateFishNameInSupabase(fishId, customName: newName)
-                  }
-                }
-
-                // Show confirmation message
-                if let fish = statsManager.collectedFish.first(where: { $0.id == fishId }) {
-                  let shinyIndicator = fish.isShiny ? " ✨" : ""
-                  if newName == fish.fish.name {
-                    showRewardMessage("🐠 Name reset to species: \(newName)\(shinyIndicator)")
-                  } else {
-                    showRewardMessage(
-                      "🐠 \(newName) the \(fish.fish.name) renamed!\(shinyIndicator)")
-                  }
-                }
-              }
-            },
-            isPresented: $showFishCollection
-          )
-        }
-
-        if showSettings {
-          SettingsView(
-            isPresented: $showSettings,
-            statsManager: statsManager,
-            fishTankManager: fishTankManager
-          )
-        }
-
-        if showCaseOpening, let lootbox = caseOpeningLootbox, !caseOpeningRewards.isEmpty {
-          CaseOpeningWheelView(
-            lootboxType: lootbox.type,
-            possibleRewards: caseOpeningRewards,
-            selectedReward: caseOpeningRewards.first!,  // First reward will be the "selected" one
-            isPresented: $showCaseOpening
-          ) { selectedFishes in
+          },
+          onLootboxOpened: { selectedFishes in
             // Handle completion - add fishes and remove lootbox
-            fishTankManager.removeLootbox(lootbox)
-            Task {
-              do {
-                try await statsManager.addFishes(selectedFishes, fishTankManager: fishTankManager)
-              } catch {
-                print("❌ Error adding fishes from lootbox: \(error)")
+            if let lootbox = caseOpeningLootbox {
+              fishTankManager.removeLootbox(lootbox)
+              Task {
+                do {
+                  try await statsManager.addFishes(selectedFishes, fishTankManager: fishTankManager)
+                } catch {
+                  print("❌ Error adding fishes from lootbox: \(error)")
+                }
               }
+
+              let fishMessages = selectedFishes.map { fish in
+                let shinyIndicator = fish.isShiny ? " ✨" : ""
+                return "\(fish.rarity.rawValue) \(fish.name)\(shinyIndicator)"
+              }
+              let hiddenCount = selectedFishes.filter { !$0.isVisible }.count
+              let hiddenMessage =
+                hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
+              let shinyCount = selectedFishes.filter { $0.isShiny }.count
+              let shinyMessage = shinyCount > 0 ? "\n✨ \(shinyCount) shiny fish!" : ""
+              showRewardMessage(
+                "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(selectedFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))\(hiddenMessage)\(shinyMessage)"
+              )
+
+              // Reset state
+              caseOpeningLootbox = nil
+              caseOpeningRewards = []
             }
-
-            let fishMessages = selectedFishes.map { fish in
-              let shinyIndicator = fish.isShiny ? " ✨" : ""
-              return "\(fish.rarity.rawValue) \(fish.name)\(shinyIndicator)"
-            }
-            let hiddenCount = selectedFishes.filter { !$0.isVisible }.count
-            let hiddenMessage = hiddenCount > 0 ? "\n(\(hiddenCount) auto-hidden - tank full)" : ""
-            let shinyCount = selectedFishes.filter { $0.isShiny }.count
-            let shinyMessage = shinyCount > 0 ? "\n✨ \(shinyCount) shiny fish!" : ""
-            showRewardMessage(
-              "🎉 \(lootbox.type.rawValue) lootbox opened!\n\(selectedFishes.count) fish obtained:\n\(fishMessages.joined(separator: ", "))\(hiddenMessage)\(shinyMessage)"
-            )
-
-            // Reset state
-            caseOpeningLootbox = nil
-            caseOpeningRewards = []
-          }
-        }
-
-        if showSkipConfirmation, let commitment = commitmentManager.currentCommitment {
-          SkipConfirmationView(
-            isPresented: $showSkipConfirmation,
-            commitment: commitment,
-            commitmentManager: commitmentManager
-          ) { skippedCommitment in
+          },
+          onSkipConfirmed: { skippedCommitment in
             // Handle successful skip
             fishTankManager.spawnLootbox(type: skippedCommitment.lootboxType)
             showRewardMessage(
               "💳 \(skippedCommitment.rawValue) skipped! \(skippedCommitment.lootboxType.emoji) \(skippedCommitment.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."
             )
-          }
-        }
+          },
+          showRewardMessage: showRewardMessage
+        )
       }
     }
     .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
@@ -385,12 +180,14 @@ struct ContentView: View {
           // Get a random fish from all collected fish
           if let randomFish = statsManager.collectedFish.randomElement() {
             // Remove the fish from collection and update swimming fish
-            statsManager.removeFish(randomFish)
-            fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
-            let shinyIndicator = randomFish.isShiny ? " ✨" : ""
-            showRewardMessage(
-              "🚨 \(cancelled.rawValue) session cancelled.\n😢 \(randomFish.name) swam away forever!\(shinyIndicator)\nApp restrictions removed."
-            )
+            Task {
+              await statsManager.removeFish(randomFish)
+              fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
+              let shinyIndicator = randomFish.isShiny ? " ✨" : ""
+              showRewardMessage(
+                "🚨 \(cancelled.rawValue) session cancelled.\n😢 \(randomFish.name) swam away forever!\(shinyIndicator)\nApp restrictions removed."
+              )
+            }
           } else {
             showRewardMessage(
               "🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
