@@ -27,22 +27,6 @@ struct AuthView: View {
         )
         .ignoresSafeArea()
 
-        // Animated bubbles
-        ForEach(0..<20, id: \.self) { _ in
-          Circle()
-            .fill(Color.white.opacity(0.1))
-            .frame(width: CGFloat.random(in: 10...30))
-            .position(
-              x: CGFloat.random(in: 0...geometry.size.width),
-              y: CGFloat.random(in: 0...geometry.size.height)
-            )
-            .animation(
-              Animation.linear(duration: Double.random(in: 3...8))
-                .repeatForever(autoreverses: false),
-              value: UUID()
-            )
-        }
-
         // Main content - responsive layout
         if geometry.size.width > geometry.size.height {
           // Horizontal layout
@@ -52,9 +36,10 @@ struct AuthView: View {
               Spacer()
 
               VStack(spacing: 20) {
-                Image(systemName: "fish.fill")
-                  .font(.system(size: 72))
-                  .foregroundColor(.white)
+                Image("Goldfish")
+                  .resizable()
+                  .scaledToFit()
+                  .frame(width: 72, height: 72)
 
                 VStack(spacing: 8) {
                   Text("Fishtank")
@@ -96,9 +81,10 @@ struct AuthView: View {
           VStack(spacing: 30) {
             // App Logo/Title
             VStack(spacing: 16) {
-              Image(systemName: "fish.fill")
-                .font(.system(size: 80))
-                .foregroundColor(.white)
+              Image("Goldfish")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 80, height: 80)
 
               Text("Fishtank")
                 .font(.system(.largeTitle, design: .rounded))
