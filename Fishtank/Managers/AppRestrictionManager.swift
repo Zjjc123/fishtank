@@ -15,7 +15,7 @@ import UIKit
 @MainActor
 final class AppRestrictionManager: ObservableObject {
   static let shared = AppRestrictionManager()
-  
+
   @Published private(set) var isRestrictionActive = false
   private let store = ManagedSettingsStore()
   private let center = AuthorizationCenter.shared
@@ -77,4 +77,4 @@ final class AppRestrictionManager: ObservableObject {
   var isAuthorized: Bool {
     center.authorizationStatus == .approved
   }
-} 
+}

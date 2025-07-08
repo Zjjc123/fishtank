@@ -5,39 +5,45 @@
 //  Created by Jiajun Zhang on 6/19/25.
 //
 
+import Combine
+import Supabase
 import SwiftUI
 
 // MARK: - Game Stats Manager
 @MainActor
 final class GameStatsManager: ObservableObject {
   static let shared = GameStatsManager()
-  
+
   @Published private(set) var collectedFish: [CollectedFish] = []
   @Published private(set) var fishCollection: [FishRarity: Int] = [:]
-  
+  @Published private(set) var isSyncing: Bool = false
+
+  private let supabaseManager = SupabaseManager.shared
+  private var cancellables = Set<AnyCancellable>()
+
   private init() {
-    loadFromStorage()
+    // Initialize with empty state first
+    initializeFishCollection()
+
+    // Listen for authentication state changes
+    supabaseManager.$isAuthenticated
+      .sink { [weak self] isAuthenticated in
+        if isAuthenticated {
+          print("🔐 GameStatsManager: User authenticated, fetching from Supabase")
+          Task {
+            await self?.fetchFromSupabase()
+          }
+        } else {
+          print("🔐 GameStatsManager: User unauthenticated, clearing data")
+          self?.collectedFish = []
+          self?.initializeFishCollection()
+        }
+      }
+      .store(in: &cancellables)
   }
 
   var fishCount: Int {
     collectedFish.count
-  }
-
-  private func loadFromStorage() {
-    collectedFish = PersistentStorageManager.loadFish()
-    fishCollection = PersistentStorageManager.loadFishCollection()
-
-    // If collection stats are empty but we have fish, recalculate
-    if fishCollection.isEmpty && !collectedFish.isEmpty {
-      recalculateFishCollection()
-    } else if fishCollection.isEmpty {
-      initializeFishCollection()
-    }
-  }
-
-  private func saveToStorage() {
-    PersistentStorageManager.saveFish(collectedFish)
-    PersistentStorageManager.saveFishCollection(fishCollection)
   }
 
   private func initializeFishCollection() {
@@ -53,27 +59,33 @@ final class GameStatsManager: ObservableObject {
     }
   }
 
-  func addFish(_ fish: CollectedFish, fishTankManager: FishTankManager? = nil) {
-    // Check if we already have 10 visible fish - if so, hide the new fish
+  @discardableResult
+  func addFish(_ fish: CollectedFish, fishTankManager: FishTankManager? = nil) async throws {
     let currentVisibleCount = getVisibleFish().count
     var newFish = fish
     if currentVisibleCount >= AppConfig.maxSwimmingFish {
       newFish.isVisible = false
     }
-
     collectedFish.append(newFish)
     fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
-    saveToStorage()
-    // Update swimming fish display if manager provided
     if let manager = fishTankManager {
       manager.updateSwimmingFish(with: getVisibleFish())
     }
+    if supabaseManager.isAuthenticated {
+      do {
+        try await supabaseManager.saveFishToSupabase(newFish)
+      } catch {
+        print("❌ Error saving fish to Supabase: \(error)")
+        throw error
+      }
+    }
   }
 
-  func addFishes(_ fishes: [CollectedFish], fishTankManager: FishTankManager? = nil) {
+  @discardableResult
+  func addFishes(_ fishes: [CollectedFish], fishTankManager: FishTankManager? = nil) async throws {
     let currentVisibleCount = getVisibleFish().count
     var visibleSlotsLeft = max(0, AppConfig.maxSwimmingFish - currentVisibleCount)
-
+    var newFishes: [CollectedFish] = []
     for fish in fishes {
       var newFish = fish
       if visibleSlotsLeft > 0 {
@@ -82,14 +94,20 @@ final class GameStatsManager: ObservableObject {
       } else {
         newFish.isVisible = false
       }
-
+      newFishes.append(newFish)
       collectedFish.append(newFish)
       fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     }
-    saveToStorage()
-    // Update swimming fish display if manager provided
     if let manager = fishTankManager {
       manager.updateSwimmingFish(with: getVisibleFish())
+    }
+    if supabaseManager.isAuthenticated {
+      do {
+        try await supabaseManager.saveFishesToSupabase(newFishes)
+      } catch {
+        print("❌ Error saving fishes to Supabase: \(error)")
+        throw error
+      }
     }
   }
 
@@ -101,39 +119,55 @@ final class GameStatsManager: ObservableObject {
     return Array(collectedFish.suffix(limit))
   }
 
-  func removeFish(_ fish: CollectedFish) {
+  func removeFish(_ fish: CollectedFish) async {
     if let index = collectedFish.firstIndex(of: fish) {
+      let fishToRemove = collectedFish[index]
       collectedFish.remove(at: index)
       fishCollection[fish.rarity] = max(0, (fishCollection[fish.rarity] ?? 0) - 1)
-      saveToStorage()
+      if supabaseManager.isAuthenticated {
+        do {
+          try await supabaseManager.deleteFishFromSupabase(fishToRemove.id)
+        } catch {
+          print("❌ Error deleting fish from Supabase: \(error)")
+        }
+      }
     }
   }
 
-  func clearAllFish(fishTankManager: FishTankManager? = nil) {
+  func clearAllFish(fishTankManager: FishTankManager? = nil) async {
+    let fishIdsToDelete = collectedFish.map { $0.id }
     collectedFish.removeAll()
     initializeFishCollection()
-    saveToStorage()
-    // Update swimming fish display if manager provided
     if let manager = fishTankManager {
       manager.updateSwimmingFish(with: getVisibleFish())
     }
+    if supabaseManager.isAuthenticated {
+      do {
+        try await supabaseManager.deleteAllFishFromSupabase(fishIdsToDelete)
+      } catch {
+        print("❌ Error deleting all fish from Supabase: \(error)")
+      }
+    }
   }
 
-  func toggleFishVisibility(_ fish: CollectedFish, fishTankManager: FishTankManager) -> Bool {
+  func toggleFishVisibility(_ fish: CollectedFish, fishTankManager: FishTankManager) async -> Bool {
     if let index = collectedFish.firstIndex(of: fish) {
-      // If fish is currently hidden and user wants to show it, check the limit
       if !collectedFish[index].isVisible {
         let currentVisibleCount = getVisibleFish().count
         if currentVisibleCount >= AppConfig.maxSwimmingFish {
-          // Cannot show more fish - limit reached
           return false
         }
       }
-
       collectedFish[index].isVisible.toggle()
-      saveToStorage()
-      // Update swimming fish display
+      let updatedFish = collectedFish[index]
       fishTankManager.updateSwimmingFish(with: getVisibleFish())
+      if supabaseManager.isAuthenticated {
+        do {
+          try await supabaseManager.updateFishVisibilityInSupabase(updatedFish.id, isVisible: updatedFish.isVisible)
+        } catch {
+          print("❌ Error updating fish visibility in Supabase: \(error)")
+        }
+      }
       return true
     }
     return false
@@ -158,10 +192,72 @@ final class GameStatsManager: ObservableObject {
       return "Export error: \(error)"
     }
   }
-  
-  func updateFishCollection(_ updatedFish: [CollectedFish]) {
+
+  func updateFishCollection(_ updatedFish: [CollectedFish]) async {
     collectedFish = updatedFish
     recalculateFishCollection()
-    saveToStorage()
+    if supabaseManager.isAuthenticated {
+      do {
+        try await supabaseManager.saveFishCollection(collectedFish)
+      } catch {
+        print("❌ Error updating fish collection in Supabase: \(error)")
+      }
+    }
   }
-} 
+
+  // MARK: - Public Sync Methods
+
+  func triggerSupabaseSync() async {
+    print("🔄 GameStatsManager: Sync requested")
+    if !supabaseManager.isAuthenticated {
+      print("⚠️ GameStatsManager: Not authenticated, skipping sync")
+      return
+    }
+    
+    print("🔄 GameStatsManager: User authenticated, starting sync")
+    await fetchFromSupabase()
+  }
+
+  // MARK: - Supabase Integration
+
+  private func fetchFromSupabase() async {
+    if isSyncing { 
+      print("🔄 GameStatsManager: Already syncing, skipping new sync request")
+      return 
+    }
+    
+    isSyncing = true
+    print("🔄 GameStatsManager: Starting Supabase sync...")
+    
+    if !supabaseManager.isAuthenticated {
+      print("⚠️ GameStatsManager: User not authenticated, aborting sync")
+      isSyncing = false
+      return
+    }
+    
+    print("🔄 GameStatsManager: User authenticated, proceeding with sync")
+    let supabaseFish = await supabaseManager.loadFishCollection()
+    print("🔄 GameStatsManager: Fetched \(supabaseFish.count) fish from Supabase")
+    
+    await MainActor.run {
+      if supabaseManager.isAuthenticated {
+        print("🔄 GameStatsManager: User is authenticated, using Supabase data")
+        collectedFish = supabaseFish
+        recalculateFishCollection()
+        print("🔄 GameStatsManager: Updated local collection with \(collectedFish.count) fish")
+        
+        // Log fish by rarity
+        for rarity in FishRarity.allCases {
+          let count = fishCollection[rarity] ?? 0
+          print("🐠 GameStatsManager: \(rarity.rawValue) fish count: \(count)")
+        }
+      } else {
+        print("⚠️ GameStatsManager: User no longer authenticated during sync, aborting")
+      }
+      
+      print("🔄 GameStatsManager: Sync complete. Total fish: \(collectedFish.count)")
+      isSyncing = false
+    }
+  }
+}
+

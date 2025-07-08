@@ -20,6 +20,7 @@ final class FishTankManager: ObservableObject {
   private let speedDecayRate: CGFloat = 0.985  // How quickly speed decays (multiply per frame)
   private let verticalChangeChance: CGFloat = 0.02  // Chance to change vertical direction per frame
   private let maxVerticalSpeed: CGFloat = 0.8  // Maximum vertical speed
+  private let supabaseManager = SupabaseManager.shared
 
   init(bounds: CGRect) {
     self.bounds = bounds
@@ -27,7 +28,7 @@ final class FishTankManager: ObservableObject {
   }
 
   private func loadState() {
-    // Load any saved state (lootboxes, etc.)
+    // Load lootboxes from local storage as cache
     if let savedLootboxes = UserDefaults.standard.array(forKey: "SavedLootboxes")
       as? [[String: Any]]
     {
@@ -41,10 +42,13 @@ final class FishTankManager: ObservableObject {
         return CommitmentLootbox(type: type, x: x, y: y)
       }
     }
+    
+    // If user is authenticated, we could potentially load lootboxes from Supabase as well
+    // This would require additional database tables and methods in SupabaseManager
   }
 
   private func saveState() {
-    // Save current state (lootboxes, etc.)
+    // Save current state to local storage as cache
     let lootboxDicts = commitmentLootboxes.map { lootbox -> [String: Any] in
       return [
         "type": lootbox.type.rawValue,
@@ -53,6 +57,9 @@ final class FishTankManager: ObservableObject {
       ]
     }
     UserDefaults.standard.set(lootboxDicts, forKey: "SavedLootboxes")
+    
+    // If user is authenticated, we could potentially save lootboxes to Supabase as well
+    // This would require additional database tables and methods in SupabaseManager
   }
 
   func startleFish(_ targetFish: SwimmingFish, tapLocation: CGPoint) {
@@ -197,13 +204,9 @@ final class FishTankManager: ObservableObject {
       // We need to create a new instance since CollectedFish is inside SwimmingFish
       var updatedCollectedFish = swimmingFish[index].collectedFish
       updatedCollectedFish.name = newName
-
-      // Create a new SwimmingFish with the updated CollectedFish
-      var updatedSwimmingFish = swimmingFish[index]
-      updatedSwimmingFish.collectedFish = updatedCollectedFish
-
-      // Replace the fish in the array
-      swimmingFish[index] = updatedSwimmingFish
+      
+      // Update the swimming fish with the new name
+      swimmingFish[index].collectedFish = updatedCollectedFish
     }
   }
 }

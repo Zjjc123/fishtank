@@ -597,7 +597,7 @@ struct FishItemView: View {
             )
             .opacity(fish.isVisible ? 1 : 0.6)
           }
-          
+
           // Main fish display
           VStack(spacing: 2) {
             Image(fish.imageName)
@@ -709,7 +709,7 @@ struct FishDetailsView: View {
               .foregroundColor(.yellow)
               .opacity(0.6)
           }
-          
+
           Image(fish.imageName)
             .resizable()
             .interpolation(.none)
@@ -742,7 +742,7 @@ struct FishDetailsView: View {
                 Capsule()
                   .fill(fish.rarity.color.opacity(0.2))
               )
-            
+
             if fish.isShiny {
               HStack(spacing: 4) {
                 Image(systemName: "sparkles")
