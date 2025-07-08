@@ -25,7 +25,7 @@ jobs:
       with:
         repository: wemakethingstoo/fastlane-match
         path: fastlane-match
-        token: ${{ secrets.GH_TOKEN}}
+        token: ${{ secrets.GH_FISHTANKBOT}}
       
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
@@ -61,7 +61,6 @@ jobs:
         # Configure git for fishtankbot account
         git config --global user.name "fishtankbot"
         git config --global user.email "fishtank.appp@gmail.com"
-        echo "https://x-access-token:${{ secrets.GH_FISHTANKBOT }}@github.com" > ~/.git-credentials
         
         # Add and commit the version change
         git add Fishtank.xcodeproj
