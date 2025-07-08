@@ -12,6 +12,7 @@ struct ContentView: View {
   @StateObject private var commitmentManager = CommitmentManager.shared
   @StateObject private var statsManager = GameStatsManager.shared
   @StateObject private var bubbleManager = BubbleManager.shared
+  @StateObject private var supabaseManager = SupabaseManager.shared
 
   @State private var currentTime = Date()
   @State private var appStartTime = Date()
@@ -28,15 +29,20 @@ struct ContentView: View {
   @State private var showAppRestrictionAlert = false
   @State private var showSkipConfirmation = false
   @State private var showCancelConfirmation = false
+  @State private var isRefreshingData = false
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
   private let bubbleTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
+  private let dataRefreshTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()  // Refresh every 5 minutes
 
   // Time-based background colors
   private var timeBasedBackground: (topColor: Color, bottomColor: Color) {
     let hour = Calendar.current.component(.hour, from: currentTime)
+    return getBackgroundColors(for: hour)
+  }
 
+  private func getBackgroundColors(for hour: Int) -> (topColor: Color, bottomColor: Color) {
     switch hour {
     case 5..<7:  // Early morning (5-7 AM) - Dawn
       return (Color.orange.opacity(0.2), Color.pink.opacity(0.15))
@@ -107,6 +113,15 @@ struct ContentView: View {
               .padding(.top, 40)
 
             Spacer()
+
+            // Sync indicator
+            if statsManager.isSyncing {
+              ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                .scaleEffect(0.8)
+                .opacity(0.6)
+                .padding(.trailing, 10)
+            }
 
             Button(action: {
               showSettings = true
@@ -206,6 +221,12 @@ struct ContentView: View {
             }
 
             Button(action: {
+              // Refresh data from Supabase before showing collection
+              if supabaseManager.isAuthenticated && !statsManager.isSyncing {
+                Task {
+                  await statsManager.triggerSupabaseSync()
+                }
+              }
               showFishCollection = true
             }) {
               HStack(spacing: 8) {
@@ -267,25 +288,32 @@ struct ContentView: View {
               return success
             },
             onFishRenamed: { fishId, newName in
-              // Update fish name in persistent storage
-              let updatedFish = PersistentStorageManager.renameFish(id: fishId, newName: newName)
+              // Update fish name in in-memory collection and Supabase
+              Task {
+                if let index = statsManager.collectedFish.firstIndex(where: { $0.id == fishId }) {
+                  statsManager.collectedFish[index].name = newName
+                  await statsManager.updateFishCollection(statsManager.collectedFish)
+                }
 
-              // Find the fish in the updated collection for the confirmation message
-              let renamedFish = updatedFish.first(where: { $0.id == fishId })
+                // Update swimming fish with the new name
+                fishTankManager.renameFish(id: fishId, newName: newName)
 
-              // Update the fish in the stats manager
-              statsManager.updateFishCollection(updatedFish)
+                // If authenticated, update the name in Supabase directly
+                if supabaseManager.isAuthenticated {
+                  Task {
+                    await supabaseManager.updateFishNameInSupabase(fishId, customName: newName)
+                  }
+                }
 
-              // Update swimming fish with the new name
-              fishTankManager.renameFish(id: fishId, newName: newName)
-
-              // Show confirmation message
-              if let fish = renamedFish {
-                let shinyIndicator = fish.isShiny ? " ✨" : ""
-                if newName == fish.fish.name {
-                  showRewardMessage("🐠 Name reset to species: \(newName)\(shinyIndicator)")
-                } else {
-                  showRewardMessage("🐠 \(newName) the \(fish.fish.name) renamed!\(shinyIndicator)")
+                // Show confirmation message
+                if let fish = statsManager.collectedFish.first(where: { $0.id == fishId }) {
+                  let shinyIndicator = fish.isShiny ? " ✨" : ""
+                  if newName == fish.fish.name {
+                    showRewardMessage("🐠 Name reset to species: \(newName)\(shinyIndicator)")
+                  } else {
+                    showRewardMessage(
+                      "🐠 \(newName) the \(fish.fish.name) renamed!\(shinyIndicator)")
+                  }
                 }
               }
             },
@@ -310,7 +338,13 @@ struct ContentView: View {
           ) { selectedFishes in
             // Handle completion - add fishes and remove lootbox
             fishTankManager.removeLootbox(lootbox)
-            statsManager.addFishes(selectedFishes, fishTankManager: fishTankManager)
+            Task {
+              do {
+                try await statsManager.addFishes(selectedFishes, fishTankManager: fishTankManager)
+              } catch {
+                print("❌ Error adding fishes from lootbox: \(error)")
+              }
+            }
 
             let fishMessages = selectedFishes.map { fish in
               let shinyIndicator = fish.isShiny ? " ✨" : ""
@@ -385,9 +419,36 @@ struct ContentView: View {
     .onReceive(bubbleTimer) { _ in
       bubbleManager.animateBubbles()
     }
+    .onReceive(dataRefreshTimer) { _ in
+      // Refresh data from Supabase every 5 minutes if authenticated
+      if supabaseManager.isAuthenticated && !statsManager.isSyncing {
+        Task {
+          await statsManager.triggerSupabaseSync()
+        }
+      }
+    }
     .onAppear {
       appStartTime = Date()
       // Initialize swimming fish with all visible fish
+      fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
+
+      // Fetch latest data from Supabase if authenticated
+      if supabaseManager.isAuthenticated && !statsManager.isSyncing {
+        Task {
+          await statsManager.triggerSupabaseSync()
+        }
+      }
+    }
+    .onChange(of: supabaseManager.isAuthenticated) { isAuthenticated in
+      // When authentication state changes, refresh data
+      if isAuthenticated && !statsManager.isSyncing {
+        Task {
+          await statsManager.triggerSupabaseSync()
+        }
+      }
+    }
+    // Update swimming fish whenever the collection changes
+    .onChange(of: statsManager.collectedFish) { _ in
       fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
     }
   }

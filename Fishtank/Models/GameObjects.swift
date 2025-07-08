@@ -24,8 +24,9 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     self.dateCaught = Date()
     self.isShiny = Double.random(in: 0...1) < 0.01
   }
-  
-  init(id: UUID, fish: Fish, name: String, dateCaught: Date, isVisible: Bool = true, isShiny: Bool) {
+
+  init(id: UUID, fish: Fish, name: String, dateCaught: Date, isVisible: Bool = true, isShiny: Bool)
+  {
     self.id = id
     self.fish = fish
     self.name = name

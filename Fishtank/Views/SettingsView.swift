@@ -5,8 +5,8 @@
 //  Created by Jiajun Zhang on 6/19/25.
 //
 
-import SwiftUI
 import Supabase
+import SwiftUI
 
 struct SettingsView: View {
   @Binding var isPresented: Bool
@@ -15,6 +15,14 @@ struct SettingsView: View {
   @StateObject private var supabaseManager = SupabaseManager.shared
   @State private var showingClearAlert = false
   @State private var showingSignOutAlert = false
+
+  private func signOut() async {
+    await supabaseManager.signOut()
+  }
+
+  private func clearAllFish() async {
+    await statsManager.clearAllFish(fishTankManager: fishTankManager)
+  }
 
   var body: some View {
     ZStack {
@@ -205,7 +213,9 @@ struct SettingsView: View {
     .alert("Clear All Fish", isPresented: $showingClearAlert) {
       Button("Cancel", role: .cancel) {}
       Button("Clear All", role: .destructive) {
-        statsManager.clearAllFish(fishTankManager: fishTankManager)
+        Task {
+          await clearAllFish()
+        }
       }
     } message: {
       Text("This will permanently delete all your collected fish. This action cannot be undone.")
@@ -214,11 +224,13 @@ struct SettingsView: View {
       Button("Cancel", role: .cancel) {}
       Button("Sign Out", role: .destructive) {
         Task {
-          await supabaseManager.signOut()
+          await signOut()
         }
       }
     } message: {
-      Text("Are you sure you want to sign out? Your fish collection will remain saved to your account.")
+      Text(
+        "Are you sure you want to sign out? Your fish collection will remain saved to your account."
+      )
     }
   }
 }
