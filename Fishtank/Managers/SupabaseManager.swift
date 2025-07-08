@@ -44,18 +44,16 @@ class SupabaseManager: ObservableObject {
       )
 
       let user = response.user
+      // Don't automatically authenticate user after sign up
+      // They need to confirm their email first
       self.currentUser = User(
         id: user.id.uuidString,
         email: user.email ?? "",
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        updatedAt: user.updatedAt,
+        emailConfirmed: false
       )
-      self.isAuthenticated = true
-
-      // Trigger fish collection sync after successful sign up
-      Task {
-        await GameStatsManager.shared.triggerSupabaseSync()
-      }
+      self.isAuthenticated = false
 
       isLoading = false
       return true
@@ -95,11 +93,21 @@ class SupabaseManager: ObservableObject {
       )
 
       let user = response.user
+      // Check if email is confirmed
+      let emailConfirmed = user.emailConfirmedAt != nil
+      
+      if !emailConfirmed {
+        errorMessage = "Please check your email and confirm your account before signing in."
+        isLoading = false
+        return false
+      }
+      
       self.currentUser = User(
         id: user.id.uuidString,
         email: user.email ?? "",
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        updatedAt: user.updatedAt,
+        emailConfirmed: emailConfirmed
       )
       self.isAuthenticated = true
       
@@ -146,15 +154,57 @@ class SupabaseManager: ObservableObject {
   }
 
   @MainActor
+  func resendConfirmationEmail(email: String) async -> Bool {
+    isLoading = true
+    errorMessage = nil
+
+    do {
+      try await client.auth.resend(
+        email: email,
+        type: .signup
+      )
+      isLoading = false
+      return true
+    } catch {
+      let errorString = error.localizedDescription.lowercased()
+      
+      if errorString.contains("already") && errorString.contains("confirmed") {
+        errorMessage = "This email is already confirmed."
+      } else if errorString.contains("invalid") && errorString.contains("email") {
+        errorMessage = "Please enter a valid email address."
+      } else if errorString.contains("network") || errorString.contains("connection") {
+        errorMessage = "Connection failed. Please check your internet and try again."
+      } else {
+        errorMessage = "Failed to resend confirmation email. Please try again."
+      }
+      isLoading = false
+      return false
+    }
+  }
+
+  @MainActor
   func checkCurrentUser() async {
     do {
       let session = try await client.auth.session
       let user = session.user
+      
+      // Check if email is confirmed
+      let emailConfirmed = user.emailConfirmedAt != nil
+      
+      if !emailConfirmed {
+        // Sign out user if email is not confirmed
+        try await client.auth.signOut()
+        self.currentUser = nil
+        self.isAuthenticated = false
+        return
+      }
+      
       self.currentUser = User(
         id: user.id.uuidString,
         email: user.email ?? "",
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        updatedAt: user.updatedAt,
+        emailConfirmed: emailConfirmed
       )
       self.isAuthenticated = true
       

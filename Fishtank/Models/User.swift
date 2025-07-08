@@ -12,12 +12,22 @@ struct User: Identifiable, Codable {
     let email: String
     let createdAt: Date
     let updatedAt: Date
+    let emailConfirmed: Bool
     
     enum CodingKeys: String, CodingKey {
         case id
         case email
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case emailConfirmed = "email_confirmed_at"
+    }
+    
+    init(id: String, email: String, createdAt: Date, updatedAt: Date, emailConfirmed: Bool = false) {
+        self.id = id
+        self.email = email
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.emailConfirmed = emailConfirmed
     }
 }
 

@@ -14,6 +14,7 @@ struct AuthView: View {
   @State private var confirmPassword = ""
   @State private var isSignUp = false
   @State private var showPassword = false
+  @State private var showConfirmationMessage = false
 
   var body: some View {
     GeometryReader { geometry in
@@ -81,6 +82,7 @@ struct AuthView: View {
                 confirmPassword: $confirmPassword,
                 isSignUp: $isSignUp,
                 showPassword: $showPassword,
+                showConfirmationMessage: $showConfirmationMessage,
                 supabaseManager: supabaseManager
               )
 
@@ -116,6 +118,7 @@ struct AuthView: View {
               confirmPassword: $confirmPassword,
               isSignUp: $isSignUp,
               showPassword: $showPassword,
+              showConfirmationMessage: $showConfirmationMessage,
               supabaseManager: supabaseManager
             )
             .padding(.horizontal, 30)
@@ -136,7 +139,24 @@ struct AuthFormView: View {
   @Binding var confirmPassword: String
   @Binding var isSignUp: Bool
   @Binding var showPassword: Bool
+  @Binding var showConfirmationMessage: Bool
   let supabaseManager: SupabaseManager
+
+  // MARK: - Computed Properties
+  private var resendButtonStyle: some View {
+    RoundedRectangle(cornerRadius: 6)
+      .fill(Color.blue.opacity(0.1))
+  }
+
+  private var backButtonStyle: some View {
+    RoundedRectangle(cornerRadius: 6)
+      .fill(.ultraThinMaterial)
+  }
+
+  private var confirmationBackgroundStyle: some View {
+    RoundedRectangle(cornerRadius: 8)
+      .fill(Color.green.opacity(0.1))
+  }
 
   var body: some View {
     VStack(spacing: 16) {
@@ -153,80 +173,15 @@ struct AuthFormView: View {
       }
 
       // Form fields
-      VStack(spacing: 12) {
-        // Email Field
-        VStack(alignment: .leading, spacing: 4) {
-          Text("Email")
-            .font(.system(.caption2, design: .rounded))
-            .foregroundColor(.white.opacity(0.7))
-
-          TextField("Enter your email", text: $email)
-            .font(.system(.callout, design: .rounded))
-            .padding(8)
-            .frame(height: 36)
-            .background(
-              RoundedRectangle(cornerRadius: 8)
-                .fill(Color.white.opacity(0.15))
-                .overlay(
-                  RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-            )
-            .foregroundColor(.white)
-            .keyboardType(.emailAddress)
-            .autocapitalization(.none)
-            .disableAutocorrection(true)
-        }
-
-        // Password Field
-        VStack(alignment: .leading, spacing: 4) {
-          Text("Password")
-            .font(.system(.caption2, design: .rounded))
-            .foregroundColor(.white.opacity(0.7))
-
-          HStack(spacing: 6) {
-            if showPassword {
-              TextField("Enter your password", text: $password)
-                .font(.system(.callout, design: .rounded))
-            } else {
-              SecureField("Enter your password", text: $password)
-                .font(.system(.callout, design: .rounded))
-            }
-
-            Button(action: {
-              showPassword.toggle()
-            }) {
-              Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
-                .font(.caption2)
-                .foregroundColor(.white.opacity(0.7))
-                .frame(width: 28, height: 28)
-                .background(
-                  RoundedRectangle(cornerRadius: 6)
-                    .fill(.ultraThinMaterial)
-                )
-            }
-          }
-          .padding(8)
-          .frame(height: 36)
-          .background(
-            RoundedRectangle(cornerRadius: 8)
-              .fill(Color.white.opacity(0.15))
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color.white.opacity(0.2), lineWidth: 1)
-              )
-          )
-          .foregroundColor(.white)
-        }
-
-        // Confirm Password Field (only for sign up)
-        if isSignUp {
+      if !showConfirmationMessage {
+        VStack(spacing: 12) {
+          // Email Field
           VStack(alignment: .leading, spacing: 4) {
-            Text("Confirm Password")
+            Text("Email")
               .font(.system(.caption2, design: .rounded))
               .foregroundColor(.white.opacity(0.7))
 
-            SecureField("Confirm your password", text: $confirmPassword)
+            TextField("Enter your email", text: $email)
               .font(.system(.callout, design: .rounded))
               .padding(8)
               .frame(height: 36)
@@ -239,8 +194,162 @@ struct AuthFormView: View {
                   )
               )
               .foregroundColor(.white)
+              .keyboardType(.emailAddress)
+              .autocapitalization(.none)
+              .disableAutocorrection(true)
+          }
+
+          // Password Field
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Password")
+              .font(.system(.caption2, design: .rounded))
+              .foregroundColor(.white.opacity(0.7))
+
+            HStack(spacing: 6) {
+              if showPassword {
+                TextField("Enter your password", text: $password)
+                  .font(.system(.callout, design: .rounded))
+              } else {
+                SecureField("Enter your password", text: $password)
+                  .font(.system(.callout, design: .rounded))
+              }
+
+              Button(action: {
+                showPassword.toggle()
+              }) {
+                Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
+                  .font(.caption2)
+                  .foregroundColor(.white.opacity(0.7))
+                  .frame(width: 28, height: 28)
+                  .background(
+                    RoundedRectangle(cornerRadius: 6)
+                      .fill(.ultraThinMaterial)
+                  )
+              }
+            }
+            .padding(8)
+            .frame(height: 36)
+            .background(
+              RoundedRectangle(cornerRadius: 8)
+                .fill(Color.white.opacity(0.15))
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
+            )
+            .foregroundColor(.white)
+          }
+
+          // Confirm Password Field (only for sign up)
+          if isSignUp {
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Confirm Password")
+                .font(.system(.caption2, design: .rounded))
+                .foregroundColor(.white.opacity(0.7))
+
+              SecureField("Confirm your password", text: $confirmPassword)
+                .font(.system(.callout, design: .rounded))
+                .padding(8)
+                .frame(height: 36)
+                .background(
+                  RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.white.opacity(0.15))
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                )
+                .foregroundColor(.white)
+            }
           }
         }
+      }
+
+      // Confirmation Message
+      if showConfirmationMessage {
+        VStack(spacing: 12) {
+          HStack(spacing: 6) {
+            Image(systemName: "envelope.fill")
+              .font(.caption2)
+              .foregroundColor(.green)
+
+            Text("Check your email!")
+              .font(.system(.caption2, design: .rounded))
+              .fontWeight(.semibold)
+              .foregroundColor(.green)
+          }
+
+          Text(
+            "We've sent a confirmation email to \(email). Please check your inbox and click the confirmation link to activate your account."
+          )
+          .font(.system(.caption2, design: .rounded))
+          .foregroundColor(.white.opacity(0.8))
+          .multilineTextAlignment(.leading)
+          .fixedSize(horizontal: false, vertical: true)
+
+          VStack(spacing: 8) {
+            // Resend Email Button
+            Button(action: {
+              Task {
+                await supabaseManager.resendConfirmationEmail(email: email)
+              }
+            }) {
+              HStack(spacing: 4) {
+                Image(systemName: "arrow.clockwise")
+                  .font(.caption2)
+                Text("Resend Email")
+                  .font(.system(.caption2, design: .rounded))
+                  .fontWeight(.medium)
+              }
+              .foregroundColor(.blue)
+              .padding(.horizontal, 12)
+              .padding(.vertical, 6)
+              .frame(maxWidth: .infinity)
+              .background(resendButtonStyle)
+              .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                  .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+              )
+            }
+            .disabled(supabaseManager.isLoading)
+
+            // Back to Sign In Button
+            Button(action: {
+              withAnimation(.easeInOut(duration: 0.3)) {
+                showConfirmationMessage = false
+                isSignUp = false
+                email = ""
+                password = ""
+                confirmPassword = ""
+                supabaseManager.errorMessage = nil
+              }
+            }) {
+              HStack(spacing: 4) {
+                Image(systemName: "xmark.circle.fill")
+                  .font(.caption2)
+                Text("Back to Sign In")
+                  .font(.system(.caption2, design: .rounded))
+                  .fontWeight(.medium)
+              }
+              .foregroundColor(.white.opacity(0.7))
+              .padding(.horizontal, 12)
+              .padding(.vertical, 6)
+              .frame(maxWidth: .infinity)
+              .background(backButtonStyle)
+              .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                  .stroke(Color.white.opacity(0.12), lineWidth: 1)
+              )
+            }
+          }
+        }
+        .padding(12)
+        .background(confirmationBackgroundStyle)
+        .overlay(
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(Color.green.opacity(0.3), lineWidth: 1)
+        )
+        .transition(.opacity.combined(with: .scale))
       }
 
       // Error Message
@@ -279,72 +388,74 @@ struct AuthFormView: View {
       }
 
       // Auth Button
-      Button(action: {
-        Task {
-          if isSignUp {
-            await handleSignUp()
-          } else {
-            await handleSignIn()
+      if !showConfirmationMessage {
+        Button(action: {
+          Task {
+            if isSignUp {
+              await handleSignUp()
+            } else {
+              await handleSignIn()
+            }
           }
-        }
-      }) {
-        HStack(spacing: 6) {
-          if supabaseManager.isLoading {
-            ProgressView()
-              .progressViewStyle(CircularProgressViewStyle(tint: .white))
-              .scaleEffect(0.7)
-          } else {
-            Image(systemName: isSignUp ? "person.badge.plus" : "person.fill")
-              .font(.caption)
+        }) {
+          HStack(spacing: 6) {
+            if supabaseManager.isLoading {
+              ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                .scaleEffect(0.7)
+            } else {
+              Image(systemName: isSignUp ? "person.badge.plus" : "person.fill")
+                .font(.caption)
+            }
+
+            Text(isSignUp ? "Sign Up" : "Sign In")
+              .font(.system(.caption, design: .rounded))
+              .fontWeight(.semibold)
           }
+          .foregroundColor(.white)
+          .frame(maxWidth: .infinity)
+          .frame(height: 36)
+          .background(
+            RoundedRectangle(cornerRadius: 10)
+              .fill(Color.blue.opacity(0.6))
+              .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                  .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+              )
+          )
+        }
+        .disabled(supabaseManager.isLoading || !isValidForm)
+        .opacity((supabaseManager.isLoading || !isValidForm) ? 0.5 : 1)
 
-          Text(isSignUp ? "Sign Up" : "Sign In")
-            .font(.system(.caption, design: .rounded))
-            .fontWeight(.semibold)
+        // Toggle Auth Mode
+        Button(action: {
+          withAnimation(.easeInOut(duration: 0.3)) {
+            isSignUp.toggle()
+            email = ""
+            password = ""
+            confirmPassword = ""
+            supabaseManager.errorMessage = nil
+          }
+        }) {
+          HStack(spacing: 4) {
+            Image(systemName: isSignUp ? "person.fill" : "person.badge.plus")
+              .font(.caption2)
+            Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
+              .font(.system(.caption2, design: .rounded))
+              .fontWeight(.medium)
+          }
+          .foregroundColor(.white.opacity(0.7))
+          .padding(.horizontal, 12)
+          .padding(.vertical, 6)
+          .background(
+            Capsule()
+              .fill(.ultraThinMaterial)
+              .overlay(
+                Capsule()
+                  .stroke(Color.white.opacity(0.12), lineWidth: 1)
+              )
+          )
         }
-        .foregroundColor(.white)
-        .frame(maxWidth: .infinity)
-        .frame(height: 36)
-        .background(
-          RoundedRectangle(cornerRadius: 10)
-            .fill(Color.blue.opacity(0.6))
-            .overlay(
-              RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-            )
-        )
-      }
-      .disabled(supabaseManager.isLoading || !isValidForm)
-      .opacity((supabaseManager.isLoading || !isValidForm) ? 0.5 : 1)
-
-      // Toggle Auth Mode
-      Button(action: {
-        withAnimation(.easeInOut(duration: 0.3)) {
-          isSignUp.toggle()
-          email = ""
-          password = ""
-          confirmPassword = ""
-          supabaseManager.errorMessage = nil
-        }
-      }) {
-        HStack(spacing: 4) {
-          Image(systemName: isSignUp ? "person.fill" : "person.badge.plus")
-            .font(.caption2)
-          Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
-            .font(.system(.caption2, design: .rounded))
-            .fontWeight(.medium)
-        }
-        .foregroundColor(.white.opacity(0.7))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-          Capsule()
-            .fill(.ultraThinMaterial)
-            .overlay(
-              Capsule()
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-            )
-        )
       }
     }
     .padding(16)
@@ -378,12 +489,11 @@ struct AuthFormView: View {
 
     let success = await supabaseManager.signUp(email: email, password: password)
     if success {
-      // Successfully signed up
+      // Successfully signed up - show confirmation message
       print("User signed up successfully")
-      // Clear form on success
-      email = ""
-      password = ""
-      confirmPassword = ""
+      withAnimation(.easeInOut(duration: 0.3)) {
+        showConfirmationMessage = true
+      }
     } else {
       // Authentication failed - error message is already set in SupabaseManager
       print("Sign up failed")
