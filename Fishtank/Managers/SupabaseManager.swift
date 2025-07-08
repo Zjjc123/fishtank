@@ -60,7 +60,7 @@ class SupabaseManager: ObservableObject {
     } catch {
       // Provide more user-friendly error messages
       let errorString = error.localizedDescription.lowercased()
-      
+
       if errorString.contains("invalid") && errorString.contains("credentials") {
         errorMessage = "Invalid email or password. Please try again."
       } else if errorString.contains("email") && errorString.contains("confirmed") {
@@ -95,13 +95,13 @@ class SupabaseManager: ObservableObject {
       let user = response.user
       // Check if email is confirmed
       let emailConfirmed = user.emailConfirmedAt != nil
-      
+
       if !emailConfirmed {
         errorMessage = "Please check your email and confirm your account before signing in."
         isLoading = false
         return false
       }
-      
+
       self.currentUser = User(
         id: user.id.uuidString,
         email: user.email ?? "",
@@ -110,25 +110,25 @@ class SupabaseManager: ObservableObject {
         emailConfirmed: emailConfirmed
       )
       self.isAuthenticated = true
-      
+
       // Post notification about authentication state change
       NotificationCenter.default.post(
         name: NSNotification.Name("SupabaseAuthStateChanged"),
         object: nil,
         userInfo: ["isAuthenticated": true]
       )
-      
+
       // Trigger fish collection sync after successful sign in
       Task {
         await GameStatsManager.shared.triggerSupabaseSync()
       }
-      
+
       isLoading = false
       return true
     } catch {
       // Provide more user-friendly error messages
       let errorString = error.localizedDescription.lowercased()
-      
+
       if errorString.contains("invalid") && errorString.contains("credentials") {
         errorMessage = "Invalid email or password. Please try again."
       } else if errorString.contains("email") && errorString.contains("confirmed") {
@@ -181,7 +181,7 @@ class SupabaseManager: ObservableObject {
       return true
     } catch {
       let errorString = error.localizedDescription.lowercased()
-      
+
       if errorString.contains("already") && errorString.contains("confirmed") {
         errorMessage = "This email is already confirmed."
       } else if errorString.contains("invalid") && errorString.contains("email") {
@@ -201,16 +201,16 @@ class SupabaseManager: ObservableObject {
     do {
       let session = try await client.auth.session
       let user = session.user
-      
+
       // Check if email is confirmed
       let emailConfirmed = user.emailConfirmedAt != nil
-      
+
       if !emailConfirmed {
         // Sign out user if email is not confirmed
         try await client.auth.signOut()
         self.currentUser = nil
         self.isAuthenticated = false
-        
+
         // Post notification about authentication state change
         NotificationCenter.default.post(
           name: NSNotification.Name("SupabaseAuthStateChanged"),
@@ -219,7 +219,7 @@ class SupabaseManager: ObservableObject {
         )
         return
       }
-      
+
       self.currentUser = User(
         id: user.id.uuidString,
         email: user.email ?? "",
@@ -228,14 +228,14 @@ class SupabaseManager: ObservableObject {
         emailConfirmed: emailConfirmed
       )
       self.isAuthenticated = true
-      
+
       // Post notification about authentication state change
       NotificationCenter.default.post(
         name: NSNotification.Name("SupabaseAuthStateChanged"),
         object: nil,
         userInfo: ["isAuthenticated": true]
       )
-      
+
       // Trigger fish collection sync if user is authenticated
       Task {
         await GameStatsManager.shared.triggerSupabaseSync()
@@ -243,7 +243,7 @@ class SupabaseManager: ObservableObject {
     } catch {
       // User is not signed in
       self.isAuthenticated = false
-      
+
       // Post notification about authentication state change
       NotificationCenter.default.post(
         name: NSNotification.Name("SupabaseAuthStateChanged"),
@@ -311,7 +311,7 @@ class SupabaseManager: ObservableObject {
       print("Error saving fish to Supabase: \(error)")
     }
   }
-  
+
   // Add 'throws' to propagate errors
   func saveFishToSupabase(_ fish: CollectedFish) async throws {
     guard let userId = currentUser?.id else { return }
@@ -338,7 +338,7 @@ class SupabaseManager: ObservableObject {
       throw error
     }
   }
-  
+
   // Add 'throws' to propagate errors
   func saveFishesToSupabase(_ fishes: [CollectedFish]) async throws {
     guard let userId = currentUser?.id else { return }
@@ -366,11 +366,11 @@ class SupabaseManager: ObservableObject {
       throw error
     }
   }
-  
+
   // Delete a fish from Supabase
   func deleteFishFromSupabase(_ fishId: UUID) async {
     guard let userId = currentUser?.id else { return }
-    
+
     do {
       _ = try await client.from("user_fish")
         .delete()
@@ -381,11 +381,11 @@ class SupabaseManager: ObservableObject {
       print("Error deleting fish from Supabase: \(error)")
     }
   }
-  
+
   // Delete multiple fish from Supabase
   func deleteAllFishFromSupabase(_ fishIds: [UUID]) async {
     guard let userId = currentUser?.id else { return }
-    
+
     do {
       // Delete all specified fish IDs
       for fishId in fishIds {
@@ -399,11 +399,11 @@ class SupabaseManager: ObservableObject {
       print("Error deleting fish from Supabase: \(error)")
     }
   }
-  
+
   // Update fish visibility in Supabase
   func updateFishVisibilityInSupabase(_ fishId: UUID, isVisible: Bool) async {
     guard let userId = currentUser?.id else { return }
-    
+
     do {
       _ = try await client.from("user_fish")
         .update(["is_visible": isVisible])
@@ -414,11 +414,11 @@ class SupabaseManager: ObservableObject {
       print("Error updating fish visibility in Supabase: \(error)")
     }
   }
-  
+
   // Update fish name in Supabase
   func updateFishNameInSupabase(_ fishId: UUID, customName: String) async {
     guard let userId = currentUser?.id else { return }
-    
+
     do {
       _ = try await client.from("user_fish")
         .update(["custom_name": customName])
@@ -434,11 +434,26 @@ class SupabaseManager: ObservableObject {
     guard let userId = currentUser?.id else { return [] }
 
     do {
+      print("🔍 loadFishCollection: Fetching fish for user \(userId)")
+
       // Fetch all fish for this user
       let response = try await client.from("user_fish")
         .select()
         .eq("user_id", value: userId)
         .execute()
+
+      print("📊 Response: \(response)")
+      print("📊 Response type: \(type(of: response))")
+      print(
+        "📊 Response properties - data: \(response.data.isEmpty ? "empty" : "has data"), count: \(response.count ?? 0)"
+      )
+
+      let data = response.data
+      print("📦 Raw data size: \(data.count) bytes")
+
+      if let jsonString = String(data: data, encoding: .utf8) {
+        print("📝 JSON data: \(jsonString)")
+      }
 
       // Parse the response
       struct FishResponse: Decodable {
@@ -452,41 +467,109 @@ class SupabaseManager: ObservableObject {
         let date_caught: String
         let is_visible: Bool
         let is_shiny: Bool
+
+        enum CodingKeys: String, CodingKey {
+          case id
+          case user_id
+          case fish_name
+          case fish_image_name
+          case fish_rarity
+          case fish_size
+          case custom_name
+          case date_caught
+          case is_visible
+          case is_shiny
+        }
       }
 
-      let fishData = try response.value as? [[String: Any]] ?? []
-      let jsonData = try JSONSerialization.data(withJSONObject: fishData)
-      let fishObjects = try JSONDecoder().decode([FishResponse].self, from: jsonData)
+      // Try to decode the response data directly
+      do {
+        let fishObjects = try JSONDecoder().decode([FishResponse].self, from: data)
+        print("🐠 loadFishCollection: Decoded \(fishObjects.count) fish objects")
 
-      // Convert to CollectedFish objects
-      return fishObjects.compactMap { f in
-        guard
-          let id = UUID(uuidString: f.id),
-          let rarity = FishRarity(rawValue: f.fish_rarity),
-          let size = FishSize(rawValue: f.fish_size),
-          let dateCaught = ISO8601DateFormatter().date(from: f.date_caught)
-        else {
-          return nil
+        // Convert to CollectedFish objects
+        return fishObjects.compactMap { f in
+          guard
+            let id = UUID(uuidString: f.id),
+            let rarity = FishRarity(rawValue: f.fish_rarity),
+            let size = FishSize(rawValue: f.fish_size),
+            let dateCaught = ISO8601DateFormatter().date(from: f.date_caught)
+          else {
+            print("❌ Failed to parse fish: \(f.id)")
+            return nil
+          }
+
+          let fish = Fish(
+            name: f.fish_name,
+            imageName: f.fish_image_name,
+            rarity: rarity,
+            size: size
+          )
+
+          return CollectedFish(
+            id: id,
+            fish: fish,
+            name: f.custom_name,
+            dateCaught: dateCaught,
+            isVisible: f.is_visible,
+            isShiny: f.is_shiny
+          )
         }
+      } catch {
+        print("❌ JSON decoding error: \(error)")
 
-        let fish = Fish(
-          name: f.fish_name,
-          imageName: f.fish_image_name,
-          rarity: rarity,
-          size: size
-        )
+        // Alternative approach: try using JSONSerialization
+        do {
+          if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            print("🔄 Falling back to JSONSerialization - found \(jsonArray.count) items")
 
-        return CollectedFish(
-          id: id,
-          fish: fish,
-          name: f.custom_name,
-          dateCaught: dateCaught,
-          isVisible: f.is_visible,
-          isShiny: f.is_shiny
-        )
+            return jsonArray.compactMap { dict -> CollectedFish? in
+              guard
+                let idString = dict["id"] as? String,
+                let id = UUID(uuidString: idString),
+                let fishName = dict["fish_name"] as? String,
+                let fishImageName = dict["fish_image_name"] as? String,
+                let fishRarityString = dict["fish_rarity"] as? String,
+                let fishRarity = FishRarity(rawValue: fishRarityString),
+                let fishSizeString = dict["fish_size"] as? String,
+                let fishSize = FishSize(rawValue: fishSizeString),
+                let customName = dict["custom_name"] as? String,
+                let dateCaughtString = dict["date_caught"] as? String,
+                let dateCaught = ISO8601DateFormatter().date(from: dateCaughtString),
+                let isVisible = dict["is_visible"] as? Bool,
+                let isShiny = dict["is_shiny"] as? Bool
+              else {
+                print("❌ Failed to parse fish dictionary")
+                return nil
+              }
+
+              let fish = Fish(
+                name: fishName,
+                imageName: fishImageName,
+                rarity: fishRarity,
+                size: fishSize
+              )
+
+              return CollectedFish(
+                id: id,
+                fish: fish,
+                name: customName,
+                dateCaught: dateCaught,
+                isVisible: isVisible,
+                isShiny: isShiny
+              )
+            }
+          } else {
+            print("❌ JSONSerialization failed - could not cast to [[String: Any]]")
+            return []
+          }
+        } catch {
+          print("❌ JSONSerialization error: \(error)")
+          return []
+        }
       }
     } catch {
-      print("Error loading fish from Supabase: \(error)")
+      print("❌ Error loading fish from Supabase: \(error)")
       return []
     }
   }

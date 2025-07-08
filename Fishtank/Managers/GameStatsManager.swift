@@ -208,25 +208,53 @@ final class GameStatsManager: ObservableObject {
   // MARK: - Public Sync Methods
 
   func triggerSupabaseSync() async {
-    if supabaseManager.isAuthenticated {
-      await fetchFromSupabase()
+    print("🔄 GameStatsManager: Sync requested")
+    if !supabaseManager.isAuthenticated {
+      print("⚠️ GameStatsManager: Not authenticated, skipping sync")
+      return
     }
+    
+    print("🔄 GameStatsManager: User authenticated, starting sync")
+    await fetchFromSupabase()
   }
 
   // MARK: - Supabase Integration
 
   private func fetchFromSupabase() async {
-    if isSyncing { return }
+    if isSyncing { 
+      print("🔄 GameStatsManager: Already syncing, skipping new sync request")
+      return 
+    }
+    
     isSyncing = true
     print("🔄 GameStatsManager: Starting Supabase sync...")
+    
+    if !supabaseManager.isAuthenticated {
+      print("⚠️ GameStatsManager: User not authenticated, aborting sync")
+      isSyncing = false
+      return
+    }
+    
+    print("🔄 GameStatsManager: User authenticated, proceeding with sync")
     let supabaseFish = await supabaseManager.loadFishCollection()
     print("🔄 GameStatsManager: Fetched \(supabaseFish.count) fish from Supabase")
+    
     await MainActor.run {
       if supabaseManager.isAuthenticated {
         print("🔄 GameStatsManager: User is authenticated, using Supabase data")
         collectedFish = supabaseFish
         recalculateFishCollection()
+        print("🔄 GameStatsManager: Updated local collection with \(collectedFish.count) fish")
+        
+        // Log fish by rarity
+        for rarity in FishRarity.allCases {
+          let count = fishCollection[rarity] ?? 0
+          print("🐠 GameStatsManager: \(rarity.rawValue) fish count: \(count)")
+        }
+      } else {
+        print("⚠️ GameStatsManager: User no longer authenticated during sync, aborting")
       }
+      
       print("🔄 GameStatsManager: Sync complete. Total fish: \(collectedFish.count)")
       isSyncing = false
     }
