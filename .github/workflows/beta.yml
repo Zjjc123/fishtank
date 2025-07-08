@@ -56,9 +56,10 @@ jobs:
         echo "Build version: $BUILD_VERSION"
         echo "Build number: $BUILD_NUMBER"
         
-        # Configure git
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
+        # Configure git for fishtankbot account
+        git config --global user.name "fishtankbot"
+        git config --global user.email "fishtank.appp@gmail.com"
+        echo "https://x-access-token:${{ secrets.GH_FISHTANKBOT }}@github.com" > ~/.git-credentials
         
         # Add and commit the version change
         git add Fishtank.xcodeproj
@@ -66,7 +67,7 @@ jobs:
         git pull origin main --rebase
         git push origin main
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_FISHTANKBOT }}
         
     - name: Fail if fastlane beta failed
       if: steps.fastlane_beta.outcome == 'failure'
