@@ -33,16 +33,17 @@
     .content {
       padding: 20px 0;
     }
-    .button {
-      display: inline-block;
-      background-color: #4299e1;
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      font-weight: 500;
-      margin: 20px 0;
+    .verification-code {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 4px;
       text-align: center;
+      color: #4299e1;
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #ebf8ff;
+      border-radius: 8px;
+      border: 1px dashed #4299e1;
     }
     .footer {
       text-align: center;
@@ -65,19 +66,16 @@
     </div>
     <div class="content">
       <p>Hello,</p>
-      <p>Thank you for signing up for Fishtank! To complete your registration and start collecting fish, please confirm your email address by clicking the button below:</p>
+      <p>Thank you for signing up for Fishtank! To complete your registration and start collecting fish, please enter the verification code below in the app:</p>
       
-      <div style="text-align: center;">
-        <a href="{{ .ConfirmationURL }}" class="button">Confirm Email Address</a>
+      <div class="verification-code">
+        {{ .Token }}
       </div>
       
-      <p>After confirming, you'll be automatically redirected to the app and signed in.</p>
-      
-      <p>If you didn't create an account with us, you can safely ignore this email.</p>
+      <p>This code will expire in 60 minutes. If you didn't create an account with us, you can safely ignore this email.</p>
       
       <div class="note">
-        <p>If the button doesn't work, you can copy and paste the following link into your browser:</p>
-        <p>{{ .ConfirmationURL }}</p>
+        <p>For security reasons, please do not share this code with anyone.</p>
       </div>
     </div>
     <div class="footer">

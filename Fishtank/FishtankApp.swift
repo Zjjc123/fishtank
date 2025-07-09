@@ -57,35 +57,6 @@ struct FishtankApp: App {
             await InAppPurchaseManager.shared.checkForUnfinishedTransactions()
           }
         }
-        .onOpenURL { url in
-          handleDeepLink(url)
-        }
-    }
-  }
-  
-  // Handle deep links from email confirmation
-  private func handleDeepLink(_ url: URL) {
-    print("Received deep link: \(url)")
-    
-    // Check if this is a login callback
-    if url.scheme == "fishtank" && url.host == "login-callback" {
-      // Extract access token and refresh token if available
-      if let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-         let queryItems = components.queryItems {
-        
-        // Look for access_token and refresh_token
-        let accessToken = queryItems.first(where: { $0.name == "access_token" })?.value
-        let refreshToken = queryItems.first(where: { $0.name == "refresh_token" })?.value
-        
-        if let accessToken = accessToken {
-          print("Found access token in deep link")
-          
-          // Process the token and authenticate the user
-          Task {
-            await supabaseManager.handleDeepLinkAuthentication(accessToken: accessToken, refreshToken: refreshToken)
-          }
-        }
-      }
     }
   }
 }
