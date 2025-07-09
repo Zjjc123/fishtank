@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Your Fishtank Account</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 1px solid #eaeaea;
+    }
+    .header img {
+      max-width: 80px;
+      height: auto;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4299e1;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      color: #718096;
+      font-size: 14px;
+      padding: 20px 0;
+      border-top: 1px solid #eaeaea;
+    }
+    .note {
+      font-size: 14px;
+      color: #718096;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welcome to Fishtank!</h1>
+    </div>
+    <div class="content">
+      <p>Hello,</p>
+      <p>Thank you for signing up for Fishtank! To complete your registration and start collecting fish, please confirm your email address by clicking the button below:</p>
+      
+      <div style="text-align: center;">
+        <a href="{{ .ConfirmationURL }}" class="button">Confirm Email Address</a>
+      </div>
+      
+      <p>After confirming, you'll be automatically redirected to the app and signed in.</p>
+      
+      <p>If you didn't create an account with us, you can safely ignore this email.</p>
+      
+      <div class="note">
+        <p>If the button doesn't work, you can copy and paste the following link into your browser:</p>
+        <p>{{ .ConfirmationURL }}</p>
+      </div>
+    </div>
+    <div class="footer">
+      <p>&copy; Fishtank App. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html> 

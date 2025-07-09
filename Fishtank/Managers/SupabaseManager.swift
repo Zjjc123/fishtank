@@ -195,6 +195,59 @@ class SupabaseManager: ObservableObject {
       return false
     }
   }
+  
+  @MainActor
+  func handleDeepLinkAuthentication(accessToken: String, refreshToken: String?) async {
+    isLoading = true
+    errorMessage = nil
+    
+    do {
+      // Set the session using the tokens from the deep link
+      try await client.auth.setSession(accessToken: accessToken, refreshToken: refreshToken ?? "")
+      
+      // Get the current session to verify and retrieve user details
+      let session = try await client.auth.session
+      let user = session.user
+      
+      // Check if email is confirmed
+      let emailConfirmed = user.emailConfirmedAt != nil
+      
+      if !emailConfirmed {
+        // This shouldn't happen as we're coming from an email confirmation, but just in case
+        errorMessage = "Email not confirmed. Please check your email and confirm your account."
+        isLoading = false
+        return
+      }
+      
+      // Set the current user and authentication state
+      self.currentUser = User(
+        id: user.id.uuidString,
+        email: user.email ?? "",
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        emailConfirmed: emailConfirmed
+      )
+      self.isAuthenticated = true
+      
+      // Post notification about authentication state change
+      NotificationCenter.default.post(
+        name: NSNotification.Name("SupabaseAuthStateChanged"),
+        object: nil,
+        userInfo: ["isAuthenticated": true]
+      )
+      
+      // Trigger fish collection sync after successful sign in
+      Task {
+        await GameStatsManager.shared.triggerSupabaseSync()
+      }
+      
+      isLoading = false
+    } catch {
+      print("Error handling deep link authentication: \(error.localizedDescription)")
+      errorMessage = "Failed to authenticate. Please try signing in manually."
+      isLoading = false
+    }
+  }
 
   @MainActor
   func checkCurrentUser() async {

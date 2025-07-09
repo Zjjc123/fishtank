@@ -6,6 +6,15 @@
 //
 
 import SwiftUI
+import UIKit
+
+// MARK: - Keyboard Dismissal Extension
+extension View {
+  func dismissKeyboard() {
+    UIApplication.shared.sendAction(
+      #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+  }
+}
 
 struct AuthView: View {
   @StateObject private var supabaseManager = SupabaseManager.shared
@@ -26,6 +35,9 @@ struct AuthView: View {
           endPoint: .bottom
         )
         .ignoresSafeArea()
+        .onTapGesture {
+          dismissKeyboard()
+        }
 
         // Main content - responsive layout
         if geometry.size.width > geometry.size.height {
@@ -52,10 +64,17 @@ struct AuthView: View {
                     .foregroundColor(.white.opacity(0.8))
                 }
               }
+              .onTapGesture {
+                dismissKeyboard()
+              }
 
               Spacer()
             }
             .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture {
+              dismissKeyboard()
+            }
 
             // Right side - Auth form
             VStack(spacing: 24) {
@@ -74,8 +93,16 @@ struct AuthView: View {
               Spacer()
             }
             .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture {
+              dismissKeyboard()
+            }
           }
           .padding(.horizontal, 60)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            dismissKeyboard()
+          }
         } else {
           // Vertical layout (original)
           VStack(spacing: 30) {
@@ -96,6 +123,9 @@ struct AuthView: View {
                 .foregroundColor(.white.opacity(0.8))
             }
             .padding(.top, 60)
+            .onTapGesture {
+              dismissKeyboard()
+            }
 
             // Auth Form
             AuthFormView(
@@ -108,8 +138,15 @@ struct AuthView: View {
               supabaseManager: supabaseManager
             )
             .padding(.horizontal, 30)
+            .onTapGesture {
+              dismissKeyboard()
+            }
 
             Spacer()
+          }
+          .contentShape(Rectangle())
+          .onTapGesture {
+            dismissKeyboard()
           }
         }
       }
