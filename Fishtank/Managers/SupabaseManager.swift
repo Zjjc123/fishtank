@@ -195,7 +195,70 @@ class SupabaseManager: ObservableObject {
       return false
     }
   }
-
+  
+  @MainActor
+  func verifyEmailWithOTP(email: String, token: String) async -> Bool {
+    isLoading = true
+    errorMessage = nil
+    
+    do {
+      // Call the Supabase API to verify the OTP token
+      try await client.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: .signup
+      )
+      
+      // After successful verification, check if the user is now authenticated
+      if let session = try? await client.auth.session {
+        let user = session.user
+        let emailConfirmed = user.emailConfirmedAt != nil
+        
+        self.currentUser = User(
+          id: user.id.uuidString,
+          email: user.email ?? "",
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          emailConfirmed: emailConfirmed
+        )
+        self.isAuthenticated = true
+        
+        // Post notification about authentication state change
+        NotificationCenter.default.post(
+          name: NSNotification.Name("SupabaseAuthStateChanged"),
+          object: nil,
+          userInfo: ["isAuthenticated": true]
+        )
+        
+        // Trigger fish collection sync after successful sign in
+        Task {
+          await GameStatsManager.shared.triggerSupabaseSync()
+        }
+        
+        isLoading = false
+        return true
+      } else {
+        errorMessage = "Failed to authenticate after verification. Please try signing in manually."
+        isLoading = false
+        return false
+      }
+    } catch {
+      let errorString = error.localizedDescription.lowercased()
+      
+      if errorString.contains("invalid") && errorString.contains("token") {
+        errorMessage = "Invalid verification code. Please try again."
+      } else if errorString.contains("expired") {
+        errorMessage = "Verification code has expired. Please request a new one."
+      } else if errorString.contains("network") || errorString.contains("connection") {
+        errorMessage = "Connection failed. Please check your internet and try again."
+      } else {
+        errorMessage = "Failed to verify your email. Please try again."
+      }
+      isLoading = false
+      return false
+    }
+  }
+  
   @MainActor
   func checkCurrentUser() async {
     do {

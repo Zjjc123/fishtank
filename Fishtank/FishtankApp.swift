@@ -12,6 +12,8 @@ import os.log
 
 @main
 struct FishtankApp: App {
+  @StateObject private var supabaseManager = SupabaseManager.shared
+  
   init() {
     // Initialize background tasks
     _ = BackgroundTaskManager.shared
@@ -21,9 +23,6 @@ struct FishtankApp: App {
     // Instead, we'll use OS logging for our own Supabase-related logs
     let supabaseLogger = Logger(subsystem: "com.fishtank.app", category: "supabase")
     supabaseLogger.info("Initializing Supabase integration")
-    
-    // Initialize Supabase manager
-    _ = SupabaseManager.shared
     
     // Configure app for Supabase as source of truth
     configureAppForSupabase()

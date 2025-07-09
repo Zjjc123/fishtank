@@ -13,6 +13,10 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
+# Set environment variables to increase xcodebuild timeout and retries
+ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "10"
+ENV["FASTLANE_XCODEBUILD_SETTINGS_RETRIES"] = "5"
+
 # stub for while setting up first run to allow ci to generate certs
 def is_readonly
   # disable after setting is verified to work
