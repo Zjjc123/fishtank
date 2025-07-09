@@ -195,6 +195,19 @@ struct AuthView: View {
           }
           .keyboardAdaptive()
         }
+
+        // Version display in bottom left corner
+        VStack {
+          Spacer()
+          HStack {
+            Text(AppConfig.versionAndBuild)
+              .font(.system(.caption2, design: .monospaced))
+              .foregroundColor(.white.opacity(0.5))
+              .padding(.leading, 12)
+              .padding(.bottom, 8)
+            Spacer()
+          }
+        }
       }
     }
     .navigationBarHidden(true)
