@@ -114,7 +114,8 @@ struct AuthView: View {
 
               Spacer()
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(width: geometry.size.width * 0.4)
             .contentShape(Rectangle())
             .onTapGesture {
               dismissKeyboard()
@@ -136,7 +137,8 @@ struct AuthView: View {
 
               Spacer()
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(width: geometry.size.width * 0.60)
             .contentShape(Rectangle())
             .onTapGesture {
               dismissKeyboard()
