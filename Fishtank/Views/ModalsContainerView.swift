@@ -89,6 +89,16 @@ struct ModalsContainerView: View {
               }
             }
           },
+          onFishDeleted: { fish in
+            // Delete fish from collection and update tank
+            Task {
+              await statsManager.removeFish(fish, fishTankManager: fishTankManager)
+              
+              // Show confirmation message
+              let shinyIndicator = fish.isShiny ? " ✨" : ""
+              showRewardMessage("🗑️ \(fish.name) has been removed\(shinyIndicator)")
+            }
+          },
           isPresented: $showFishCollection
         )
       }

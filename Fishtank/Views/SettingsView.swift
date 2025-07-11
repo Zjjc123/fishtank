@@ -13,15 +13,10 @@ struct SettingsView: View {
   let statsManager: GameStatsManager
   let fishTankManager: FishTankManager
   @StateObject private var supabaseManager = SupabaseManager.shared
-  @State private var showingClearAlert = false
   @State private var showingSignOutAlert = false
 
   private func signOut() async {
     await supabaseManager.signOut()
-  }
-
-  private func clearAllFish() async {
-    await statsManager.clearAllFish(fishTankManager: fishTankManager)
   }
 
   var body: some View {
@@ -129,28 +124,6 @@ struct SettingsView: View {
             }
           }
 
-          Button(action: {
-            showingClearAlert = true
-          }) {
-            HStack(spacing: 8) {
-              Image(systemName: "trash.fill")
-                .font(.subheadline)
-              Text("Clear All Fish")
-                .font(.system(.subheadline, design: .rounded))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 40)
-            .background(
-              RoundedRectangle(cornerRadius: 12)
-                .fill(Color.red.opacity(0.7))
-                .overlay(
-                  RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                )
-            )
-          }
-
           // Sign Out Button (if authenticated)
           if supabaseManager.isAuthenticated {
             Button(action: {
@@ -167,10 +140,10 @@ struct SettingsView: View {
               .frame(height: 40)
               .background(
                 RoundedRectangle(cornerRadius: 12)
-                  .fill(Color.orange.opacity(0.7))
+                  .fill(Color.red.opacity(0.7))
                   .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                      .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                      .stroke(Color.red.opacity(0.3), lineWidth: 1)
                   )
               )
             }
@@ -210,16 +183,7 @@ struct SettingsView: View {
       )
       .padding(.horizontal, 100)
     }
-    .alert("Clear All Fish", isPresented: $showingClearAlert) {
-      Button("Cancel", role: .cancel) {}
-      Button("Clear All", role: .destructive) {
-        Task {
-          await clearAllFish()
-        }
-      }
-    } message: {
-      Text("This will permanently delete all your collected fish. This action cannot be undone.")
-    }
+
     .alert("Sign Out", isPresented: $showingSignOutAlert) {
       Button("Cancel", role: .cancel) {}
       Button("Sign Out", role: .destructive) {

@@ -13,7 +13,7 @@ struct BottomActionBarView: View {
   let onCancelTapped: () -> Void
   let onSkipTapped: () -> Void
   let onCollectionTapped: () -> Void
-  
+
   var body: some View {
     HStack(spacing: 12) {
       if !isCommitmentActive {
@@ -112,4 +112,4 @@ struct BottomActionBarView: View {
     onCollectionTapped: {}
   )
   .background(Color.blue)
-} 
+}
