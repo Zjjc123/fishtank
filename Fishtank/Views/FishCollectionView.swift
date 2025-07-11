@@ -294,32 +294,49 @@ struct CollectionTabView: View {
         // Sort & Filter Controls (Cohesive, Compact)
         HStack(spacing: 4) {
           Button(action: {
-            sortOption = sortOption == .time ? .rarity : .time
+            if sortOption == .time {
+              sortDirection = sortDirection == .ascending ? .descending : .ascending
+            } else {
+              sortOption = .time
+              sortDirection = .descending
+            }
           }) {
             HStack(spacing: 4) {
-              Text(sortOption.displayName)
+              Text("Time")
                 .font(.system(.caption2, design: .rounded))
                 .fontWeight(.medium)
-              Image(systemName: "chevron.left.chevron.right")
+              Image(systemName: sortOption == .time ? sortDirection.icon : "")
                 .font(.caption2)
             }
             .foregroundColor(.white)
             .frame(height: 28)
             .padding(.horizontal, 10)
-            .background(sortOption == .time ? Color.blue.opacity(0.18) : Color.purple.opacity(0.18))
+            .background(sortOption == .time ? Color.blue.opacity(0.18) : Color.gray.opacity(0.18))
             .clipShape(Capsule())
           }
 
           Button(action: {
-            sortDirection = sortDirection == .ascending ? .descending : .ascending
+            if sortOption == .rarity {
+              sortDirection = sortDirection == .ascending ? .descending : .ascending
+            } else {
+              sortOption = .rarity
+              sortDirection = .descending
+            }
           }) {
-            Image(systemName: sortDirection.icon)
-              .font(.caption2)
-              .foregroundColor(.white)
-              .frame(height: 28)
-              .padding(.horizontal, 10)
-              .background(Color.gray.opacity(0.18))
-              .clipShape(Capsule())
+            HStack(spacing: 4) {
+              Text("Rarity")
+                .font(.system(.caption2, design: .rounded))
+                .fontWeight(.medium)
+              Image(systemName: sortOption == .rarity ? sortDirection.icon : "")
+                .font(.caption2)
+            }
+            .foregroundColor(.white)
+            .frame(height: 28)
+            .padding(.horizontal, 10)
+            .background(
+              sortOption == .rarity ? Color.purple.opacity(0.18) : Color.gray.opacity(0.18)
+            )
+            .clipShape(Capsule())
           }
 
           Button(action: {
