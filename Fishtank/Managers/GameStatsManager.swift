@@ -119,11 +119,17 @@ final class GameStatsManager: ObservableObject {
     return Array(collectedFish.suffix(limit))
   }
 
-  func removeFish(_ fish: CollectedFish) async {
+  func removeFish(_ fish: CollectedFish, fishTankManager: FishTankManager? = nil) async {
     if let index = collectedFish.firstIndex(of: fish) {
       let fishToRemove = collectedFish[index]
       collectedFish.remove(at: index)
       fishCollection[fish.rarity] = max(0, (fishCollection[fish.rarity] ?? 0) - 1)
+      
+      // Update swimming fish if fishTankManager is provided
+      if let manager = fishTankManager {
+        manager.updateSwimmingFish(with: getVisibleFish())
+      }
+      
       if supabaseManager.isAuthenticated {
         do {
           try await supabaseManager.deleteFishFromSupabase(fishToRemove.id)

@@ -140,10 +140,10 @@ struct SettingsView: View {
               .frame(height: 40)
               .background(
                 RoundedRectangle(cornerRadius: 12)
-                  .fill(Color.orange.opacity(0.7))
+                  .fill(Color.red.opacity(0.7))
                   .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                      .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                      .stroke(Color.red.opacity(0.3), lineWidth: 1)
                   )
               )
             }

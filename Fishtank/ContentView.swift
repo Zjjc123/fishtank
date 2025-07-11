@@ -181,8 +181,7 @@ struct ContentView: View {
           if let randomFish = statsManager.collectedFish.randomElement() {
             // Remove the fish from collection and update swimming fish
             Task {
-              await statsManager.removeFish(randomFish)
-              fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
+              await statsManager.removeFish(randomFish, fishTankManager: fishTankManager)
               let shinyIndicator = randomFish.isShiny ? " ✨" : ""
               showRewardMessage(
                 "🚨 \(cancelled.rawValue) session cancelled.\n😢 \(randomFish.name) swam away forever!\(shinyIndicator)\nApp restrictions removed."

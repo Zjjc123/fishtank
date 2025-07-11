@@ -12,6 +12,7 @@ struct FishCollectionView: View {
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Bool
   let onFishRenamed: (UUID, String) -> Void
+  let onFishDeleted: (CollectedFish) -> Void
   @Binding var isPresented: Bool
   @State private var showLimitAlert = false
   @AppStorage("FishCollectionSortOption") private var sortOption: SortOption = .time
@@ -121,6 +122,7 @@ struct FishCollectionView: View {
                 fishToRename = fish
                 showRenameView = true
               },
+              onFishDeleted: onFishDeleted,
               showLimitAlert: $showLimitAlert,
               sortOption: $sortOption,
               sortDirection: $sortDirection,
@@ -191,6 +193,10 @@ struct FishCollectionView: View {
             },
             onCancel: {
               showRenameView = false
+            },
+            onDelete: { fish in
+              onFishDeleted(fish)
+              showRenameView = false
             }
           )
         }
@@ -214,6 +220,7 @@ struct CollectionTabView: View {
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Bool
   let onRenamePressed: (CollectedFish) -> Void
+  let onFishDeleted: (CollectedFish) -> Void
   @Binding var showLimitAlert: Bool
   @Binding var sortOption: FishCollectionView.SortOption
   @Binding var sortDirection: FishCollectionView.SortDirection
@@ -305,8 +312,10 @@ struct CollectionTabView: View {
               Text("Time")
                 .font(.system(.caption2, design: .rounded))
                 .fontWeight(.medium)
-              Image(systemName: sortOption == .time ? sortDirection.icon : "")
-                .font(.caption2)
+              if sortOption == .time {
+                Image(systemName: sortDirection.icon)
+                  .font(.caption2)
+              }
             }
             .foregroundColor(.white)
             .frame(height: 28)
@@ -327,8 +336,10 @@ struct CollectionTabView: View {
               Text("Rarity")
                 .font(.system(.caption2, design: .rounded))
                 .fontWeight(.medium)
-              Image(systemName: sortOption == .rarity ? sortDirection.icon : "")
-                .font(.caption2)
+              if sortOption == .rarity {
+                Image(systemName: sortDirection.icon)
+                  .font(.caption2)
+              }
             }
             .foregroundColor(.white)
             .frame(height: 28)
@@ -382,6 +393,7 @@ struct CollectionTabView: View {
               onFishSelected: onFishSelected,
               onVisibilityToggled: onVisibilityToggled,
               onRenamePressed: onRenamePressed,
+              onFishDeleted: onFishDeleted,
               showLimitAlert: $showLimitAlert
             )
           }
@@ -550,6 +562,7 @@ struct FishItemView: View {
   let onFishSelected: (CollectedFish) -> Void
   let onVisibilityToggled: (CollectedFish) -> Bool
   let onRenamePressed: (CollectedFish) -> Void
+  let onFishDeleted: (CollectedFish) -> Void
   @Binding var showLimitAlert: Bool
   @State private var glowOpacity: Double = 0.3
 
@@ -677,6 +690,7 @@ struct FishItemView: View {
           )
       }
     }
+
   }
 
   private func formatDate(_ date: Date) -> String {
@@ -692,14 +706,20 @@ struct FishDetailsView: View {
   let fish: CollectedFish
   let onRename: (String) -> Void
   let onCancel: () -> Void
+  let onDelete: (CollectedFish) -> Void
   @State private var newName: String
+  @State private var showDeleteAlert = false
   @FocusState private var isTextFieldFocused: Bool
   @ObservedObject private var statsManager = GameStatsManager.shared
 
-  init(fish: CollectedFish, onRename: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+  init(
+    fish: CollectedFish, onRename: @escaping (String) -> Void, onCancel: @escaping () -> Void,
+    onDelete: @escaping (CollectedFish) -> Void
+  ) {
     self.fish = fish
     self.onRename = onRename
     self.onCancel = onCancel
+    self.onDelete = onDelete
     let currentName =
       GameStatsManager.shared.collectedFish.first(where: { $0.id == fish.id })?.name ?? fish.name
     self._newName = State(initialValue: currentName)
@@ -783,16 +803,29 @@ struct FishDetailsView: View {
 
       // Right side - Input and buttons
       VStack(spacing: 12) {
-        // Header
+        // Delete button
         HStack {
-          Image(systemName: "fish.fill")
-            .font(.subheadline)
-            .foregroundColor(.white.opacity(0.9))
+          Spacer()
 
-          Text("Fish Details")
-            .font(.system(.subheadline, design: .rounded))
-            .fontWeight(.semibold)
+          Button(action: {
+            showDeleteAlert = true
+          }) {
+            HStack(spacing: 4) {
+              Image(systemName: "trash.fill")
+                .font(.caption2)
+            }
             .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+              RoundedRectangle(cornerRadius: 8)
+                .fill(Color.red.opacity(0.6))
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.red.opacity(0.2), lineWidth: 1)
+                )
+            )
+          }
         }
 
         // Text field for new name
@@ -886,8 +919,10 @@ struct FishDetailsView: View {
           .disabled(newName.isEmpty)
           .opacity(newName.isEmpty ? 0.5 : 1)
         }
+
       }
     }
+
     .padding(16)
     .background(
       RoundedRectangle(cornerRadius: 16)
@@ -898,5 +933,13 @@ struct FishDetailsView: View {
         )
     )
     .frame(width: 400)
+    .alert("Delete Fish", isPresented: $showDeleteAlert) {
+      Button("Cancel", role: .cancel) {}
+      Button("Delete", role: .destructive) {
+        onDelete(fish)
+      }
+    } message: {
+      Text("Are you sure you want to delete this fish? This action cannot be undone.")
+    }
   }
 }
