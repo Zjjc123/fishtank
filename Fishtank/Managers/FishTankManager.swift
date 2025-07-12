@@ -14,7 +14,7 @@ final class FishTankManager: ObservableObject {
 
   @Published var swimmingFish: [SwimmingFish] = []
   @Published var commitmentLootboxes: [CommitmentLootbox] = []
-  private let bounds: CGRect
+  private var bounds: CGRect
   private let startleDuration: TimeInterval = 3  // Duration of startled state
   private let startledSpeedMultiplier: CGFloat = 15.0  // How much faster fish swim when startled
   private let speedDecayRate: CGFloat = 0.985  // How quickly speed decays (multiply per frame)
@@ -25,6 +25,41 @@ final class FishTankManager: ObservableObject {
   init(bounds: CGRect) {
     self.bounds = bounds
     loadState()
+  }
+
+  // Update bounds when orientation changes
+  func updateBounds(newBounds: CGRect) {
+    let widthRatio = newBounds.width / bounds.width
+    let heightRatio = newBounds.height / bounds.height
+
+    // Update fish positions based on the new bounds
+    for i in swimmingFish.indices {
+      // Scale positions proportionally to new bounds
+      swimmingFish[i].x *= widthRatio
+      swimmingFish[i].y *= heightRatio
+
+      // Ensure fish stay within bounds
+      swimmingFish[i].x = max(0, min(newBounds.width * 0.9, swimmingFish[i].x))
+      swimmingFish[i].y = max(
+        newBounds.height * 0.1, min(newBounds.height * 0.9, swimmingFish[i].y))
+    }
+
+    // Update lootbox positions
+    for i in commitmentLootboxes.indices {
+      commitmentLootboxes[i].x *= widthRatio
+      commitmentLootboxes[i].y *= heightRatio
+
+      // Ensure lootboxes stay within bounds
+      commitmentLootboxes[i].x = max(0, min(newBounds.width * 0.8, commitmentLootboxes[i].x))
+      commitmentLootboxes[i].y = max(
+        newBounds.height * 0.3, min(newBounds.height * 0.7, commitmentLootboxes[i].y))
+    }
+
+    // Update the bounds
+    self.bounds = newBounds
+
+    // Save the updated state
+    saveState()
   }
 
   private func loadState() {
@@ -42,7 +77,7 @@ final class FishTankManager: ObservableObject {
         return CommitmentLootbox(type: type, x: x, y: y)
       }
     }
-    
+
     // If user is authenticated, we could potentially load lootboxes from Supabase as well
     // This would require additional database tables and methods in SupabaseManager
   }
@@ -57,7 +92,7 @@ final class FishTankManager: ObservableObject {
       ]
     }
     UserDefaults.standard.set(lootboxDicts, forKey: "SavedLootboxes")
-    
+
     // If user is authenticated, we could potentially save lootboxes to Supabase as well
     // This would require additional database tables and methods in SupabaseManager
   }
@@ -204,7 +239,7 @@ final class FishTankManager: ObservableObject {
       // We need to create a new instance since CollectedFish is inside SwimmingFish
       var updatedCollectedFish = swimmingFish[index].collectedFish
       updatedCollectedFish.name = newName
-      
+
       // Update the swimming fish with the new name
       swimmingFish[index].collectedFish = updatedCollectedFish
     }

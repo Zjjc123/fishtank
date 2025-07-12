@@ -95,7 +95,7 @@ final class GameStateManager: ObservableObject {
   // MARK: - Data Merging
 
   private func mergeCloudAndLocalData() async {
-    print("🔄 GameStateManager: Starting cloud and local data merge")
+    print("🔄 GameStateManager: Starting cloud and local data merge (cloud overrides local)")
 
     // Load local fish first
     var localFish: [CollectedFish] = []
@@ -122,15 +122,10 @@ final class GameStateManager: ObservableObject {
       fishById[fish.id.uuidString] = fish
     }
 
-    // Add local fish, potentially overriding cloud fish
+    // Add local fish, but only if they don't exist in cloud
     for fish in localFish {
-      if let existingFish = fishById[fish.id.uuidString] {
-        // If fish exists in both, use the most recently updated one
-        if fish.updatedAt > existingFish.updatedAt {
-          fishById[fish.id.uuidString] = fish
-        }
-      } else {
-        // If fish only exists locally, add it
+      // Only add local fish if not already present in cloud (cloud takes precedence)
+      if fishById[fish.id.uuidString] == nil {
         fishById[fish.id.uuidString] = fish
       }
     }

@@ -9,10 +9,30 @@ import SwiftUI
 import BackgroundTasks
 import Supabase
 import os.log
+import UIKit
+
+// MARK: - App Delegate with Orientation Lock
+class AppDelegate: NSObject, UIApplicationDelegate {
+  static var orientationLock = UIInterfaceOrientationMask.all
+  
+  func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+    return AppDelegate.orientationLock
+  }
+  
+  func applicationDidBecomeActive(_ application: UIApplication) {
+    // Force UI update when app becomes active
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      UIViewController.attemptRotationToDeviceOrientation()
+    }
+  }
+}
 
 @main
 struct FishtankApp: App {
   @StateObject private var supabaseManager = SupabaseManager.shared
+  
+  // Register app delegate
+  @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
   
   init() {
     // Initialize background tasks
