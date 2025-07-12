@@ -174,6 +174,23 @@ struct ContentView: View {
         )
       }
     }
+    .onAppear {
+      // Force landscape orientation and UI update
+      UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
+      AppDelegate.orientationLock = .landscape
+      UIViewController.attemptRotationToDeviceOrientation()
+      
+      appStartTime = Date()
+      // Initialize swimming fish with all visible fish
+      fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
+
+      // Fetch latest data from Supabase if authenticated
+      if supabaseManager.isAuthenticated && !statsManager.isSyncing {
+        Task {
+          await statsManager.triggerSupabaseSync()
+        }
+      }
+    }
     .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
       Button("Yes", role: .destructive) {
         if let cancelled = commitmentManager.cancelCommitment() {
@@ -217,18 +234,6 @@ struct ContentView: View {
     }
     .onReceive(dataRefreshTimer) { _ in
       // Refresh data from Supabase every 5 minutes if authenticated
-      if supabaseManager.isAuthenticated && !statsManager.isSyncing {
-        Task {
-          await statsManager.triggerSupabaseSync()
-        }
-      }
-    }
-    .onAppear {
-      appStartTime = Date()
-      // Initialize swimming fish with all visible fish
-      fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
-
-      // Fetch latest data from Supabase if authenticated
       if supabaseManager.isAuthenticated && !statsManager.isSyncing {
         Task {
           await statsManager.triggerSupabaseSync()

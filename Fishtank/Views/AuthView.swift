@@ -83,120 +83,51 @@ struct AuthView: View {
           dismissKeyboard()
         }
 
-        // Main content - responsive layout
-        if geometry.size.width > geometry.size.height {
-          // Horizontal layout
-          HStack(spacing: 40) {
-            // Left side - Logo and branding
-            VStack(spacing: 24) {
-              Spacer()
+        // Main content - vertical layout only
+        VStack(spacing: 30) {
+          // App Logo/Title
+          VStack(spacing: 16) {
+            Image("Goldfish")
+              .resizable()
+              .scaledToFit()
+              .frame(width: 80, height: 80)
 
-              VStack(spacing: 20) {
-                Image("Goldfish")
-                  .resizable()
-                  .scaledToFit()
-                  .frame(width: 72, height: 72)
+            Text("Fishtank")
+              .font(.system(.largeTitle, design: .rounded))
+              .fontWeight(.bold)
+              .foregroundColor(.white)
 
-                VStack(spacing: 8) {
-                  Text("Fishtank")
-                    .font(.system(.largeTitle, design: .rounded))
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-
-                  Text("Focus and collect fish")
-                    .font(.system(.subheadline, design: .rounded))
-                    .foregroundColor(.white.opacity(0.8))
-                }
-              }
-              .onTapGesture {
-                dismissKeyboard()
-              }
-
-              Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(width: geometry.size.width * 0.4)
-            .contentShape(Rectangle())
-            .onTapGesture {
-              dismissKeyboard()
-            }
-
-            // Right side - Auth form
-            VStack(spacing: 24) {
-              Spacer()
-
-              AuthFormView(
-                email: $email,
-                password: $password,
-                confirmPassword: $confirmPassword,
-                isSignUp: $isSignUp,
-                showPassword: $showPassword,
-                showConfirmationMessage: $showConfirmationMessage,
-                supabaseManager: supabaseManager
-              )
-
-              Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(width: geometry.size.width * 0.60)
-            .contentShape(Rectangle())
-            .onTapGesture {
-              dismissKeyboard()
-            }
+            Text("Focus and collect fish")
+              .font(.system(.subheadline, design: .rounded))
+              .foregroundColor(.white.opacity(0.8))
           }
-          .padding(.horizontal, 60)
-          .contentShape(Rectangle())
+          .padding(.top, 60)
           .onTapGesture {
             dismissKeyboard()
           }
-          .keyboardAdaptive()
-        } else {
-          // Vertical layout (original)
-          VStack(spacing: 30) {
-            // App Logo/Title
-            VStack(spacing: 16) {
-              Image("Goldfish")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80, height: 80)
 
-              Text("Fishtank")
-                .font(.system(.largeTitle, design: .rounded))
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-
-              Text("Focus and collect fish")
-                .font(.system(.subheadline, design: .rounded))
-                .foregroundColor(.white.opacity(0.8))
-            }
-            .padding(.top, 60)
-            .onTapGesture {
-              dismissKeyboard()
-            }
-
-            // Auth Form
-            AuthFormView(
-              email: $email,
-              password: $password,
-              confirmPassword: $confirmPassword,
-              isSignUp: $isSignUp,
-              showPassword: $showPassword,
-              showConfirmationMessage: $showConfirmationMessage,
-              supabaseManager: supabaseManager
-            )
-            .padding(.horizontal, 30)
-            .onTapGesture {
-              dismissKeyboard()
-            }
-
-            Spacer()
-          }
-          .contentShape(Rectangle())
+          // Auth Form
+          AuthFormView(
+            email: $email,
+            password: $password,
+            confirmPassword: $confirmPassword,
+            isSignUp: $isSignUp,
+            showPassword: $showPassword,
+            showConfirmationMessage: $showConfirmationMessage,
+            supabaseManager: supabaseManager
+          )
+          .padding(.horizontal, 30)
           .onTapGesture {
             dismissKeyboard()
           }
-          .keyboardAdaptive()
+
+          Spacer()
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+          dismissKeyboard()
+        }
+        .keyboardAdaptive()
 
         // Version display in bottom left corner
         VStack {
@@ -213,6 +144,16 @@ struct AuthView: View {
       }
     }
     .navigationBarHidden(true)
+    .onAppear {
+      UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+      AppDelegate.orientationLock = .portrait
+      UIViewController.attemptRotationToDeviceOrientation()
+    }
+    .onDisappear {
+      UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
+      AppDelegate.orientationLock = .landscape
+      UIViewController.attemptRotationToDeviceOrientation()
+    }
   }
 }
 
