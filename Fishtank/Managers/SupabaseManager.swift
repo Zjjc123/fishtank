@@ -120,7 +120,7 @@ class SupabaseManager: ObservableObject {
 
       // Trigger fish collection sync after successful sign in
       Task {
-        await GameStatsManager.shared.triggerSupabaseSync()
+        await GameStateManager.shared.triggerSupabaseSync()
       }
 
       isLoading = false
@@ -232,7 +232,7 @@ class SupabaseManager: ObservableObject {
         
         // Trigger fish collection sync after successful sign in
         Task {
-          await GameStatsManager.shared.triggerSupabaseSync()
+          await GameStateManager.shared.triggerSupabaseSync()
         }
         
         isLoading = false
@@ -301,7 +301,7 @@ class SupabaseManager: ObservableObject {
 
       // Trigger fish collection sync if user is authenticated
       Task {
-        await GameStatsManager.shared.triggerSupabaseSync()
+        await GameStateManager.shared.triggerSupabaseSync()
       }
     } catch {
       // User is not signed in

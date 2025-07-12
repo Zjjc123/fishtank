@@ -10,13 +10,32 @@ import SwiftUI
 
 struct SettingsView: View {
   @Binding var isPresented: Bool
-  let statsManager: GameStatsManager
+  let statsManager: GameStateManager
   let fishTankManager: FishTankManager
   @StateObject private var supabaseManager = SupabaseManager.shared
   @State private var showingSignOutAlert = false
-
+  @State private var isOnline = true
+  
   private func signOut() async {
     await supabaseManager.signOut()
+  }
+  
+  private func checkConnection() {
+    Task {
+      // Simple network check by trying to make a connection
+      do {
+        let url = URL(string: "https://www.apple.com")!
+        let (_, response) = try await URLSession.shared.data(from: url)
+        
+        await MainActor.run {
+          isOnline = (response as? HTTPURLResponse)?.statusCode == 200
+        }
+      } catch {
+        await MainActor.run {
+          isOnline = false
+        }
+      }
+    }
   }
 
   var body: some View {
@@ -40,6 +59,33 @@ struct SettingsView: View {
             .foregroundColor(.white)
         }
         .padding(.top, 6)
+
+        // Connection Status
+        HStack(spacing: 8) {
+          Image(systemName: isOnline ? "wifi" : "wifi.slash")
+            .font(.title3)
+            .foregroundColor(isOnline ? .green.opacity(0.9) : .red.opacity(0.9))
+
+          Text("Connection Status")
+            .font(.system(.subheadline, design: .rounded))
+            .foregroundColor(.white.opacity(0.8))
+
+          Spacer()
+
+          Text(isOnline ? "Online" : "Offline")
+            .font(.system(.headline, design: .rounded))
+            .fontWeight(.semibold)
+            .foregroundColor(isOnline ? .green : .red)
+        }
+        .padding(12)
+        .background(
+          RoundedRectangle(cornerRadius: 12)
+            .fill(.ultraThinMaterial)
+            .overlay(
+              RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+        )
 
         // Settings Options
         VStack(spacing: 12) {
@@ -66,10 +112,15 @@ struct SettingsView: View {
               Image(systemName: "info.circle.fill")
                 .font(.caption)
                 .foregroundColor(.blue.opacity(0.8))
-              if supabaseManager.isAuthenticated {
+              if supabaseManager.isAuthenticated && isOnline {
                 Text("Fish are synced to your account")
                   .font(.system(.caption, design: .rounded))
                   .foregroundColor(.blue.opacity(0.8))
+                  .multilineTextAlignment(.leading)
+              } else if supabaseManager.isAuthenticated && !isOnline {
+                Text("Fish are saved locally (offline mode, will sync when online)")
+                  .font(.system(.caption, design: .rounded))
+                  .foregroundColor(.orange.opacity(0.8))
                   .multilineTextAlignment(.leading)
               } else {
                 Text("Fish are saved locally on your device")
@@ -90,6 +141,36 @@ struct SettingsView: View {
                   .stroke(Color.white.opacity(0.2), lineWidth: 1)
               )
           )
+        }
+
+        // Sync Button (if authenticated but offline)
+        if supabaseManager.isAuthenticated && !isOnline {
+          Button(action: {
+            checkConnection()
+            if isOnline {
+              Task {
+                await statsManager.triggerSupabaseSync()
+              }
+            }
+          }) {
+            HStack(spacing: 8) {
+              Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.subheadline)
+              Text("Try to Sync")
+                .font(.system(.subheadline, design: .rounded))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 40)
+            .background(
+              RoundedRectangle(cornerRadius: 12)
+                .fill(Color.blue.opacity(0.7))
+                .overlay(
+                  RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                )
+            )
+          }
         }
 
         // Buttons
@@ -182,6 +263,9 @@ struct SettingsView: View {
           )
       )
       .padding(.horizontal, 100)
+      .onAppear {
+        checkConnection()
+      }
     }
 
     .alert("Sign Out", isPresented: $showingSignOutAlert) {

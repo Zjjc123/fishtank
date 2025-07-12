@@ -16,6 +16,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
   var isSwimming: Bool = false
   var isVisible: Bool = true
   let isShiny: Bool
+  var updatedAt: Date
 
   init(fish: Fish) {
     self.id = UUID()
@@ -23,6 +24,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     self.name = fish.name
     self.dateCaught = Date()
     self.isShiny = Double.random(in: 0...1) < 0.01
+    self.updatedAt = Date()
   }
 
   init(id: UUID, fish: Fish, name: String, dateCaught: Date, isVisible: Bool = true, isShiny: Bool)
@@ -33,11 +35,12 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     self.dateCaught = dateCaught
     self.isVisible = isVisible
     self.isShiny = isShiny
+    self.updatedAt = Date()
   }
 
   // Custom Codable implementation to handle UUID properly
   enum CodingKeys: String, CodingKey {
-    case id, fish, name, dateCaught, isSwimming, isVisible, isShiny
+    case id, fish, name, dateCaught, isSwimming, isVisible, isShiny, updatedAt
   }
 
   init(from decoder: Decoder) throws {
@@ -49,6 +52,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     isSwimming = try container.decodeIfPresent(Bool.self, forKey: .isSwimming) ?? false
     isVisible = try container.decodeIfPresent(Bool.self, forKey: .isVisible) ?? true
     isShiny = try container.decodeIfPresent(Bool.self, forKey: .isShiny) ?? false
+    updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? dateCaught
   }
 
   func encode(to encoder: Encoder) throws {
@@ -60,6 +64,7 @@ struct CollectedFish: Identifiable, Hashable, Codable {
     try container.encode(isSwimming, forKey: .isSwimming)
     try container.encode(isVisible, forKey: .isVisible)
     try container.encode(isShiny, forKey: .isShiny)
+    try container.encode(updatedAt, forKey: .updatedAt)
   }
 
   func hash(into hasher: inout Hasher) {

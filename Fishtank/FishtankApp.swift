@@ -41,7 +41,7 @@ struct FishtankApp: App {
         // Trigger data refresh when authentication state changes
         if isAuthenticated {
           Task {
-            await GameStatsManager.shared.triggerSupabaseSync()
+            await GameStateManager.shared.triggerSupabaseSync()
           }
         }
       }
