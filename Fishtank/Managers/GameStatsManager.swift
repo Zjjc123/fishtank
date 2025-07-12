@@ -18,12 +18,16 @@ final class GameStatsManager: ObservableObject {
   @Published private(set) var fishCollection: [FishRarity: Int] = [:]
   @Published private(set) var isSyncing: Bool = false
 
+  private let localStorageKey = "dev.jasonzhang.fishtank.collectedFish"
   private let supabaseManager = SupabaseManager.shared
   private var cancellables = Set<AnyCancellable>()
 
   private init() {
     // Initialize with empty state first
     initializeFishCollection()
+
+    // Load fish from local storage first
+    loadFromLocalStorage()
 
     // Listen for authentication state changes
     supabaseManager.$isAuthenticated
@@ -34,9 +38,8 @@ final class GameStatsManager: ObservableObject {
             await self?.fetchFromSupabase()
           }
         } else {
-          print("🔐 GameStatsManager: User unauthenticated, clearing data")
-          self?.collectedFish = []
-          self?.initializeFishCollection()
+          print("🔐 GameStatsManager: User unauthenticated, using local data only")
+          self?.loadFromLocalStorage()
         }
       }
       .store(in: &cancellables)
@@ -59,6 +62,38 @@ final class GameStatsManager: ObservableObject {
     }
   }
 
+  // MARK: - Local Storage Methods
+
+  private func saveToLocalStorage() {
+    do {
+      let encoder = JSONEncoder()
+      let data = try encoder.encode(collectedFish)
+      UserDefaults.standard.set(data, forKey: localStorageKey)
+      print("💾 GameStatsManager: Saved \(collectedFish.count) fish to local storage")
+    } catch {
+      print("❌ GameStatsManager: Error saving to local storage: \(error)")
+    }
+  }
+
+  private func loadFromLocalStorage() {
+    guard let data = UserDefaults.standard.data(forKey: localStorageKey) else {
+      print("💾 GameStatsManager: No local fish data found")
+      return
+    }
+
+    do {
+      let decoder = JSONDecoder()
+      let localFish = try decoder.decode([CollectedFish].self, from: data)
+      collectedFish = localFish
+      recalculateFishCollection()
+      print("💾 GameStatsManager: Loaded \(collectedFish.count) fish from local storage")
+    } catch {
+      print("❌ GameStatsManager: Error loading from local storage: \(error)")
+    }
+  }
+
+  // MARK: - Fish Collection Methods
+
   @discardableResult
   func addFish(_ fish: CollectedFish, fishTankManager: FishTankManager? = nil) async throws {
     let currentVisibleCount = getVisibleFish().count
@@ -68,14 +103,20 @@ final class GameStatsManager: ObservableObject {
     }
     collectedFish.append(newFish)
     fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
+
+    // Update local storage
+    saveToLocalStorage()
+
     if let manager = fishTankManager {
       manager.updateSwimmingFish(with: getVisibleFish())
     }
+
+    // Sync to Supabase if authenticated
     if supabaseManager.isAuthenticated {
       do {
-        try await supabaseManager.saveFishToSupabase(newFish)
+        try await syncEntireCollectionToSupabase()
       } catch {
-        print("❌ Error saving fish to Supabase: \(error)")
+        print("❌ Error syncing to Supabase after adding fish: \(error)")
         throw error
       }
     }
@@ -85,7 +126,7 @@ final class GameStatsManager: ObservableObject {
   func addFishes(_ fishes: [CollectedFish], fishTankManager: FishTankManager? = nil) async throws {
     let currentVisibleCount = getVisibleFish().count
     var visibleSlotsLeft = max(0, AppConfig.maxSwimmingFish - currentVisibleCount)
-    var newFishes: [CollectedFish] = []
+
     for fish in fishes {
       var newFish = fish
       if visibleSlotsLeft > 0 {
@@ -94,18 +135,23 @@ final class GameStatsManager: ObservableObject {
       } else {
         newFish.isVisible = false
       }
-      newFishes.append(newFish)
       collectedFish.append(newFish)
       fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
     }
+
+    // Update local storage
+    saveToLocalStorage()
+
     if let manager = fishTankManager {
       manager.updateSwimmingFish(with: getVisibleFish())
     }
+
+    // Sync to Supabase if authenticated
     if supabaseManager.isAuthenticated {
       do {
-        try await supabaseManager.saveFishesToSupabase(newFishes)
+        try await syncEntireCollectionToSupabase()
       } catch {
-        print("❌ Error saving fishes to Supabase: \(error)")
+        print("❌ Error syncing to Supabase after adding fishes: \(error)")
         throw error
       }
     }
@@ -121,37 +167,45 @@ final class GameStatsManager: ObservableObject {
 
   func removeFish(_ fish: CollectedFish, fishTankManager: FishTankManager? = nil) async {
     if let index = collectedFish.firstIndex(of: fish) {
-      let fishToRemove = collectedFish[index]
       collectedFish.remove(at: index)
       fishCollection[fish.rarity] = max(0, (fishCollection[fish.rarity] ?? 0) - 1)
-      
+
+      // Update local storage
+      saveToLocalStorage()
+
       // Update swimming fish if fishTankManager is provided
       if let manager = fishTankManager {
         manager.updateSwimmingFish(with: getVisibleFish())
       }
-      
+
+      // Sync to Supabase if authenticated
       if supabaseManager.isAuthenticated {
         do {
-          try await supabaseManager.deleteFishFromSupabase(fishToRemove.id)
+          try await syncEntireCollectionToSupabase()
         } catch {
-          print("❌ Error deleting fish from Supabase: \(error)")
+          print("❌ Error syncing to Supabase after removing fish: \(error)")
         }
       }
     }
   }
 
   func clearAllFish(fishTankManager: FishTankManager? = nil) async {
-    let fishIdsToDelete = collectedFish.map { $0.id }
     collectedFish.removeAll()
     initializeFishCollection()
+
+    // Update local storage
+    saveToLocalStorage()
+
     if let manager = fishTankManager {
       manager.updateSwimmingFish(with: getVisibleFish())
     }
+
+    // Sync to Supabase if authenticated
     if supabaseManager.isAuthenticated {
       do {
-        try await supabaseManager.deleteAllFishFromSupabase(fishIdsToDelete)
+        try await syncEntireCollectionToSupabase()
       } catch {
-        print("❌ Error deleting all fish from Supabase: \(error)")
+        print("❌ Error syncing to Supabase after clearing fish: \(error)")
       }
     }
   }
@@ -165,13 +219,18 @@ final class GameStatsManager: ObservableObject {
         }
       }
       collectedFish[index].isVisible.toggle()
-      let updatedFish = collectedFish[index]
+
+      // Update local storage
+      saveToLocalStorage()
+
       fishTankManager.updateSwimmingFish(with: getVisibleFish())
+
+      // Sync to Supabase if authenticated
       if supabaseManager.isAuthenticated {
         do {
-          try await supabaseManager.updateFishVisibilityInSupabase(updatedFish.id, isVisible: updatedFish.isVisible)
+          try await syncEntireCollectionToSupabase()
         } catch {
-          print("❌ Error updating fish visibility in Supabase: \(error)")
+          print("❌ Error syncing to Supabase after toggling visibility: \(error)")
         }
       }
       return true
@@ -202,11 +261,16 @@ final class GameStatsManager: ObservableObject {
   func updateFishCollection(_ updatedFish: [CollectedFish]) async {
     collectedFish = updatedFish
     recalculateFishCollection()
+
+    // Update local storage
+    saveToLocalStorage()
+
+    // Sync to Supabase if authenticated
     if supabaseManager.isAuthenticated {
       do {
-        try await supabaseManager.saveFishCollection(collectedFish)
+        try await syncEntireCollectionToSupabase()
       } catch {
-        print("❌ Error updating fish collection in Supabase: \(error)")
+        print("❌ Error syncing to Supabase after updating collection: \(error)")
       }
     }
   }
@@ -219,39 +283,59 @@ final class GameStatsManager: ObservableObject {
       print("⚠️ GameStatsManager: Not authenticated, skipping sync")
       return
     }
-    
+
     print("🔄 GameStatsManager: User authenticated, starting sync")
     await fetchFromSupabase()
   }
 
   // MARK: - Supabase Integration
 
-  private func fetchFromSupabase() async {
-    if isSyncing { 
-      print("🔄 GameStatsManager: Already syncing, skipping new sync request")
-      return 
+  private func syncEntireCollectionToSupabase() async throws {
+    if !supabaseManager.isAuthenticated {
+      print("⚠️ GameStatsManager: Not authenticated, skipping Supabase sync")
+      return
     }
-    
+
+    print("🔄 GameStatsManager: Syncing entire fish collection to Supabase...")
+    do {
+      try await supabaseManager.saveFishCollection(collectedFish)
+      print("✅ GameStatsManager: Successfully synced \(collectedFish.count) fish to Supabase")
+    } catch {
+      print("❌ GameStatsManager: Error syncing to Supabase: \(error)")
+      throw error
+    }
+  }
+
+  private func fetchFromSupabase() async {
+    if isSyncing {
+      print("🔄 GameStatsManager: Already syncing, skipping new sync request")
+      return
+    }
+
     isSyncing = true
     print("🔄 GameStatsManager: Starting Supabase sync...")
-    
+
     if !supabaseManager.isAuthenticated {
       print("⚠️ GameStatsManager: User not authenticated, aborting sync")
       isSyncing = false
       return
     }
-    
+
     print("🔄 GameStatsManager: User authenticated, proceeding with sync")
     let supabaseFish = await supabaseManager.loadFishCollection()
     print("🔄 GameStatsManager: Fetched \(supabaseFish.count) fish from Supabase")
-    
+
     await MainActor.run {
       if supabaseManager.isAuthenticated {
         print("🔄 GameStatsManager: User is authenticated, using Supabase data")
         collectedFish = supabaseFish
         recalculateFishCollection()
+
+        // Update local storage with Supabase data
+        saveToLocalStorage()
+
         print("🔄 GameStatsManager: Updated local collection with \(collectedFish.count) fish")
-        
+
         // Log fish by rarity
         for rarity in FishRarity.allCases {
           let count = fishCollection[rarity] ?? 0
@@ -260,10 +344,9 @@ final class GameStatsManager: ObservableObject {
       } else {
         print("⚠️ GameStatsManager: User no longer authenticated during sync, aborting")
       }
-      
+
       print("🔄 GameStatsManager: Sync complete. Total fish: \(collectedFish.count)")
       isSyncing = false
     }
   }
 }
-
