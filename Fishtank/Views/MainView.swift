@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainView: View {
   @StateObject private var supabaseManager = SupabaseManager.shared
+  @StateObject private var fishTankManager = FishTankManager.shared
 
   var body: some View {
     Group {
@@ -18,6 +19,11 @@ struct MainView: View {
           .onAppear {
             // Force landscape orientation when authenticated
             setOrientation(to: .landscape)
+            
+            // Update fish tank bounds after orientation change
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+              fishTankManager.updateBounds(newBounds: UIScreen.main.bounds)
+            }
           }
       } else {
         AuthView()

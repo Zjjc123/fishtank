@@ -119,6 +119,6 @@ struct SwimmingFish: Identifiable {
 struct CommitmentLootbox: Identifiable {
   let id = UUID()
   let type: LootboxType
-  let x: CGFloat
-  let y: CGFloat
+  var x: CGFloat
+  var y: CGFloat
 }

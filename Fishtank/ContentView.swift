@@ -191,6 +191,11 @@ struct ContentView: View {
         }
       }
     }
+    .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+      // Update fish tank bounds when orientation changes
+      let newBounds = UIScreen.main.bounds
+      fishTankManager.updateBounds(newBounds: newBounds)
+    }
     .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
       Button("Yes", role: .destructive) {
         if let cancelled = commitmentManager.cancelCommitment() {
