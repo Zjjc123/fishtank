@@ -33,9 +33,9 @@ final class GameStatsManager: ObservableObject {
     supabaseManager.$isAuthenticated
       .sink { [weak self] isAuthenticated in
         if isAuthenticated {
-          print("🔐 GameStatsManager: User authenticated, fetching from Supabase")
+          print("🔐 GameStatsManager: User authenticated, merging cloud and local data")
           Task {
-            await self?.fetchFromSupabase()
+            await self?.mergeCloudAndLocalData()
           }
         } else {
           print("🔐 GameStatsManager: User unauthenticated, using local data only")
@@ -92,6 +92,71 @@ final class GameStatsManager: ObservableObject {
     }
   }
 
+  // MARK: - Data Merging
+
+  private func mergeCloudAndLocalData() async {
+    print("🔄 GameStatsManager: Starting cloud and local data merge")
+
+    // Load local fish first
+    var localFish: [CollectedFish] = []
+    if let data = UserDefaults.standard.data(forKey: localStorageKey) {
+      do {
+        let decoder = JSONDecoder()
+        localFish = try decoder.decode([CollectedFish].self, from: data)
+        print("🔄 GameStatsManager: Found \(localFish.count) fish in local storage for merging")
+      } catch {
+        print("❌ GameStatsManager: Error loading local fish for merging: \(error)")
+        localFish = []
+      }
+    }
+
+    // Load cloud fish
+    let cloudFish = await supabaseManager.loadFishCollection()
+    print("🔄 GameStatsManager: Found \(cloudFish.count) fish in cloud for merging")
+
+    // Create dictionaries for easier merging
+    var fishById = [String: CollectedFish]()
+
+    // Add cloud fish first
+    for fish in cloudFish {
+      fishById[fish.id.uuidString] = fish
+    }
+
+    // Add local fish, potentially overriding cloud fish
+    for fish in localFish {
+      if let existingFish = fishById[fish.id.uuidString] {
+        // If fish exists in both, use the most recently updated one
+        if fish.updatedAt > existingFish.updatedAt {
+          fishById[fish.id.uuidString] = fish
+        }
+      } else {
+        // If fish only exists locally, add it
+        fishById[fish.id.uuidString] = fish
+      }
+    }
+
+    // Convert back to array
+    let mergedFish = Array(fishById.values)
+    print("🔄 GameStatsManager: Merged collection has \(mergedFish.count) fish")
+
+    // Update our collection
+    collectedFish = mergedFish
+    recalculateFishCollection()
+
+    // Save the merged collection locally
+    saveToLocalStorage()
+
+    // Sync the merged collection to Supabase
+    if supabaseManager.isAuthenticated {
+      do {
+        try await syncEntireCollectionToSupabase()
+        print("✅ GameStatsManager: Successfully synced merged collection to Supabase")
+      } catch {
+        print("❌ GameStatsManager: Failed to sync merged collection: \(error)")
+      }
+    }
+  }
+
   // MARK: - Fish Collection Methods
 
   @discardableResult
@@ -101,6 +166,7 @@ final class GameStatsManager: ObservableObject {
     if currentVisibleCount >= AppConfig.maxSwimmingFish {
       newFish.isVisible = false
     }
+    newFish.updatedAt = Date()
     collectedFish.append(newFish)
     fishCollection[fish.rarity] = (fishCollection[fish.rarity] ?? 0) + 1
 
@@ -129,6 +195,7 @@ final class GameStatsManager: ObservableObject {
 
     for fish in fishes {
       var newFish = fish
+      newFish.updatedAt = Date()
       if visibleSlotsLeft > 0 {
         newFish.isVisible = true
         visibleSlotsLeft -= 1
@@ -219,6 +286,7 @@ final class GameStatsManager: ObservableObject {
         }
       }
       collectedFish[index].isVisible.toggle()
+      collectedFish[index].updatedAt = Date()
 
       // Update local storage
       saveToLocalStorage()
@@ -285,7 +353,7 @@ final class GameStatsManager: ObservableObject {
     }
 
     print("🔄 GameStatsManager: User authenticated, starting sync")
-    await fetchFromSupabase()
+    await mergeCloudAndLocalData()
   }
 
   // MARK: - Supabase Integration
@@ -303,50 +371,6 @@ final class GameStatsManager: ObservableObject {
     } catch {
       print("❌ GameStatsManager: Error syncing to Supabase: \(error)")
       throw error
-    }
-  }
-
-  private func fetchFromSupabase() async {
-    if isSyncing {
-      print("🔄 GameStatsManager: Already syncing, skipping new sync request")
-      return
-    }
-
-    isSyncing = true
-    print("🔄 GameStatsManager: Starting Supabase sync...")
-
-    if !supabaseManager.isAuthenticated {
-      print("⚠️ GameStatsManager: User not authenticated, aborting sync")
-      isSyncing = false
-      return
-    }
-
-    print("🔄 GameStatsManager: User authenticated, proceeding with sync")
-    let supabaseFish = await supabaseManager.loadFishCollection()
-    print("🔄 GameStatsManager: Fetched \(supabaseFish.count) fish from Supabase")
-
-    await MainActor.run {
-      if supabaseManager.isAuthenticated {
-        print("🔄 GameStatsManager: User is authenticated, using Supabase data")
-        collectedFish = supabaseFish
-        recalculateFishCollection()
-
-        // Update local storage with Supabase data
-        saveToLocalStorage()
-
-        print("🔄 GameStatsManager: Updated local collection with \(collectedFish.count) fish")
-
-        // Log fish by rarity
-        for rarity in FishRarity.allCases {
-          let count = fishCollection[rarity] ?? 0
-          print("🐠 GameStatsManager: \(rarity.rawValue) fish count: \(count)")
-        }
-      } else {
-        print("⚠️ GameStatsManager: User no longer authenticated during sync, aborting")
-      }
-
-      print("🔄 GameStatsManager: Sync complete. Total fish: \(collectedFish.count)")
-      isSyncing = false
     }
   }
 }
