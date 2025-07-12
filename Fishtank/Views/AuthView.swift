@@ -141,6 +141,7 @@ struct AuthView: View {
             Spacer()
           }
         }
+        .ignoresSafeArea(.keyboard)  // Ignore keyboard to stay fixed at bottom
       }
     }
     .navigationBarHidden(true)
