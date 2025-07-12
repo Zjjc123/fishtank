@@ -1,5 +1,5 @@
 //
-//  GameStatsManager.swift
+//  GameStateManager.swift
 //  Fishtank
 //
 //  Created by Jiajun Zhang on 6/19/25.
@@ -11,8 +11,8 @@ import SwiftUI
 
 // MARK: - Game Stats Manager
 @MainActor
-final class GameStatsManager: ObservableObject {
-  static let shared = GameStatsManager()
+final class GameStateManager: ObservableObject {
+  static let shared = GameStateManager()
 
   @Published private(set) var collectedFish: [CollectedFish] = []
   @Published private(set) var fishCollection: [FishRarity: Int] = [:]
@@ -33,12 +33,12 @@ final class GameStatsManager: ObservableObject {
     supabaseManager.$isAuthenticated
       .sink { [weak self] isAuthenticated in
         if isAuthenticated {
-          print("🔐 GameStatsManager: User authenticated, merging cloud and local data")
+          print("🔐 GameStateManager: User authenticated, merging cloud and local data")
           Task {
             await self?.mergeCloudAndLocalData()
           }
         } else {
-          print("🔐 GameStatsManager: User unauthenticated, using local data only")
+          print("🔐 GameStateManager: User unauthenticated, using local data only")
           self?.loadFromLocalStorage()
         }
       }
@@ -69,15 +69,15 @@ final class GameStatsManager: ObservableObject {
       let encoder = JSONEncoder()
       let data = try encoder.encode(collectedFish)
       UserDefaults.standard.set(data, forKey: localStorageKey)
-      print("💾 GameStatsManager: Saved \(collectedFish.count) fish to local storage")
+      print("💾 GameStateManager: Saved \(collectedFish.count) fish to local storage")
     } catch {
-      print("❌ GameStatsManager: Error saving to local storage: \(error)")
+      print("❌ GameStateManager: Error saving to local storage: \(error)")
     }
   }
 
   private func loadFromLocalStorage() {
     guard let data = UserDefaults.standard.data(forKey: localStorageKey) else {
-      print("💾 GameStatsManager: No local fish data found")
+      print("💾 GameStateManager: No local fish data found")
       return
     }
 
@@ -86,16 +86,16 @@ final class GameStatsManager: ObservableObject {
       let localFish = try decoder.decode([CollectedFish].self, from: data)
       collectedFish = localFish
       recalculateFishCollection()
-      print("💾 GameStatsManager: Loaded \(collectedFish.count) fish from local storage")
+      print("💾 GameStateManager: Loaded \(collectedFish.count) fish from local storage")
     } catch {
-      print("❌ GameStatsManager: Error loading from local storage: \(error)")
+      print("❌ GameStateManager: Error loading from local storage: \(error)")
     }
   }
 
   // MARK: - Data Merging
 
   private func mergeCloudAndLocalData() async {
-    print("🔄 GameStatsManager: Starting cloud and local data merge")
+    print("🔄 GameStateManager: Starting cloud and local data merge")
 
     // Load local fish first
     var localFish: [CollectedFish] = []
@@ -103,16 +103,16 @@ final class GameStatsManager: ObservableObject {
       do {
         let decoder = JSONDecoder()
         localFish = try decoder.decode([CollectedFish].self, from: data)
-        print("🔄 GameStatsManager: Found \(localFish.count) fish in local storage for merging")
+        print("🔄 GameStateManager: Found \(localFish.count) fish in local storage for merging")
       } catch {
-        print("❌ GameStatsManager: Error loading local fish for merging: \(error)")
+        print("❌ GameStateManager: Error loading local fish for merging: \(error)")
         localFish = []
       }
     }
 
     // Load cloud fish
     let cloudFish = await supabaseManager.loadFishCollection()
-    print("🔄 GameStatsManager: Found \(cloudFish.count) fish in cloud for merging")
+    print("🔄 GameStateManager: Found \(cloudFish.count) fish in cloud for merging")
 
     // Create dictionaries for easier merging
     var fishById = [String: CollectedFish]()
@@ -137,7 +137,7 @@ final class GameStatsManager: ObservableObject {
 
     // Convert back to array
     let mergedFish = Array(fishById.values)
-    print("🔄 GameStatsManager: Merged collection has \(mergedFish.count) fish")
+    print("🔄 GameStateManager: Merged collection has \(mergedFish.count) fish")
 
     // Update our collection
     collectedFish = mergedFish
@@ -150,9 +150,9 @@ final class GameStatsManager: ObservableObject {
     if supabaseManager.isAuthenticated {
       do {
         try await syncEntireCollectionToSupabase()
-        print("✅ GameStatsManager: Successfully synced merged collection to Supabase")
+        print("✅ GameStateManager: Successfully synced merged collection to Supabase")
       } catch {
-        print("❌ GameStatsManager: Failed to sync merged collection: \(error)")
+        print("❌ GameStateManager: Failed to sync merged collection: \(error)")
       }
     }
   }
@@ -346,13 +346,13 @@ final class GameStatsManager: ObservableObject {
   // MARK: - Public Sync Methods
 
   func triggerSupabaseSync() async {
-    print("🔄 GameStatsManager: Sync requested")
+    print("🔄 GameStateManager: Sync requested")
     if !supabaseManager.isAuthenticated {
-      print("⚠️ GameStatsManager: Not authenticated, skipping sync")
+      print("⚠️ GameStateManager: Not authenticated, skipping sync")
       return
     }
 
-    print("🔄 GameStatsManager: User authenticated, starting sync")
+    print("🔄 GameStateManager: User authenticated, starting sync")
     await mergeCloudAndLocalData()
   }
 
@@ -360,16 +360,16 @@ final class GameStatsManager: ObservableObject {
 
   private func syncEntireCollectionToSupabase() async throws {
     if !supabaseManager.isAuthenticated {
-      print("⚠️ GameStatsManager: Not authenticated, skipping Supabase sync")
+      print("⚠️ GameStateManager: Not authenticated, skipping Supabase sync")
       return
     }
 
-    print("🔄 GameStatsManager: Syncing entire fish collection to Supabase...")
+    print("🔄 GameStateManager: Syncing entire fish collection to Supabase...")
     do {
       try await supabaseManager.saveFishCollection(collectedFish)
-      print("✅ GameStatsManager: Successfully synced \(collectedFish.count) fish to Supabase")
+      print("✅ GameStateManager: Successfully synced \(collectedFish.count) fish to Supabase")
     } catch {
-      print("❌ GameStatsManager: Error syncing to Supabase: \(error)")
+      print("❌ GameStateManager: Error syncing to Supabase: \(error)")
       throw error
     }
   }

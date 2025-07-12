@@ -10,7 +10,7 @@ import SwiftUI
 struct ModalsContainerView: View {
   // Managers
   @ObservedObject var commitmentManager: CommitmentManager
-  @ObservedObject var statsManager: GameStatsManager
+  @ObservedObject var statsManager: GameStateManager
   @ObservedObject var fishTankManager: FishTankManager
   @ObservedObject var supabaseManager: SupabaseManager
   
@@ -138,7 +138,7 @@ struct ModalsContainerView: View {
 #Preview {
   ModalsContainerView(
     commitmentManager: CommitmentManager.shared,
-    statsManager: GameStatsManager.shared,
+    statsManager: GameStateManager.shared,
     fishTankManager: FishTankManager.shared,
     supabaseManager: SupabaseManager.shared,
     showCommitmentSelection: .constant(false),

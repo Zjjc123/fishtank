@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
   @StateObject private var fishTankManager = FishTankManager.shared
   @StateObject private var commitmentManager = CommitmentManager.shared
-  @StateObject private var statsManager = GameStatsManager.shared
+  @StateObject private var statsManager = GameStateManager.shared
   @StateObject private var bubbleManager = BubbleManager.shared
   @StateObject private var supabaseManager = SupabaseManager.shared
 

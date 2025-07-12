@@ -710,7 +710,7 @@ struct FishDetailsView: View {
   @State private var newName: String
   @State private var showDeleteAlert = false
   @FocusState private var isTextFieldFocused: Bool
-  @ObservedObject private var statsManager = GameStatsManager.shared
+  @ObservedObject private var statsManager = GameStateManager.shared
 
   init(
     fish: CollectedFish, onRename: @escaping (String) -> Void, onCancel: @escaping () -> Void,
@@ -721,7 +721,7 @@ struct FishDetailsView: View {
     self.onCancel = onCancel
     self.onDelete = onDelete
     let currentName =
-      GameStatsManager.shared.collectedFish.first(where: { $0.id == fish.id })?.name ?? fish.name
+      GameStateManager.shared.collectedFish.first(where: { $0.id == fish.id })?.name ?? fish.name
     self._newName = State(initialValue: currentName)
   }
 

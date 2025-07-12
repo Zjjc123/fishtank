@@ -10,7 +10,7 @@ import SwiftUI
 
 struct SettingsView: View {
   @Binding var isPresented: Bool
-  let statsManager: GameStatsManager
+  let statsManager: GameStateManager
   let fishTankManager: FishTankManager
   @StateObject private var supabaseManager = SupabaseManager.shared
   @State private var showingSignOutAlert = false
