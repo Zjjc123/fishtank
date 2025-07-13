@@ -26,10 +26,10 @@ struct Bubble: Identifiable {
     // Random start position - some start below screen, some start within screen
     let startY = CGFloat.random(in: landscapeBounds.height * 0.5...landscapeBounds.height + 50)
     self.y = startY
-    self.size = CGFloat.random(in: 4...15)  // Smaller size range
-    self.speed = CGFloat.random(in: 0.3...1.0)  // Slightly slower
-    self.opacity = Double.random(in: 0.2...0.5)  // Lower opacity
-    self.wobble = CGFloat.random(in: -0.3...0.3)  // Less wobble
+    self.size = CGFloat.random(in: 4...14)  // Larger size range for visibility
+    self.speed = CGFloat.random(in: 0.03...0.1)  // Faster speed for visibility
+    self.opacity = Double.random(in: 0.4...0.7)  // Higher opacity for visibility
+    self.wobble = CGFloat.random(in: -0.05...0.05)  // Less wobble
   }
 }
 
@@ -39,8 +39,8 @@ final class BubbleManager: ObservableObject {
   
   @Published var bubbles: [Bubble] = []
   private var bounds: CGRect
-  private let maxBubbles = 20
-  private let bubbleSpawnChance = 0.1 // 10% chance to spawn a new bubble each animation frame
+  private let maxBubbles = 30
+  private let bubbleSpawnChance = 0.2 // 20% chance to spawn a new bubble each animation frame
   
   init(bounds: CGRect) {
     // Always use landscape bounds (width > height)
@@ -83,6 +83,11 @@ final class BubbleManager: ObservableObject {
     // Ensure we're using landscape bounds
     let landscapeBounds = bounds.width > bounds.height ? bounds : 
                           CGRect(x: 0, y: 0, width: bounds.height, height: bounds.width)
+    
+    // Occasionally spawn new bubbles if we have fewer than maxBubbles
+    if bubbles.count < maxBubbles && Double.random(in: 0...1) < bubbleSpawnChance {
+      bubbles.append(Bubble(in: landscapeBounds))
+    }
     
     for i in bubbles.indices {
       // Move bubble upward

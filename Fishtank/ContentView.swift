@@ -33,7 +33,7 @@ struct ContentView: View {
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
-  private let bubbleTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
+  private let bubbleTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect() // 60 FPS
   private let dataRefreshTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()  // Refresh every 5 minutes
 
   var body: some View {
