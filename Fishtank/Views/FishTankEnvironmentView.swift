@@ -18,6 +18,8 @@ struct FishTankEnvironmentView: View {
       ForEach(bubbleManager.bubbles) { bubble in
         BubbleView(bubble: bubble)
           .position(x: bubble.x, y: bubble.y)
+          .animation(.linear(duration: 0.016), value: bubble.x)
+          .animation(.linear(duration: 0.016), value: bubble.y)
       }
 
       // Swimming Fish

@@ -23,14 +23,21 @@ final class FishTankManager: ObservableObject {
   private let supabaseManager = SupabaseManager.shared
 
   init(bounds: CGRect) {
-    self.bounds = bounds
+    // Always use landscape bounds (width > height)
+    let screenBounds = bounds
+    self.bounds = screenBounds.width > screenBounds.height ? screenBounds : 
+                  CGRect(x: 0, y: 0, width: screenBounds.height, height: screenBounds.width)
     loadState()
   }
 
   // Update bounds when orientation changes
   func updateBounds(newBounds: CGRect) {
-    let widthRatio = newBounds.width / bounds.width
-    let heightRatio = newBounds.height / bounds.height
+    // Always use landscape bounds (width > height)
+    let landscapeBounds = newBounds.width > newBounds.height ? newBounds : 
+                          CGRect(x: 0, y: 0, width: newBounds.height, height: newBounds.width)
+    
+    let widthRatio = landscapeBounds.width / bounds.width
+    let heightRatio = landscapeBounds.height / bounds.height
 
     // Update fish positions based on the new bounds
     for i in swimmingFish.indices {
@@ -39,9 +46,9 @@ final class FishTankManager: ObservableObject {
       swimmingFish[i].y *= heightRatio
 
       // Ensure fish stay within bounds
-      swimmingFish[i].x = max(0, min(newBounds.width * 0.9, swimmingFish[i].x))
+      swimmingFish[i].x = max(0, min(landscapeBounds.width * 0.9, swimmingFish[i].x))
       swimmingFish[i].y = max(
-        newBounds.height * 0.1, min(newBounds.height * 0.9, swimmingFish[i].y))
+        landscapeBounds.height * 0.1, min(landscapeBounds.height * 0.9, swimmingFish[i].y))
     }
 
     // Update lootbox positions
@@ -50,13 +57,13 @@ final class FishTankManager: ObservableObject {
       commitmentLootboxes[i].y *= heightRatio
 
       // Ensure lootboxes stay within bounds
-      commitmentLootboxes[i].x = max(0, min(newBounds.width * 0.8, commitmentLootboxes[i].x))
+      commitmentLootboxes[i].x = max(0, min(landscapeBounds.width * 0.8, commitmentLootboxes[i].x))
       commitmentLootboxes[i].y = max(
-        newBounds.height * 0.3, min(newBounds.height * 0.7, commitmentLootboxes[i].y))
+        landscapeBounds.height * 0.3, min(landscapeBounds.height * 0.7, commitmentLootboxes[i].y))
     }
 
     // Update the bounds
-    self.bounds = newBounds
+    self.bounds = landscapeBounds
 
     // Save the updated state
     saveState()
@@ -142,6 +149,10 @@ final class FishTankManager: ObservableObject {
   }
 
   func animateFish() {
+    // Ensure we're using landscape bounds
+    let landscapeBounds = bounds.width > bounds.height ? bounds : 
+                          CGRect(x: 0, y: 0, width: bounds.height, height: bounds.width)
+    
     for i in swimmingFish.indices {
       // Check if we need to end startled state
       if swimmingFish[i].isStartled,
@@ -192,8 +203,8 @@ final class FishTankManager: ObservableObject {
       }
 
       // Keep fish within vertical bounds and handle bouncing
-      let minY = bounds.height * 0.1
-      let maxY = bounds.height * 0.9
+      let minY = landscapeBounds.height * 0.1
+      let maxY = landscapeBounds.height * 0.9
       if swimmingFish[i].y < minY {
         swimmingFish[i].y = minY
         swimmingFish[i].verticalDirection = 1  // Bounce down
@@ -205,20 +216,24 @@ final class FishTankManager: ObservableObject {
       }
 
       // Bounce off walls
-      if swimmingFish[i].x <= 0 || swimmingFish[i].x >= bounds.width * 0.9 {
+      if swimmingFish[i].x <= 0 || swimmingFish[i].x >= landscapeBounds.width * 0.9 {
         swimmingFish[i].direction *= -1
         // Slightly reduce speed on bounce for natural feel
         swimmingFish[i].speed *= 0.9
       }
 
       // Keep fish within horizontal bounds
-      swimmingFish[i].x = max(0, min(bounds.width * 0.9, swimmingFish[i].x))
+      swimmingFish[i].x = max(0, min(landscapeBounds.width * 0.9, swimmingFish[i].x))
     }
   }
 
   func spawnLootbox(type: LootboxType) {
-    let x = CGFloat.random(in: bounds.width * 0.2...bounds.width * 0.8)
-    let y = CGFloat.random(in: bounds.height * 0.3...bounds.height * 0.7)
+    // Ensure we're using landscape bounds
+    let landscapeBounds = bounds.width > bounds.height ? bounds : 
+                          CGRect(x: 0, y: 0, width: bounds.height, height: bounds.width)
+    
+    let x = CGFloat.random(in: landscapeBounds.width * 0.2...landscapeBounds.width * 0.8)
+    let y = CGFloat.random(in: landscapeBounds.height * 0.3...landscapeBounds.height * 0.7)
 
     let lootbox = CommitmentLootbox(type: type, x: x, y: y)
     commitmentLootboxes.append(lootbox)

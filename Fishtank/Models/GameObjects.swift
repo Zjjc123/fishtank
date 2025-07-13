@@ -101,8 +101,13 @@ struct SwimmingFish: Identifiable {
 
   init(collectedFish: CollectedFish, in bounds: CGRect) {
     self.collectedFish = collectedFish
-    self.x = CGFloat.random(in: 0...bounds.width)
-    self.y = CGFloat.random(in: bounds.height * 0.2...bounds.height * 0.8)
+    
+    // Ensure we're using landscape bounds
+    let landscapeBounds = bounds.width > bounds.height ? bounds : 
+                          CGRect(x: 0, y: 0, width: bounds.height, height: bounds.width)
+    
+    self.x = CGFloat.random(in: 0...landscapeBounds.width)
+    self.y = CGFloat.random(in: landscapeBounds.height * 0.2...landscapeBounds.height * 0.8)
 
     // Size is based on the fish's size property
     self.size = collectedFish.fish.size.displaySize

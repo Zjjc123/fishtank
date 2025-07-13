@@ -10,6 +10,7 @@ import SwiftUI
 struct MainView: View {
   @StateObject private var supabaseManager = SupabaseManager.shared
   @StateObject private var fishTankManager = FishTankManager.shared
+  @StateObject private var bubbleManager = BubbleManager.shared
 
   var body: some View {
     Group {
@@ -20,11 +21,10 @@ struct MainView: View {
             // Force landscape orientation when authenticated
             setOrientation(to: .landscape)
             
-            // Update fish tank bounds after orientation change
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-              fishTankManager.updateBounds(newBounds: UIScreen.main.bounds)
-            }
+            // No need to update bounds on orientation change anymore
+            // We're always using landscape bounds
           }
+          // Remove the willEnterForeground notification handler
       } else {
         AuthView()
           .onAppear {
