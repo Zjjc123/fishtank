@@ -176,9 +176,16 @@ struct ContentView: View {
     }
     .onAppear {
       // Force landscape orientation and UI update
-      UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
+      UIDevice.current.setValue(
+        UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
       UIViewController.attemptRotationToDeviceOrientation()
+      
+      // Ensure bounds are properly initialized in landscape mode
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        // No need to update bounds on orientation change anymore
+        // We're always using landscape bounds
+      }
       
       appStartTime = Date()
       // Initialize swimming fish with all visible fish
@@ -191,10 +198,11 @@ struct ContentView: View {
         }
       }
     }
-    .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-      // Update fish tank bounds when orientation changes
-      let newBounds = UIScreen.main.bounds
-      fishTankManager.updateBounds(newBounds: newBounds)
+    // Remove orientation change notification handler
+    .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification))
+    { _ in
+      // No need to update bounds on becoming active anymore
+      // We're always using landscape bounds
     }
     .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
       Button("Yes", role: .destructive) {

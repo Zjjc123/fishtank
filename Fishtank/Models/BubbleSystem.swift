@@ -18,9 +18,13 @@ struct Bubble: Identifiable {
   var wobble: CGFloat
 
   init(in bounds: CGRect) {
-    self.x = CGFloat.random(in: 0...bounds.width)
+    // Ensure we're using landscape bounds
+    let landscapeBounds = bounds.width > bounds.height ? bounds : 
+                          CGRect(x: 0, y: 0, width: bounds.height, height: bounds.width)
+    
+    self.x = CGFloat.random(in: 0...landscapeBounds.width)
     // Random start position - some start below screen, some start within screen
-    let startY = CGFloat.random(in: bounds.height * 0.5...bounds.height + 50)
+    let startY = CGFloat.random(in: landscapeBounds.height * 0.5...landscapeBounds.height + 50)
     self.y = startY
     self.size = CGFloat.random(in: 4...15)  // Smaller size range
     self.speed = CGFloat.random(in: 0.3...1.0)  // Slightly slower
@@ -34,13 +38,39 @@ final class BubbleManager: ObservableObject {
   static let shared = BubbleManager(bounds: UIScreen.main.bounds)
   
   @Published var bubbles: [Bubble] = []
-  private let bounds: CGRect
+  private var bounds: CGRect
   private let maxBubbles = 20
   private let bubbleSpawnChance = 0.1 // 10% chance to spawn a new bubble each animation frame
   
   init(bounds: CGRect) {
-    self.bounds = bounds
+    // Always use landscape bounds (width > height)
+    let screenBounds = bounds
+    self.bounds = screenBounds.width > screenBounds.height ? screenBounds : 
+                  CGRect(x: 0, y: 0, width: screenBounds.height, height: screenBounds.width)
     spawnInitialBubbles()
+  }
+
+  // Update bounds when orientation changes
+  func updateBounds(newBounds: CGRect) {
+    // Always use landscape bounds (width > height)
+    let landscapeBounds = newBounds.width > newBounds.height ? newBounds : 
+                          CGRect(x: 0, y: 0, width: newBounds.height, height: newBounds.width)
+    
+    let widthRatio = landscapeBounds.width / bounds.width
+    let heightRatio = landscapeBounds.height / bounds.height
+
+    // Update bubble positions based on the new bounds
+    for i in bubbles.indices {
+      // Scale positions proportionally to new bounds
+      bubbles[i].x *= widthRatio
+      bubbles[i].y *= heightRatio
+
+      // Ensure bubbles stay within bounds
+      bubbles[i].x = max(0, min(landscapeBounds.width, bubbles[i].x))
+    }
+
+    // Update the bounds
+    self.bounds = landscapeBounds
   }
 
   private func spawnInitialBubbles() {
@@ -50,6 +80,10 @@ final class BubbleManager: ObservableObject {
   }
 
   func animateBubbles() {
+    // Ensure we're using landscape bounds
+    let landscapeBounds = bounds.width > bounds.height ? bounds : 
+                          CGRect(x: 0, y: 0, width: bounds.height, height: bounds.width)
+    
     for i in bubbles.indices {
       // Move bubble upward
       bubbles[i].y -= bubbles[i].speed
@@ -61,10 +95,10 @@ final class BubbleManager: ObservableObject {
       if bubbles[i].y < -50 {
         // Add some randomness to when bubbles respawn
         if Double.random(in: 0...1) < 0.1 {  // 10% chance to respawn immediately
-          bubbles[i] = Bubble(in: bounds)
+          bubbles[i] = Bubble(in: landscapeBounds)
         } else {
           // Otherwise, keep it off screen for a bit
-          bubbles[i].y = bounds.height + CGFloat.random(in: 0...100)
+          bubbles[i].y = landscapeBounds.height + CGFloat.random(in: 0...100)
         }
       }
 
@@ -72,8 +106,8 @@ final class BubbleManager: ObservableObject {
       if bubbles[i].x < 0 {
         bubbles[i].x = 0
         bubbles[i].wobble = abs(bubbles[i].wobble)
-      } else if bubbles[i].x > bounds.width {
-        bubbles[i].x = bounds.width
+      } else if bubbles[i].x > landscapeBounds.width {
+        bubbles[i].x = landscapeBounds.width
         bubbles[i].wobble = -abs(bubbles[i].wobble)
       }
     }
