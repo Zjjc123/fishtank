@@ -68,6 +68,8 @@ struct AuthView: View {
   @State private var isSignUp = false
   @State private var showPassword = false
   @State private var showConfirmationMessage = false
+  @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
+  @Environment(\.dismiss) private var dismiss
 
   var body: some View {
     GeometryReader { geometry in
@@ -114,12 +116,34 @@ struct AuthView: View {
             isSignUp: $isSignUp,
             showPassword: $showPassword,
             showConfirmationMessage: $showConfirmationMessage,
+            shouldShowAuthView: $shouldShowAuthView,
             supabaseManager: supabaseManager
           )
           .padding(.horizontal, 30)
           .onTapGesture {
             dismissKeyboard()
           }
+
+          // Continue as Guest Button
+          Button(action: {
+            supabaseManager.continueAsGuest()
+          }) {
+            HStack(spacing: 6) {
+              Image(systemName: "person.crop.circle.badge.questionmark")
+                .font(.caption)
+              Text("Continue as Guest")
+                .font(.system(.caption, design: .rounded))
+                .fontWeight(.medium)
+            }
+            .foregroundColor(.white.opacity(0.8))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+              Capsule()
+                .fill(Color.gray.opacity(0.2))
+            )
+          }
+          .padding(.top, 8)
 
           Spacer()
         }
@@ -146,14 +170,20 @@ struct AuthView: View {
     }
     .navigationBarHidden(true)
     .onAppear {
-      UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+      // Set portrait orientation using the recommended API
+      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+        let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
+        windowScene.requestGeometryUpdate(geometryPreferences)
+      }
+      
+      // Set app orientation mask
       AppDelegate.orientationLock = .portrait
       UIViewController.attemptRotationToDeviceOrientation()
-    }
-    .onDisappear {
-      UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
-      AppDelegate.orientationLock = .landscape
-      UIViewController.attemptRotationToDeviceOrientation()
+
+      // If coming from guest mode, default to sign up mode
+      if shouldShowAuthView {
+        isSignUp = true
+      }
     }
   }
 }
@@ -166,6 +196,7 @@ struct AuthFormView: View {
   @Binding var isSignUp: Bool
   @Binding var showPassword: Bool
   @Binding var showConfirmationMessage: Bool
+  @Binding var shouldShowAuthView: Bool
   let supabaseManager: SupabaseManager
 
   // Add state for OTP verification
@@ -302,6 +333,11 @@ struct AuthFormView: View {
         errorView(message: errorMessage)
       }
 
+      // Success Message
+      if let successMessage = supabaseManager.successMessage {
+        successView(message: successMessage)
+      }
+
       // Auth Button
       if !showConfirmationMessage {
         authButtonsView()
@@ -320,6 +356,41 @@ struct AuthFormView: View {
   }
 
   // MARK: - Extracted Views
+
+  @ViewBuilder
+  private func successView(message: String) -> some View {
+    HStack(spacing: 6) {
+      Image(systemName: "checkmark.circle.fill")
+        .font(.caption2)
+        .foregroundColor(.green)
+
+      Text(message)
+        .font(.system(.caption2, design: .rounded))
+        .foregroundColor(.green)
+        .multilineTextAlignment(.leading)
+        .fixedSize(horizontal: false, vertical: true)
+
+      Spacer()
+
+      Button(action: {
+        supabaseManager.successMessage = nil
+      }) {
+        Image(systemName: "xmark.circle.fill")
+          .font(.caption2)
+          .foregroundColor(.green.opacity(0.7))
+      }
+    }
+    .padding(8)
+    .background(
+      RoundedRectangle(cornerRadius: 8)
+        .fill(Color.green.opacity(0.1))
+        .overlay(
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(Color.green.opacity(0.3), lineWidth: 1)
+        )
+    )
+    .transition(.opacity.combined(with: .scale))
+  }
 
   @ViewBuilder
   private func confirmationView() -> some View {
@@ -408,17 +479,18 @@ struct AuthFormView: View {
           .font(.system(.caption2, design: .rounded))
           .fontWeight(.medium)
       }
-      .foregroundColor(.blue)
+      .foregroundColor(.white)
       .padding(.horizontal, 12)
-      .padding(.vertical, 6)
+      .padding(.vertical, 8)
       .frame(maxWidth: .infinity)
       .background(
-        RoundedRectangle(cornerRadius: 6)
-          .fill(Color.blue.opacity(0.1))
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.blue)
           .overlay(
-            RoundedRectangle(cornerRadius: 6)
-              .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8)
+              .stroke(Color.white.opacity(0.3), lineWidth: 1)
           )
+          .shadow(color: Color.blue.opacity(0.4), radius: 3, x: 0, y: 2)
       )
     }
     .disabled(buttonDisabledState())
@@ -613,6 +685,14 @@ struct AuthFormView: View {
       return
     }
 
+    // If in guest mode, exit guest mode first to prevent authentication conflicts
+    let wasGuest = supabaseManager.isGuest
+    if wasGuest {
+      await MainActor.run {
+        supabaseManager.isGuest = false
+      }
+    }
+
     let success = await supabaseManager.signUp(email: email, password: password)
     if success {
       // Successfully signed up - show confirmation message
@@ -620,13 +700,36 @@ struct AuthFormView: View {
       withAnimation(.easeInOut(duration: 0.3)) {
         showConfirmationMessage = true
       }
+      // If previously guest, prepare to migrate local fish to Supabase after verification
+      if wasGuest {
+        await GameStateManager.shared.migrateGuestDataIfNeeded()
+        await MainActor.run {
+          // Set success message about fish migration
+          supabaseManager.successMessage =
+            "Your fish collection has been saved to your new account!"
+        }
+      }
     } else {
       // Authentication failed - error message is already set in SupabaseManager
       print("Sign up failed")
+      // If sign-up failed and was guest, restore guest mode
+      if wasGuest {
+        await MainActor.run {
+          supabaseManager.continueAsGuest()
+        }
+      }
     }
   }
 
   private func handleSignIn() async {
+    // If in guest mode, exit guest mode first to prevent authentication conflicts
+    let wasGuest = supabaseManager.isGuest
+    if wasGuest {
+      await MainActor.run {
+        supabaseManager.isGuest = false
+      }
+    }
+
     let success = await supabaseManager.signIn(email: email, password: password)
     if success {
       // Successfully signed in
@@ -635,14 +738,39 @@ struct AuthFormView: View {
       email = ""
       password = ""
       confirmPassword = ""
+      // If previously guest, migrate local fish to Supabase
+      if wasGuest {
+        await GameStateManager.shared.migrateGuestDataIfNeeded()
+        await MainActor.run {
+          // Set success message about fish migration
+          supabaseManager.successMessage = "Your fish collection has been saved to your account!"
+        }
+      }
+
+      // Ensure isAuthenticated is true and force UI update
+      await MainActor.run {
+        supabaseManager.isAuthenticated = true
+        // Reset shouldShowAuthView to ensure MainView shows ContentView
+        shouldShowAuthView = false
+      }
     } else {
       // Authentication failed - error message is already set in SupabaseManager
       print("Sign in failed")
+      // If sign-in failed and was guest, restore guest mode
+      if wasGuest {
+        await MainActor.run {
+          supabaseManager.continueAsGuest()
+        }
+      }
     }
   }
 
   private func verifyOTP() async {
     isVerifyingOTP = true
+
+    // If in guest mode, remember this but don't exit yet
+    let wasGuest = supabaseManager.isGuest
+
     let success = await supabaseManager.verifyEmailWithOTP(email: email, token: otpCode)
     isVerifyingOTP = false
 
@@ -655,9 +783,38 @@ struct AuthFormView: View {
       confirmPassword = ""
       otpCode = ""
       showConfirmationMessage = false
+
+      // Show success message about automatic login
+      supabaseManager.successMessage = "Your account has been verified! You are now logged in."
+
+      // If previously guest, migrate local fish to Supabase and exit guest mode
+      if wasGuest {
+        await GameStateManager.shared.migrateGuestDataIfNeeded()
+        await MainActor.run {
+          // Guest mode should already be exited by successful authentication
+          // Just ensure it's false
+          supabaseManager.isGuest = false
+          // Set success message about fish migration
+          supabaseManager.successMessage =
+            "Your fish collection has been saved to your new account!"
+        }
+      }
+
+      // Ensure isAuthenticated is true and force UI update
+      await MainActor.run {
+        supabaseManager.isAuthenticated = true
+        // Reset shouldShowAuthView to ensure MainView shows ContentView
+        shouldShowAuthView = false
+      }
     } else {
       // Verification failed - error message is already set in SupabaseManager
       print("OTP verification failed")
+      // If verification failed and was guest, ensure guest mode is restored
+      if wasGuest && !supabaseManager.isAuthenticated {
+        await MainActor.run {
+          supabaseManager.continueAsGuest()
+        }
+      }
     }
   }
 }

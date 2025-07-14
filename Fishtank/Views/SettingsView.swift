@@ -15,6 +15,8 @@ struct SettingsView: View {
   @StateObject private var supabaseManager = SupabaseManager.shared
   @State private var showingSignOutAlert = false
   @State private var isOnline = true
+  @State private var showSignUpAlert = false
+  @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
   
   private func signOut() async {
     await supabaseManager.signOut()
@@ -122,6 +124,11 @@ struct SettingsView: View {
                   .font(.system(.caption, design: .rounded))
                   .foregroundColor(.orange.opacity(0.8))
                   .multilineTextAlignment(.leading)
+              } else if supabaseManager.isGuest {
+                Text("Fish are saved locally on your device (guest mode)")
+                  .font(.system(.caption, design: .rounded))
+                  .foregroundColor(.yellow.opacity(0.8))
+                  .multilineTextAlignment(.leading)
               } else {
                 Text("Fish are saved locally on your device")
                   .font(.system(.caption, design: .rounded))
@@ -175,8 +182,60 @@ struct SettingsView: View {
 
         // Buttons
         VStack(spacing: 8) {
+          // Sign Up Button (if guest)
+          if supabaseManager.isGuest {
+            VStack(spacing: 8) {
+              HStack(spacing: 8) {
+                Image(systemName: "person.crop.circle.badge.questionmark")
+                  .font(.title3)
+                  .foregroundColor(.yellow.opacity(0.9))
+
+                Text("Guest Mode")
+                  .font(.system(.subheadline, design: .rounded))
+                  .foregroundColor(.white.opacity(0.8))
+
+                Spacer()
+
+                Text("Create an account to save your fish online")
+                  .font(.system(.caption, design: .rounded))
+                  .foregroundColor(.yellow.opacity(0.8))
+              }
+              .padding(12)
+              .background(
+                RoundedRectangle(cornerRadius: 12)
+                  .fill(.ultraThinMaterial)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                      .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
+                  )
+              )
+            }
+            
+            Button(action: {
+              showSignUpAlert = true
+            }) {
+              HStack(spacing: 8) {
+                Image(systemName: "person.badge.plus")
+                  .font(.subheadline)
+                Text("Sign Up")
+                  .font(.system(.subheadline, design: .rounded))
+              }
+              .foregroundColor(.white)
+              .frame(maxWidth: .infinity)
+              .frame(height: 40)
+              .background(
+                RoundedRectangle(cornerRadius: 12)
+                  .fill(Color.green.opacity(0.7))
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                      .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                  )
+              )
+            }
+          }
+
           // Account Section (if authenticated)
-          if supabaseManager.isAuthenticated {
+          if supabaseManager.isAuthenticated && !supabaseManager.isGuest {
             VStack(spacing: 8) {
               HStack(spacing: 8) {
                 Image(systemName: "person.circle.fill")
@@ -206,7 +265,7 @@ struct SettingsView: View {
           }
 
           // Sign Out Button (if authenticated)
-          if supabaseManager.isAuthenticated {
+          if supabaseManager.isAuthenticated && !supabaseManager.isGuest {
             Button(action: {
               showingSignOutAlert = true
             }) {
@@ -268,6 +327,27 @@ struct SettingsView: View {
       }
     }
 
+    // Sign Up Alert
+    .alert("Create Account", isPresented: $showSignUpAlert) {
+      Button("Cancel", role: .cancel) {}
+      Button("Continue", role: .none) {
+        // Exit guest mode and show auth view with sign up mode
+        Task {
+          await MainActor.run {
+            // Set flag to show auth view
+            shouldShowAuthView = true
+            // Close settings view
+            isPresented = false
+            // Exit guest mode
+            supabaseManager.exitGuestMode()
+          }
+        }
+      }
+    } message: {
+      Text("Would you like to create an account? Your fish collection will be saved to your new account.")
+    }
+    
+    // Sign Out Alert
     .alert("Sign Out", isPresented: $showingSignOutAlert) {
       Button("Cancel", role: .cancel) {}
       Button("Sign Out", role: .destructive) {

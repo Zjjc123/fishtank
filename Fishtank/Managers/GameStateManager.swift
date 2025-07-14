@@ -94,6 +94,24 @@ final class GameStateManager: ObservableObject {
 
   // MARK: - Data Merging
 
+  // Call this to clear all local fish data (used on logout)
+  func clearLocalFishData() {
+    collectedFish.removeAll()
+    initializeFishCollection()
+    UserDefaults.standard.removeObject(forKey: localStorageKey)
+    print("🧹 GameStateManager: Cleared all local fish data")
+  }
+
+  // Call this after a guest signs up/logs in to migrate local fish to Supabase
+  func migrateGuestDataIfNeeded() async {
+    if supabaseManager.isGuest {
+      // Do nothing, still guest
+      return
+    }
+    // If just signed up/logged in, merge and sync
+    await mergeCloudAndLocalData()
+  }
+
   private func mergeCloudAndLocalData() async {
     print("🔄 GameStateManager: Starting cloud and local data merge (cloud overrides local)")
 
@@ -110,9 +128,14 @@ final class GameStateManager: ObservableObject {
       }
     }
 
-    // Load cloud fish
-    let cloudFish = await supabaseManager.loadFishCollection()
-    print("🔄 GameStateManager: Found \(cloudFish.count) fish in cloud for merging")
+    // Load cloud fish (skip if guest)
+    let cloudFish: [CollectedFish]
+    if supabaseManager.isGuest {
+      cloudFish = []
+    } else {
+      cloudFish = await supabaseManager.loadFishCollection()
+      print("🔄 GameStateManager: Found \(cloudFish.count) fish in cloud for merging")
+    }
 
     // Create dictionaries for easier merging
     var fishById = [String: CollectedFish]()
@@ -141,8 +164,8 @@ final class GameStateManager: ObservableObject {
     // Save the merged collection locally
     saveToLocalStorage()
 
-    // Sync the merged collection to Supabase
-    if supabaseManager.isAuthenticated {
+    // Sync the merged collection to Supabase (skip if guest)
+    if supabaseManager.isAuthenticated && !supabaseManager.isGuest {
       do {
         try await syncEntireCollectionToSupabase()
         print("✅ GameStateManager: Successfully synced merged collection to Supabase")
@@ -354,8 +377,8 @@ final class GameStateManager: ObservableObject {
   // MARK: - Supabase Integration
 
   private func syncEntireCollectionToSupabase() async throws {
-    if !supabaseManager.isAuthenticated {
-      print("⚠️ GameStateManager: Not authenticated, skipping Supabase sync")
+    if !supabaseManager.isAuthenticated || supabaseManager.isGuest {
+      print("⚠️ GameStateManager: Not authenticated or guest, skipping Supabase sync")
       return
     }
 
