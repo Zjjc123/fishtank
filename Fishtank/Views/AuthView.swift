@@ -179,12 +179,6 @@ struct AuthView: View {
         isSignUp = true
       }
     }
-    .onDisappear {
-      UIDevice.current.setValue(
-        UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
-      AppDelegate.orientationLock = .landscape
-      UIViewController.attemptRotationToDeviceOrientation()
-    }
   }
 }
 
@@ -479,17 +473,18 @@ struct AuthFormView: View {
           .font(.system(.caption2, design: .rounded))
           .fontWeight(.medium)
       }
-      .foregroundColor(.blue)
+      .foregroundColor(.white)
       .padding(.horizontal, 12)
-      .padding(.vertical, 6)
+      .padding(.vertical, 8)
       .frame(maxWidth: .infinity)
       .background(
-        RoundedRectangle(cornerRadius: 6)
-          .fill(Color.blue.opacity(0.1))
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.blue)
           .overlay(
-            RoundedRectangle(cornerRadius: 6)
-              .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8)
+              .stroke(Color.white.opacity(0.3), lineWidth: 1)
           )
+          .shadow(color: Color.blue.opacity(0.4), radius: 3, x: 0, y: 2)
       )
     }
     .disabled(buttonDisabledState())

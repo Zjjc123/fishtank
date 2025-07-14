@@ -24,26 +24,17 @@ struct MainView: View {
               // Force landscape orientation when authenticated or guest
               setOrientation(to: .landscape)
             }
-          if supabaseManager.isGuest {
-            HStack {
-              Image(systemName: "person.crop.circle.badge.questionmark")
-                .foregroundColor(.yellow)
-              Text("You are playing as a guest. Your progress is saved locally.")
-                .font(.caption)
-                .foregroundColor(.yellow)
-              Spacer()
-            }
-            .padding(10)
-            .background(Color.black.opacity(0.7))
-            .cornerRadius(10)
-            .padding([.top, .horizontal], 16)
-          }
         }
       } else {
         AuthView()
           .onDisappear {
             // Reset the flag when auth view disappears
             shouldShowAuthView = false
+
+            // Only set landscape orientation if user is authenticated or guest
+            if supabaseManager.isAuthenticated || supabaseManager.isGuest {
+              setOrientation(to: .landscape)
+            }
           }
           .onAppear {
             // Force portrait orientation for auth view
@@ -79,22 +70,29 @@ struct MainView: View {
   // Helper function to set orientation with proper delay
   private func setOrientation(to orientation: UIInterfaceOrientationMask) {
     if orientation == .landscape {
+      // Set app orientation mask first
+      AppDelegate.orientationLock = .landscape
+
       // Set device orientation
       UIDevice.current.setValue(
         UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
-      // Set app orientation mask
-      AppDelegate.orientationLock = .landscape
 
       // Force UI update after a slight delay
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
         // Additional rotation force if needed
         UIViewController.attemptRotationToDeviceOrientation()
       }
     } else {
+      // Set app orientation mask first
+      AppDelegate.orientationLock = .portrait
+
       // Set device orientation
       UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
-      // Set app orientation mask
-      AppDelegate.orientationLock = .portrait
+
+      // Force UI update after a slight delay
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        UIViewController.attemptRotationToDeviceOrientation()
+      }
     }
   }
 }
