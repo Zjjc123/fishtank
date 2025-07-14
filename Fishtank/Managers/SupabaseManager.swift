@@ -19,12 +19,21 @@ class SupabaseManager: ObservableObject {
   @Published var errorMessage: String?
   @Published var isGuest: Bool = false
   @Published var successMessage: String?
+  
+  // User defaults keys
+  private let guestModeKey = "isGuestMode"
 
   private init() {
     self.client = SupabaseClient(
       supabaseURL: URL(string: SupabaseConfig.supabaseURL)!,
       supabaseKey: SupabaseConfig.supabaseAnonKey
     )
+    
+    // Check if user previously selected guest mode
+    if UserDefaults.standard.bool(forKey: guestModeKey) {
+      self.isGuest = true
+      self.isAuthenticated = true
+    }
 
     // Check if user is already signed in
     Task {
@@ -38,6 +47,10 @@ class SupabaseManager: ObservableObject {
     self.isGuest = true
     self.currentUser = nil
     self.isAuthenticated = true // For UI flow
+    
+    // Save guest mode preference
+    UserDefaults.standard.set(true, forKey: guestModeKey)
+    
     NotificationCenter.default.post(
       name: NSNotification.Name("SupabaseAuthStateChanged"),
       object: nil,
@@ -49,6 +62,10 @@ class SupabaseManager: ObservableObject {
   func exitGuestMode() {
     self.isGuest = false
     self.isAuthenticated = false
+    
+    // Clear guest mode preference
+    UserDefaults.standard.set(false, forKey: guestModeKey)
+    
     NotificationCenter.default.post(
       name: NSNotification.Name("SupabaseAuthStateChanged"),
       object: nil,
@@ -181,7 +198,11 @@ class SupabaseManager: ObservableObject {
       try await client.auth.signOut()
       self.currentUser = nil
       self.isAuthenticated = false
-      // Removed PersistentStorageManager.clearAllData() since local cache is no longer used
+      
+      // Clear guest mode preference
+      UserDefaults.standard.set(false, forKey: guestModeKey)
+      self.isGuest = false
+      
       // Post notification about authentication state change
       NotificationCenter.default.post(
         name: NSNotification.Name("SupabaseAuthStateChanged"),

@@ -69,25 +69,29 @@ struct MainView: View {
 
   // Helper function to set orientation with proper delay
   private func setOrientation(to orientation: UIInterfaceOrientationMask) {
-    if orientation == .landscape {
-      // Set app orientation mask first
-      AppDelegate.orientationLock = .landscape
+    // Set app orientation mask first
+    AppDelegate.orientationLock = orientation
 
-      // Set device orientation
-      UIDevice.current.setValue(
-        UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
+    // Get the windowScene
+    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+      return
+    }
+
+    if orientation == .landscape {
+      // Request landscape orientation using the recommended API
+      let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(
+        interfaceOrientations: .landscapeRight)
+      windowScene.requestGeometryUpdate(geometryPreferences)
 
       // Force UI update after a slight delay
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-        // Additional rotation force if needed
         UIViewController.attemptRotationToDeviceOrientation()
       }
     } else {
-      // Set app orientation mask first
-      AppDelegate.orientationLock = .portrait
-
-      // Set device orientation
-      UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+      // Request portrait orientation using the recommended API
+      let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(
+        interfaceOrientations: .portrait)
+      windowScene.requestGeometryUpdate(geometryPreferences)
 
       // Force UI update after a slight delay
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {

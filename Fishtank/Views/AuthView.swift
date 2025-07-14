@@ -170,7 +170,13 @@ struct AuthView: View {
     }
     .navigationBarHidden(true)
     .onAppear {
-      UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+      // Set portrait orientation using the recommended API
+      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+        let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
+        windowScene.requestGeometryUpdate(geometryPreferences)
+      }
+      
+      // Set app orientation mask
       AppDelegate.orientationLock = .portrait
       UIViewController.attemptRotationToDeviceOrientation()
 
