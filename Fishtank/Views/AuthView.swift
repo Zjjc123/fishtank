@@ -121,6 +121,27 @@ struct AuthView: View {
             dismissKeyboard()
           }
 
+          // Continue as Guest Button
+          Button(action: {
+            supabaseManager.continueAsGuest()
+          }) {
+            HStack(spacing: 6) {
+              Image(systemName: "person.crop.circle.badge.questionmark")
+                .font(.caption)
+              Text("Continue as Guest")
+                .font(.system(.caption, design: .rounded))
+                .fontWeight(.medium)
+            }
+            .foregroundColor(.white.opacity(0.8))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+              Capsule()
+                .fill(Color.gray.opacity(0.2))
+            )
+          }
+          .padding(.top, 8)
+
           Spacer()
         }
         .contentShape(Rectangle())
@@ -151,7 +172,8 @@ struct AuthView: View {
       UIViewController.attemptRotationToDeviceOrientation()
     }
     .onDisappear {
-      UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
+      UIDevice.current.setValue(
+        UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
       UIViewController.attemptRotationToDeviceOrientation()
     }
@@ -620,6 +642,13 @@ struct AuthFormView: View {
       withAnimation(.easeInOut(duration: 0.3)) {
         showConfirmationMessage = true
       }
+      // If previously guest, migrate local fish to Supabase and exit guest mode
+      if supabaseManager.isGuest {
+        await GameStateManager.shared.migrateGuestDataIfNeeded()
+        await MainActor.run {
+          supabaseManager.exitGuestMode()
+        }
+      }
     } else {
       // Authentication failed - error message is already set in SupabaseManager
       print("Sign up failed")
@@ -635,6 +664,13 @@ struct AuthFormView: View {
       email = ""
       password = ""
       confirmPassword = ""
+      // If previously guest, migrate local fish to Supabase and exit guest mode
+      if supabaseManager.isGuest {
+        await GameStateManager.shared.migrateGuestDataIfNeeded()
+        await MainActor.run {
+          supabaseManager.exitGuestMode()
+        }
+      }
     } else {
       // Authentication failed - error message is already set in SupabaseManager
       print("Sign in failed")

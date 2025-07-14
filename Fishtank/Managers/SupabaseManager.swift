@@ -17,6 +17,7 @@ class SupabaseManager: ObservableObject {
   @Published var isAuthenticated = false
   @Published var isLoading = false
   @Published var errorMessage: String?
+  @Published var isGuest: Bool = false
 
   private init() {
     self.client = SupabaseClient(
@@ -28,6 +29,30 @@ class SupabaseManager: ObservableObject {
     Task {
       await checkCurrentUser()
     }
+  }
+
+  // Guest mode logic
+  @MainActor
+  func continueAsGuest() {
+    self.isGuest = true
+    self.currentUser = nil
+    self.isAuthenticated = true // For UI flow
+    NotificationCenter.default.post(
+      name: NSNotification.Name("SupabaseAuthStateChanged"),
+      object: nil,
+      userInfo: ["isAuthenticated": true, "isGuest": true]
+    )
+  }
+
+  @MainActor
+  func exitGuestMode() {
+    self.isGuest = false
+    self.isAuthenticated = false
+    NotificationCenter.default.post(
+      name: NSNotification.Name("SupabaseAuthStateChanged"),
+      object: nil,
+      userInfo: ["isAuthenticated": false, "isGuest": false]
+    )
   }
 
   // MARK: - Authentication
@@ -162,6 +187,8 @@ class SupabaseManager: ObservableObject {
         object: nil,
         userInfo: ["isAuthenticated": false]
       )
+      // Clear all local fish data on logout
+      GameStateManager.shared.clearLocalFishData()
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -341,7 +368,7 @@ class SupabaseManager: ObservableObject {
   }
 
   func saveFishCollection(_ fish: [CollectedFish]) async {
-    guard let userId = currentUser?.id else { return }
+    guard let userId = currentUser?.id, !isGuest else { return }
 
     do {
       // Convert CollectedFish to database format
@@ -377,7 +404,7 @@ class SupabaseManager: ObservableObject {
 
   // Add 'throws' to propagate errors
   func saveFishToSupabase(_ fish: CollectedFish) async throws {
-    guard let userId = currentUser?.id else { return }
+    guard let userId = currentUser?.id, !isGuest else { return }
     do {
       let fishData = FishInsert(
         id: fish.id.uuidString,
@@ -404,7 +431,7 @@ class SupabaseManager: ObservableObject {
 
   // Add 'throws' to propagate errors
   func saveFishesToSupabase(_ fishes: [CollectedFish]) async throws {
-    guard let userId = currentUser?.id else { return }
+    guard let userId = currentUser?.id, !isGuest else { return }
     do {
       let fishData = fishes.map { f in
         FishInsert(
@@ -432,7 +459,7 @@ class SupabaseManager: ObservableObject {
 
   // Delete a fish from Supabase
   func deleteFishFromSupabase(_ fishId: UUID) async {
-    guard let userId = currentUser?.id else { return }
+    guard let userId = currentUser?.id, !isGuest else { return }
 
     do {
       _ = try await client.from("user_fish")
@@ -447,7 +474,7 @@ class SupabaseManager: ObservableObject {
 
   // Delete multiple fish from Supabase
   func deleteAllFishFromSupabase(_ fishIds: [UUID]) async {
-    guard let userId = currentUser?.id else { return }
+    guard let userId = currentUser?.id, !isGuest else { return }
 
     do {
       // Delete all specified fish IDs
@@ -465,7 +492,7 @@ class SupabaseManager: ObservableObject {
 
   // Update fish visibility in Supabase
   func updateFishVisibilityInSupabase(_ fishId: UUID, isVisible: Bool) async {
-    guard let userId = currentUser?.id else { return }
+    guard let userId = currentUser?.id, !isGuest else { return }
 
     do {
       _ = try await client.from("user_fish")
@@ -480,7 +507,7 @@ class SupabaseManager: ObservableObject {
 
   // Update fish name in Supabase
   func updateFishNameInSupabase(_ fishId: UUID, customName: String) async {
-    guard let userId = currentUser?.id else { return }
+    guard let userId = currentUser?.id, !isGuest else { return }
 
     do {
       _ = try await client.from("user_fish")
@@ -494,7 +521,7 @@ class SupabaseManager: ObservableObject {
   }
 
   func loadFishCollection() async -> [CollectedFish] {
-    guard let userId = currentUser?.id else { return [] }
+    guard let userId = currentUser?.id, !isGuest else { return [] }
 
     do {
       print("🔍 loadFishCollection: Fetching fish for user \(userId)")

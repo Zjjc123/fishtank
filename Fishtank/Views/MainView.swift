@@ -14,17 +14,29 @@ struct MainView: View {
 
   var body: some View {
     Group {
-      if supabaseManager.isAuthenticated {
-        ContentView()
-          .environmentObject(supabaseManager)
-          .onAppear {
-            // Force landscape orientation when authenticated
-            setOrientation(to: .landscape)
-            
-            // No need to update bounds on orientation change anymore
-            // We're always using landscape bounds
+      if supabaseManager.isAuthenticated || supabaseManager.isGuest {
+        ZStack(alignment: .top) {
+          ContentView()
+            .environmentObject(supabaseManager)
+            .onAppear {
+              // Force landscape orientation when authenticated or guest
+              setOrientation(to: .landscape)
+            }
+          if supabaseManager.isGuest {
+            HStack {
+              Image(systemName: "person.crop.circle.badge.questionmark")
+                .foregroundColor(.yellow)
+              Text("You are playing as a guest. Your progress is saved locally.")
+                .font(.caption)
+                .foregroundColor(.yellow)
+              Spacer()
+            }
+            .padding(10)
+            .background(Color.black.opacity(0.7))
+            .cornerRadius(10)
+            .padding([.top, .horizontal], 16)
           }
-          // Remove the willEnterForeground notification handler
+        }
       } else {
         AuthView()
           .onAppear {
