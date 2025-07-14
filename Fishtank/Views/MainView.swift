@@ -11,10 +11,12 @@ struct MainView: View {
   @StateObject private var supabaseManager = SupabaseManager.shared
   @StateObject private var fishTankManager = FishTankManager.shared
   @StateObject private var bubbleManager = BubbleManager.shared
+  @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
+  @State private var forceUpdate: Bool = false
 
   var body: some View {
     Group {
-      if supabaseManager.isAuthenticated || supabaseManager.isGuest {
+      if (supabaseManager.isAuthenticated || supabaseManager.isGuest) && !shouldShowAuthView {
         ZStack(alignment: .top) {
           ContentView()
             .environmentObject(supabaseManager)
@@ -39,6 +41,10 @@ struct MainView: View {
         }
       } else {
         AuthView()
+          .onDisappear {
+            // Reset the flag when auth view disappears
+            shouldShowAuthView = false
+          }
           .onAppear {
             // Force portrait orientation for auth view
             setOrientation(to: .portrait)
@@ -50,6 +56,23 @@ struct MainView: View {
       Task {
         await supabaseManager.checkCurrentUser()
       }
+
+      // Listen for authentication state changes
+      setupAuthStateObserver()
+    }
+    // Force view update when authentication state changes
+    .id(forceUpdate)
+  }
+
+  // Setup observer for authentication state changes
+  private func setupAuthStateObserver() {
+    NotificationCenter.default.addObserver(
+      forName: NSNotification.Name("SupabaseAuthStateChanged"),
+      object: nil,
+      queue: .main
+    ) { notification in
+      // Force view to update when auth state changes
+      self.forceUpdate.toggle()
     }
   }
 

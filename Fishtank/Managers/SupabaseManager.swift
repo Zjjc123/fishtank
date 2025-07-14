@@ -18,6 +18,7 @@ class SupabaseManager: ObservableObject {
   @Published var isLoading = false
   @Published var errorMessage: String?
   @Published var isGuest: Bool = false
+  @Published var successMessage: String?
 
   private init() {
     self.client = SupabaseClient(
