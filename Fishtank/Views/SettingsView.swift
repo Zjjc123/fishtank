@@ -5,9 +5,9 @@
 //  Created by Jiajun Zhang on 6/19/25.
 //
 
+import StoreKit
 import Supabase
 import SwiftUI
-import StoreKit
 
 struct SettingsView: View {
   @Binding var isPresented: Bool
@@ -22,18 +22,18 @@ struct SettingsView: View {
   @State private var showPurchaseAlert = false
   @State private var selectedColorForPurchase: BackgroundColorOption?
   @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
-  
+
   private func signOut() async {
     await supabaseManager.signOut()
   }
-  
+
   private func checkConnection() {
     Task {
       // Simple network check by trying to make a connection
       do {
         let url = URL(string: "https://www.apple.com")!
         let (_, response) = try await URLSession.shared.data(from: url)
-        
+
         await MainActor.run {
           isOnline = (response as? HTTPURLResponse)?.statusCode == 200
         }
@@ -57,14 +57,13 @@ struct SettingsView: View {
       // Main content
       VStack(spacing: 16) {
         headerView
-        
+
         // Settings Options
         ScrollView {
           connectionStatusView
           storageInfoView
           backgroundColorSelectionView
           restorePurchasesButton
-          syncButtonView
           accountButtonsView
         }
       }
@@ -101,9 +100,11 @@ struct SettingsView: View {
         }
       }
     } message: {
-      Text("Would you like to create an account? Your fish collection will be saved to your new account.")
+      Text(
+        "Would you like to create an account? Your fish collection will be saved to your new account."
+      )
     }
-    
+
     // Sign Out Alert
     .alert("Sign Out", isPresented: $showingSignOutAlert) {
       Button("Cancel", role: .cancel) {}
@@ -117,7 +118,7 @@ struct SettingsView: View {
         "Are you sure you want to sign out? Your fish collection will remain saved to your account."
       )
     }
-    
+
     // Purchase Alert
     .alert("Unlock All Backgrounds", isPresented: $showPurchaseAlert) {
       Button("Cancel", role: .cancel) {}
@@ -134,9 +135,9 @@ struct SettingsView: View {
       Text("Unlock all background colors for \(iapManager.getBackgroundsPrice())?")
     }
   }
-  
+
   // MARK: - Extracted Views
-  
+
   private var headerView: some View {
     HStack(spacing: 8) {
       Image(systemName: "gearshape.fill")
@@ -150,7 +151,7 @@ struct SettingsView: View {
     }
     .padding(.top, 6)
   }
-  
+
   private var connectionStatusView: some View {
     HStack(spacing: 8) {
       Image(systemName: isOnline ? "wifi" : "wifi.slash")
@@ -178,7 +179,7 @@ struct SettingsView: View {
         )
     )
   }
-  
+
   private var storageInfoView: some View {
     VStack(spacing: 8) {
       HStack(spacing: 8) {
@@ -210,17 +211,17 @@ struct SettingsView: View {
         )
     )
   }
-  
+
   private var storageInfoDetailsView: some View {
     HStack(spacing: 6) {
       Image(systemName: "info.circle.fill")
         .font(.caption)
         .foregroundColor(.blue.opacity(0.8))
-      
+
       storageStatusText
     }
   }
-  
+
   private var storageStatusText: some View {
     Group {
       if supabaseManager.isAuthenticated && isOnline {
@@ -246,7 +247,7 @@ struct SettingsView: View {
       }
     }
   }
-  
+
   private var backgroundColorSelectionView: some View {
     VStack(spacing: 8) {
       HStack(spacing: 8) {
@@ -259,7 +260,7 @@ struct SettingsView: View {
           .foregroundColor(.white.opacity(0.8))
 
         Spacer()
-        
+
         if !userPreferences.unlockedBackgrounds {
           Button(action: {
             showPurchaseAlert = true
@@ -280,7 +281,7 @@ struct SettingsView: View {
           }
         }
       }
-      
+
       colorSelectionGrid
     }
     .padding(12)
@@ -294,7 +295,7 @@ struct SettingsView: View {
     )
     .padding(.vertical, 8)
   }
-  
+
   private var colorSelectionGrid: some View {
     LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 10) {
       ForEach(BackgroundColorOption.allCases) { colorOption in
@@ -303,7 +304,7 @@ struct SettingsView: View {
     }
     .padding(.vertical, 8)
   }
-  
+
   private func colorSelectionButton(for colorOption: BackgroundColorOption) -> some View {
     Button(action: {
       if colorOption.requiresPurchase && !userPreferences.unlockedBackgrounds {
@@ -318,25 +319,25 @@ struct SettingsView: View {
       VStack {
         ZStack {
           colorCircle(for: colorOption)
-          
+
           if colorOption == userPreferences.selectedBackgroundColor {
             Circle()
               .stroke(Color.white, lineWidth: 3)
               .frame(width: 46, height: 46)
           }
-          
+
           // Show lock icon for locked colors
           if colorOption.requiresPurchase && !userPreferences.unlockedBackgrounds {
             Circle()
               .fill(Color.black.opacity(0.5))
               .frame(width: 40, height: 40)
-            
+
             Image(systemName: "lock.fill")
               .font(.system(size: 16))
               .foregroundColor(.white)
           }
         }
-        
+
         Text(colorOption.rawValue)
           .font(.system(.caption, design: .rounded))
           .foregroundColor(.white.opacity(0.8))
@@ -344,7 +345,7 @@ struct SettingsView: View {
     }
     .buttonStyle(PlainButtonStyle())
   }
-  
+
   private func colorCircle(for colorOption: BackgroundColorOption) -> some View {
     LinearGradient(
       colors: [colorOption.colors.top, colorOption.colors.bottom],
@@ -354,7 +355,7 @@ struct SettingsView: View {
     .clipShape(Circle())
     .frame(width: 40, height: 40)
   }
-  
+
   private var restorePurchasesButton: some View {
     Button(action: {
       Task {
@@ -381,40 +382,7 @@ struct SettingsView: View {
     }
     .padding(.vertical, 8)
   }
-  
-  private var syncButtonView: some View {
-    Group {
-      if supabaseManager.isAuthenticated && !isOnline {
-        Button(action: {
-          checkConnection()
-          if isOnline {
-            Task {
-              await statsManager.triggerSupabaseSync()
-            }
-          }
-        }) {
-          HStack(spacing: 8) {
-            Image(systemName: "arrow.triangle.2.circlepath")
-              .font(.subheadline)
-            Text("Try to Sync")
-              .font(.system(.subheadline, design: .rounded))
-          }
-          .foregroundColor(.white)
-          .frame(maxWidth: .infinity)
-          .frame(height: 40)
-          .background(
-            RoundedRectangle(cornerRadius: 12)
-              .fill(Color.blue.opacity(0.7))
-              .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                  .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-              )
-          )
-        }
-      }
-    }
-  }
-  
+
   private var accountButtonsView: some View {
     VStack(spacing: 8) {
       guestModeView
@@ -423,7 +391,7 @@ struct SettingsView: View {
       closeButton
     }
   }
-  
+
   private var guestModeView: some View {
     Group {
       if supabaseManager.isGuest {
@@ -452,7 +420,7 @@ struct SettingsView: View {
                   .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
               )
           )
-        
+
           Button(action: {
             showSignUpAlert = true
           }) {
@@ -478,7 +446,7 @@ struct SettingsView: View {
       }
     }
   }
-  
+
   private var accountInfoView: some View {
     Group {
       if supabaseManager.isAuthenticated && !supabaseManager.isGuest {
@@ -511,7 +479,7 @@ struct SettingsView: View {
       }
     }
   }
-  
+
   private var signOutButton: some View {
     Group {
       if supabaseManager.isAuthenticated && !supabaseManager.isGuest {
@@ -539,7 +507,7 @@ struct SettingsView: View {
       }
     }
   }
-  
+
   private var closeButton: some View {
     Button(action: {
       isPresented = false

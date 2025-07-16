@@ -85,7 +85,13 @@ struct MainView: View {
 
       // Force UI update after a slight delay
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-        UIViewController.attemptRotationToDeviceOrientation()
+        if #available(iOS 16.0, *) {
+          UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .forEach { $0.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations() }
+        } else {
+          UIViewController.attemptRotationToDeviceOrientation()
+        }
       }
     } else {
       // Request portrait orientation using the recommended API
@@ -95,7 +101,13 @@ struct MainView: View {
 
       // Force UI update after a slight delay
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-        UIViewController.attemptRotationToDeviceOrientation()
+        if #available(iOS 16.0, *) {
+          UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .forEach { $0.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations() }
+        } else {
+          UIViewController.attemptRotationToDeviceOrientation()
+        }
       }
     }
   }

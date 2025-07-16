@@ -34,7 +34,7 @@ struct ContentView: View {
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
-  private let bubbleTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect() // 60 FPS
+  private let bubbleTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
   private let dataRefreshTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()  // Refresh every 5 minutes
 
   var body: some View {
@@ -180,14 +180,22 @@ struct ContentView: View {
       UIDevice.current.setValue(
         UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
-      UIViewController.attemptRotationToDeviceOrientation()
-      
+      if #available(iOS 16.0, *) {
+        UIApplication.shared.connectedScenes
+          .compactMap { $0 as? UIWindowScene }
+          .forEach {
+            $0.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+          }
+      } else {
+        UIViewController.attemptRotationToDeviceOrientation()
+      }
+
       // Ensure bounds are properly initialized in landscape mode
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
         // No need to update bounds on orientation change anymore
         // We're always using landscape bounds
       }
-      
+
       appStartTime = Date()
       // Initialize swimming fish with all visible fish
       fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())

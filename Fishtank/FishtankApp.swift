@@ -24,7 +24,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
   func applicationDidBecomeActive(_ application: UIApplication) {
     // Force UI update when app becomes active
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-      UIViewController.attemptRotationToDeviceOrientation()
+      if #available(iOS 16.0, *) {
+        UIApplication.shared.connectedScenes
+          .compactMap { $0 as? UIWindowScene }
+          .forEach {
+            $0.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+          }
+      } else {
+        UIViewController.attemptRotationToDeviceOrientation()
+      }
 
       // No need to update bounds anymore
       // We're always using landscape bounds

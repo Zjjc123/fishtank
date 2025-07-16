@@ -178,7 +178,13 @@ struct AuthView: View {
       
       // Set app orientation mask
       AppDelegate.orientationLock = .portrait
-      UIViewController.attemptRotationToDeviceOrientation()
+      if #available(iOS 16.0, *) {
+        UIApplication.shared.connectedScenes
+          .compactMap { $0 as? UIWindowScene }
+          .forEach { $0.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations() }
+      } else {
+        UIViewController.attemptRotationToDeviceOrientation()
+      }
 
       // If coming from guest mode, default to sign up mode
       if shouldShowAuthView {
