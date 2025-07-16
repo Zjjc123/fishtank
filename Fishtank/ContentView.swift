@@ -13,6 +13,7 @@ struct ContentView: View {
   @StateObject private var statsManager = GameStateManager.shared
   @StateObject private var bubbleManager = BubbleManager.shared
   @StateObject private var supabaseManager = SupabaseManager.shared
+  @StateObject private var userPreferences = UserPreferences.shared
 
   @State private var currentTime = Date()
   @State private var appStartTime = Date()
