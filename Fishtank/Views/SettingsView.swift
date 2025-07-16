@@ -7,6 +7,7 @@
 
 import Supabase
 import SwiftUI
+import StoreKit
 
 struct SettingsView: View {
   @Binding var isPresented: Bool
@@ -14,9 +15,12 @@ struct SettingsView: View {
   let fishTankManager: FishTankManager
   @StateObject private var supabaseManager = SupabaseManager.shared
   @ObservedObject private var userPreferences = UserPreferences.shared
+  @ObservedObject private var iapManager = InAppPurchaseManager.shared
   @State private var showingSignOutAlert = false
   @State private var isOnline = true
   @State private var showSignUpAlert = false
+  @State private var showPurchaseAlert = false
+  @State private var selectedColorForPurchase: BackgroundColorOption?
   @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
   
   private func signOut() async {
@@ -53,12 +57,13 @@ struct SettingsView: View {
       // Main content
       VStack(spacing: 16) {
         headerView
-        connectionStatusView
         
         // Settings Options
         ScrollView {
+          connectionStatusView
           storageInfoView
           backgroundColorSelectionView
+          restorePurchasesButton
           syncButtonView
           accountButtonsView
         }
@@ -75,6 +80,9 @@ struct SettingsView: View {
       .padding(.horizontal, 100)
       .onAppear {
         checkConnection()
+        Task {
+          await iapManager.ensureProductsLoaded()
+        }
       }
     }
     .alert("Create Account", isPresented: $showSignUpAlert) {
@@ -108,6 +116,22 @@ struct SettingsView: View {
       Text(
         "Are you sure you want to sign out? Your fish collection will remain saved to your account."
       )
+    }
+    
+    // Purchase Alert
+    .alert("Unlock All Backgrounds", isPresented: $showPurchaseAlert) {
+      Button("Cancel", role: .cancel) {}
+      Button("Purchase", role: .none) {
+        Task {
+          let success = await iapManager.purchaseBackgrounds()
+          if success {
+            // If successful, the transaction listener will update userPreferences.unlockedBackgrounds
+            // and the UI will update automatically
+          }
+        }
+      }
+    } message: {
+      Text("Unlock all background colors for \(iapManager.getBackgroundsPrice())?")
     }
   }
   
@@ -235,6 +259,26 @@ struct SettingsView: View {
           .foregroundColor(.white.opacity(0.8))
 
         Spacer()
+        
+        if !userPreferences.unlockedBackgrounds {
+          Button(action: {
+            showPurchaseAlert = true
+          }) {
+            HStack(spacing: 4) {
+              Image(systemName: "lock.open")
+                .font(.caption)
+              Text("Unlock All")
+                .font(.system(.caption, design: .rounded))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+              Capsule()
+                .fill(Color.purple.opacity(0.7))
+            )
+            .foregroundColor(.white)
+          }
+        }
       }
       
       colorSelectionGrid
@@ -262,7 +306,14 @@ struct SettingsView: View {
   
   private func colorSelectionButton(for colorOption: BackgroundColorOption) -> some View {
     Button(action: {
-      userPreferences.selectedBackgroundColor = colorOption
+      if colorOption.requiresPurchase && !userPreferences.unlockedBackgrounds {
+        // Show purchase dialog
+        selectedColorForPurchase = colorOption
+        showPurchaseAlert = true
+      } else {
+        // Select the color
+        userPreferences.selectedBackgroundColor = colorOption
+      }
     }) {
       VStack {
         ZStack {
@@ -272,6 +323,17 @@ struct SettingsView: View {
             Circle()
               .stroke(Color.white, lineWidth: 3)
               .frame(width: 46, height: 46)
+          }
+          
+          // Show lock icon for locked colors
+          if colorOption.requiresPurchase && !userPreferences.unlockedBackgrounds {
+            Circle()
+              .fill(Color.black.opacity(0.5))
+              .frame(width: 40, height: 40)
+            
+            Image(systemName: "lock.fill")
+              .font(.system(size: 16))
+              .foregroundColor(.white)
           }
         }
         
@@ -291,6 +353,33 @@ struct SettingsView: View {
     )
     .clipShape(Circle())
     .frame(width: 40, height: 40)
+  }
+  
+  private var restorePurchasesButton: some View {
+    Button(action: {
+      Task {
+        await iapManager.restorePurchases()
+      }
+    }) {
+      HStack(spacing: 8) {
+        Image(systemName: "arrow.clockwise")
+          .font(.subheadline)
+        Text("Restore Purchases")
+          .font(.system(.subheadline, design: .rounded))
+      }
+      .foregroundColor(.white)
+      .frame(maxWidth: .infinity)
+      .frame(height: 40)
+      .background(
+        RoundedRectangle(cornerRadius: 12)
+          .fill(Color.purple.opacity(0.7))
+          .overlay(
+            RoundedRectangle(cornerRadius: 12)
+              .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+          )
+      )
+    }
+    .padding(.vertical, 8)
   }
   
   private var syncButtonView: some View {
@@ -474,6 +563,4 @@ struct SettingsView: View {
       )
     }
   }
-}
-
 }

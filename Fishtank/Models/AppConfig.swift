@@ -25,6 +25,9 @@ struct AppConfig {
   static var versionAndBuild: String {
     "v\(appVersion) (\(buildNumber))"
   }
+  
+  // MARK: - In-App Purchase IDs
+  static let backgroundsProductID = "dev.jasonzhang.fishtank.backgrounds"
 }
 
 // MARK: - User Preferences
@@ -37,10 +40,19 @@ class UserPreferences: ObservableObject {
     }
   }
   
+  @Published var unlockedBackgrounds: Bool {
+    didSet {
+      UserDefaults.standard.set(unlockedBackgrounds, forKey: "unlockedBackgrounds")
+    }
+  }
+  
   private init() {
     // Load saved background color preference or use blue if not set
     let savedColorValue = UserDefaults.standard.string(forKey: "selectedBackgroundColor") ?? BackgroundColorOption.blue.rawValue
     self.selectedBackgroundColor = BackgroundColorOption(rawValue: savedColorValue) ?? .blue
+    
+    // Load unlocked backgrounds status
+    self.unlockedBackgrounds = UserDefaults.standard.bool(forKey: "unlockedBackgrounds")
   }
 }
 
@@ -54,6 +66,15 @@ enum BackgroundColorOption: String, CaseIterable, Identifiable {
   case pink = "Pink"
   
   var id: String { self.rawValue }
+  
+  var requiresPurchase: Bool {
+    switch self {
+    case .blue:
+      return false // Blue is always free
+    default:
+      return true // All other colors require purchase
+    }
+  }
   
   var colors: (top: Color, bottom: Color) {
     switch self {

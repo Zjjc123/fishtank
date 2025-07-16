@@ -19,7 +19,11 @@ final class InAppPurchaseManager: ObservableObject {
 
   private var products: [Product] = []
   private let skipProductID = "dev.jasonzhang.fishtank.skip"
+  private let backgroundsProductID = AppConfig.backgroundsProductID
   private var transactionListener: Task<Void, Error>?
+  
+  // User preferences reference
+  private let userPreferences = UserPreferences.shared
 
   private init() {
     // Start listening for transactions
@@ -28,6 +32,8 @@ final class InAppPurchaseManager: ObservableObject {
     // Load products when manager is initialized
     Task {
       await loadProducts()
+      await checkForUnfinishedTransactions()
+      await checkPurchasedProducts()
     }
   }
 
@@ -56,10 +62,14 @@ final class InAppPurchaseManager: ObservableObject {
   }
 
   private func handle(transaction: StoreKit.Transaction) async {
-    // Here you can add any additional transaction handling logic
-    // For example, you might want to store the transaction ID
-    // or update some user entitlements
-    print("Handling transaction: \(transaction.id)")
+    // Handle the transaction based on product ID
+    if transaction.productID == backgroundsProductID {
+      await MainActor.run {
+        userPreferences.unlockedBackgrounds = true
+      }
+    }
+    
+    print("Handling transaction: \(transaction.id) for product: \(transaction.productID)")
   }
 
   func ensureProductsLoaded() async {
@@ -73,7 +83,7 @@ final class InAppPurchaseManager: ObservableObject {
     purchaseError = nil
 
     do {
-      let productIdentifiers = Set([skipProductID])
+      let productIdentifiers = Set([skipProductID, backgroundsProductID])
       products = try await Product.products(for: productIdentifiers)
       print("Loaded \(products.count) products")
     } catch {
@@ -87,6 +97,15 @@ final class InAppPurchaseManager: ObservableObject {
   @MainActor
   func getSkipPrice(for commitment: FocusCommitment) -> String {
     guard let product = products.first(where: { $0.id == skipProductID }) else {
+      return "Loading..."
+    }
+
+    return product.displayPrice
+  }
+  
+  @MainActor
+  func getBackgroundsPrice() -> String {
+    guard let product = products.first(where: { $0.id == backgroundsProductID }) else {
       return "Loading..."
     }
 
@@ -150,6 +169,64 @@ final class InAppPurchaseManager: ObservableObject {
       return false
     }
   }
+  
+  @MainActor
+  func purchaseBackgrounds() async -> Bool {
+    guard let product = products.first(where: { $0.id == backgroundsProductID }) else {
+      purchaseError = "Backgrounds product not available"
+      return false
+    }
+
+    isPurchasing = true
+    purchaseError = nil
+
+    do {
+      let result = try await product.purchase()
+
+      switch result {
+      case .success(let verification):
+        // Verify the transaction
+        switch verification {
+        case .verified(let transaction):
+          // Handle successful purchase
+          await handle(transaction: transaction)
+          await transaction.finish()
+          print("Backgrounds purchase successful")
+          isPurchasing = false
+          return true
+
+        case .unverified(_, let error):
+          purchaseError = "Transaction verification failed: \(error.localizedDescription)"
+          print("Transaction verification failed: \(error)")
+          isPurchasing = false
+          return false
+        }
+
+      case .userCancelled:
+        print("User cancelled backgrounds purchase")
+        isPurchasing = false
+        return false
+
+      case .pending:
+        purchaseError = "Purchase is pending approval"
+        print("Purchase is pending approval")
+        isPurchasing = false
+        return false
+
+      @unknown default:
+        purchaseError = "Unknown purchase result"
+        print("Unknown purchase result")
+        isPurchasing = false
+        return false
+      }
+
+    } catch {
+      purchaseError = "Purchase failed: \(error.localizedDescription)"
+      print("Purchase failed: \(error)")
+      isPurchasing = false
+      return false
+    }
+  }
 
   // MARK: - Transaction Management
   @MainActor
@@ -165,6 +242,31 @@ final class InAppPurchaseManager: ObservableObject {
       case .unverified(_, let error):
         print("Unverified transaction: \(error)")
       }
+    }
+  }
+  
+  // Check if user has already purchased products
+  @MainActor
+  private func checkPurchasedProducts() async {
+    // Check for backgrounds purchase
+    for await result in Transaction.currentEntitlements {
+      if case .verified(let transaction) = result {
+        if transaction.productID == backgroundsProductID {
+          userPreferences.unlockedBackgrounds = true
+        }
+      }
+    }
+  }
+  
+  // Restore purchases
+  @MainActor
+  func restorePurchases() async {
+    do {
+      try await AppStore.sync()
+      await checkPurchasedProducts()
+    } catch {
+      print("Failed to restore purchases: \(error)")
+      purchaseError = "Failed to restore purchases: \(error.localizedDescription)"
     }
   }
 }

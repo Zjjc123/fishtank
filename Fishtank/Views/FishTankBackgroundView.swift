@@ -22,6 +22,13 @@ struct FishTankBackgroundView: View {
 
   // Get background colors based on user preference
   private var backgroundColors: (top: Color, bottom: Color) {
+    // If the selected color requires purchase and backgrounds are not unlocked,
+    // fall back to the default blue background
+    if userPreferences.selectedBackgroundColor.requiresPurchase && !userPreferences.unlockedBackgrounds {
+      return BackgroundColorOption.blue.colors
+    }
+    
+    // Otherwise, use the selected background color
     return userPreferences.selectedBackgroundColor.colors
   }
 }
