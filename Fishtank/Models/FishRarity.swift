@@ -34,6 +34,16 @@ enum FishRarity: String, CaseIterable, Codable {
     case .legendary: return .orange
     }
   }
+  
+  var emoji: String {
+    switch self {
+    case .common: return "⚪️"
+    case .uncommon: return "🟢"
+    case .rare: return "🔵"
+    case .epic: return "🟣"
+    case .legendary: return "🟠"
+    }
+  }
 }
 
 extension FishRarity {

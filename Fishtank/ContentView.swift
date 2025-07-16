@@ -31,10 +31,11 @@ struct ContentView: View {
   @State private var showSkipConfirmation = false
   @State private var showCancelConfirmation = false
   @State private var isRefreshingData = false
+  @State private var isShareSheetPresented = false
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
-  private let bubbleTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect() // 60 FPS
+  private let bubbleTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
   private let dataRefreshTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()  // Refresh every 5 minutes
 
   var body: some View {
@@ -61,7 +62,11 @@ struct ContentView: View {
             isSyncing: statsManager.isSyncing,
             onSettingsTapped: {
               showSettings = true
-            }
+            },
+            onShareTapped: {
+              isShareSheetPresented = true
+            },
+            fishSpeciesCount: getUniqueSpeciesCount()
           )
 
           // Commitment Progress
@@ -174,20 +179,31 @@ struct ContentView: View {
           showRewardMessage: showRewardMessage
         )
       }
+      .sheet(isPresented: $isShareSheetPresented) {
+        createShareSheet()
+      }
     }
     .onAppear {
       // Force landscape orientation and UI update
       UIDevice.current.setValue(
         UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
-      UIViewController.attemptRotationToDeviceOrientation()
-      
+      if #available(iOS 16.0, *) {
+        UIApplication.shared.connectedScenes
+          .compactMap { $0 as? UIWindowScene }
+          .forEach {
+            $0.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+          }
+      } else {
+        UIViewController.attemptRotationToDeviceOrientation()
+      }
+
       // Ensure bounds are properly initialized in landscape mode
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
         // No need to update bounds on orientation change anymore
         // We're always using landscape bounds
       }
-      
+
       appStartTime = Date()
       // Initialize swimming fish with all visible fish
       fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
@@ -288,6 +304,69 @@ struct ContentView: View {
     DispatchQueue.main.asyncAfter(
       deadline: .now() + AppConfig.rewardDisplayDuration, execute: newTimer)
   }
+
+  // Helper function to create the share sheet content
+  private func createShareSheet() -> ShareSheet {
+    let uniqueSpecies = getUniqueSpeciesCount()
+    let rarityCount = getRarityCount()
+    
+    var message = "🐠 I've collected \(uniqueSpecies) different fish species in my Fishtank!\n\n"
+
+    // Add rarity breakdown
+    message += "📊 My collection:\n"
+    for (rarity, count) in rarityCount.sorted(by: { $0.key.sortOrder > $1.key.sortOrder }) {
+      if count > 0 {
+        message += "\(rarity.emoji) \(rarity.rawValue): \(count)\n"
+      }
+    }
+    
+    message += "\nDownload Fishtank - Focus App!"
+    
+    let appStoreURL = URL(string: "https://apps.apple.com/us/app/fishtank-focus-app/id6747935306")!
+    
+    let itemsToShare: [Any] = [message, appStoreURL]
+    
+    return ShareSheet(activityItems: itemsToShare)
+  }
+
+  // Helper function to get counts by rarity
+  private func getRarityCount() -> [FishRarity: Int] {
+    var counts: [FishRarity: Int] = [:]
+
+    // Initialize all rarities with zero
+    for rarity in FishRarity.allCases {
+      counts[rarity] = 0
+    }
+
+    // Count fish by rarity
+    for fish in statsManager.collectedFish {
+      counts[fish.rarity, default: 0] += 1
+    }
+
+    return counts
+  }
+
+  // Helper function to get unique species count
+  private func getUniqueSpeciesCount() -> Int {
+    let uniqueSpecies = Set(statsManager.collectedFish.map { $0.fish.name })
+    return uniqueSpecies.count
+  }
+}
+
+// ShareSheet for iOS sharing
+struct ShareSheet: UIViewControllerRepresentable {
+  var activityItems: [Any]
+  var applicationActivities: [UIActivity]? = nil
+
+  func makeUIViewController(context: Context) -> UIActivityViewController {
+    let controller = UIActivityViewController(
+      activityItems: activityItems,
+      applicationActivities: applicationActivities
+    )
+    return controller
+  }
+
+  func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {
