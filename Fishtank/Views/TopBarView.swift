@@ -13,7 +13,7 @@ struct TopBarView: View {
   let onSettingsTapped: () -> Void
   let onShareTapped: () -> Void
   let fishSpeciesCount: Int
-  
+
   var body: some View {
     HStack {
       ClockDisplayView(currentTime: currentTime)
@@ -21,7 +21,7 @@ struct TopBarView: View {
         .padding(.top, 40)
 
       Spacer()
-      
+
       // Share button
       Button(action: onShareTapped) {
         Image(systemName: "square.and.arrow.up")
@@ -32,7 +32,7 @@ struct TopBarView: View {
           .padding(.bottom, 3)
           .background(.ultraThinMaterial)
           .clipShape(Circle())
-          .contentShape(Circle()) // Ensure the entire circle is tappable
+          .contentShape(Circle())  // Ensure the entire circle is tappable
       }
 
       // Sync indicator
@@ -52,7 +52,7 @@ struct TopBarView: View {
           .padding(12)
           .background(.ultraThinMaterial)
           .clipShape(Circle())
-          .contentShape(Circle()) // Ensure the entire circle is tappable
+          .contentShape(Circle())  // Ensure the entire circle is tappable
       }
       .padding(.trailing, 25)
     }
@@ -69,4 +69,4 @@ struct TopBarView: View {
     fishSpeciesCount: 15
   )
   .background(Color.blue)
-} 
+}

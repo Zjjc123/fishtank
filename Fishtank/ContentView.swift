@@ -32,7 +32,6 @@ struct ContentView: View {
   @State private var showCancelConfirmation = false
   @State private var isRefreshingData = false
   @State private var isShareSheetPresented = false
-  @State private var fishTankScreenshot: UIImage? = nil
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
@@ -65,8 +64,6 @@ struct ContentView: View {
               showSettings = true
             },
             onShareTapped: {
-              // Take a screenshot before presenting the share sheet
-              captureScreenshot()
               isShareSheetPresented = true
             },
             fishSpeciesCount: getUniqueSpeciesCount()
@@ -308,27 +305,13 @@ struct ContentView: View {
       deadline: .now() + AppConfig.rewardDisplayDuration, execute: newTimer)
   }
 
-  // Helper function to capture screenshot
-  private func captureScreenshot() {
-    // Use the modern API to get the key window
-    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-      let window = windowScene.windows.first
-    else { return }
-
-    let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
-    fishTankScreenshot = renderer.image { _ in
-      window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
-    }
-  }
-
   // Helper function to create the share sheet content
   private func createShareSheet() -> ShareSheet {
-    // Create a more detailed share message
     let uniqueSpecies = getUniqueSpeciesCount()
-    let totalFish = statsManager.collectedFish.count
     let rarityCount = getRarityCount()
-
+    
     var message = "🐠 I've collected \(uniqueSpecies) different fish species in my Fishtank!\n\n"
+
     // Add rarity breakdown
     message += "📊 My collection:\n"
     for (rarity, count) in rarityCount.sorted(by: { $0.key.sortOrder > $1.key.sortOrder }) {
@@ -336,18 +319,13 @@ struct ContentView: View {
         message += "\(rarity.emoji) \(rarity.rawValue): \(count)\n"
       }
     }
-
+    
     message += "\nDownload Fishtank - Focus App!"
-
-    // Create App Store URL
+    
     let appStoreURL = URL(string: "https://apps.apple.com/us/app/fishtank-focus-app/id6747935306")!
-
-    // Share both the message, URL, and the screenshot if available
-    var itemsToShare: [Any] = [message, appStoreURL]
-    if let screenshot = fishTankScreenshot {
-      itemsToShare.append(screenshot)
-    }
-
+    
+    let itemsToShare: [Any] = [message, appStoreURL]
+    
     return ShareSheet(activityItems: itemsToShare)
   }
 
