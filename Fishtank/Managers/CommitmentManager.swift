@@ -158,6 +158,11 @@ final class CommitmentManager: ObservableObject {
       commitmentStartTime = nil
       saveState()
       
+      // Track completed focus time
+      Task {
+        await GameStateManager.shared.addFocusTime(commitment.duration)
+      }
+      
       return completed
     }
     
@@ -197,6 +202,11 @@ final class CommitmentManager: ObservableObject {
 
       // Save state to persist the skipped session
       saveState()
+      
+      // Track focus time for skipped sessions
+      Task {
+        await GameStateManager.shared.addFocusTime(commitment.duration)
+      }
 
       return skippedCommitment
     }

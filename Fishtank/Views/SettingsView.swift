@@ -61,6 +61,7 @@ struct SettingsView: View {
         // Settings Options
         ScrollView {
           connectionStatusView
+          totalFocusTimeView
           storageInfoView
           backgroundColorSelectionView
           restorePurchasesButton
@@ -178,6 +179,46 @@ struct SettingsView: View {
             .stroke(Color.white.opacity(0.2), lineWidth: 1)
         )
     )
+  }
+  
+  private var totalFocusTimeView: some View {
+    HStack(spacing: 8) {
+      Image(systemName: "hourglass")
+        .font(.title3)
+        .foregroundColor(.orange.opacity(0.9))
+
+      Text("Total Focus Time")
+        .font(.system(.subheadline, design: .rounded))
+        .foregroundColor(.white.opacity(0.8))
+
+      Spacer()
+
+      Text(formatTimeInterval(statsManager.totalFocusTime))
+        .font(.system(.headline, design: .rounded))
+        .fontWeight(.semibold)
+        .foregroundColor(.orange)
+    }
+    .padding(12)
+    .background(
+      RoundedRectangle(cornerRadius: 12)
+        .fill(.ultraThinMaterial)
+        .overlay(
+          RoundedRectangle(cornerRadius: 12)
+            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+        )
+    )
+    .padding(.vertical, 8)
+  }
+  
+  private func formatTimeInterval(_ interval: TimeInterval) -> String {
+    let hours = Int(interval) / 3600
+    let minutes = (Int(interval) % 3600) / 60
+    
+    if hours > 0 {
+      return "\(hours)h \(minutes)m"
+    } else {
+      return "\(minutes) minutes"
+    }
   }
 
   private var storageInfoView: some View {

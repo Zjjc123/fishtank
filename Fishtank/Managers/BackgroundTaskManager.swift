@@ -59,6 +59,9 @@ final class BackgroundTaskManager {
       // First stop app restrictions
       AppRestrictionManager.shared.stopAppRestriction()
 
+      // Track completed focus time
+      await GameStateManager.shared.addFocusTime(commitment.duration)
+      
       // Then spawn lootbox and save state
       await FishTankManager.shared.spawnLootbox(type: commitment.lootboxType)
 

@@ -311,6 +311,9 @@ struct ContentView: View {
     let rarityCount = getRarityCount()
     
     var message = "🐠 I've collected \(uniqueSpecies) different fish species in my Fishtank!\n\n"
+    
+    // Add total focus time
+    message += "⏱️ Total Focus Time: \(formatTimeInterval(statsManager.totalFocusTime))\n\n"
 
     // Add rarity breakdown
     message += "📊 My collection:\n"
@@ -327,6 +330,18 @@ struct ContentView: View {
     let itemsToShare: [Any] = [message, appStoreURL]
     
     return ShareSheet(activityItems: itemsToShare)
+  }
+  
+  // Helper function to format time interval
+  private func formatTimeInterval(_ interval: TimeInterval) -> String {
+    let hours = Int(interval) / 3600
+    let minutes = (Int(interval) % 3600) / 60
+    
+    if hours > 0 {
+      return "\(hours)h \(minutes)m"
+    } else {
+      return "\(minutes) minutes"
+    }
   }
 
   // Helper function to get counts by rarity

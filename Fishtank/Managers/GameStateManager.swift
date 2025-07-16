@@ -17,8 +17,10 @@ final class GameStateManager: ObservableObject {
   @Published private(set) var collectedFish: [CollectedFish] = []
   @Published private(set) var fishCollection: [FishRarity: Int] = [:]
   @Published private(set) var isSyncing: Bool = false
+  @Published private(set) var totalFocusTime: TimeInterval = 0
 
   private let localStorageKey = "dev.jasonzhang.fishtank.collectedFish"
+  private let totalFocusTimeKey = "dev.jasonzhang.fishtank.totalFocusTime"
   private let supabaseManager = SupabaseManager.shared
   private var cancellables = Set<AnyCancellable>()
 
@@ -28,6 +30,9 @@ final class GameStateManager: ObservableObject {
 
     // Load fish from local storage first
     loadFromLocalStorage()
+    
+    // Load total focus time
+    totalFocusTime = UserDefaults.standard.double(forKey: totalFocusTimeKey)
 
     // Listen for authentication state changes
     supabaseManager.$isAuthenticated
@@ -36,6 +41,7 @@ final class GameStateManager: ObservableObject {
           print("🔐 GameStateManager: User authenticated, merging cloud and local data")
           Task {
             await self?.mergeCloudAndLocalData()
+            await self?.loadUserProfile()
           }
         } else {
           print("🔐 GameStateManager: User unauthenticated, using local data only")
@@ -43,6 +49,42 @@ final class GameStateManager: ObservableObject {
         }
       }
       .store(in: &cancellables)
+  }
+  
+  // MARK: - User Profile
+  
+  private func loadUserProfile() async {
+    guard !supabaseManager.isGuest else { return }
+    
+    if let profile = await supabaseManager.getUserProfile() {
+      // If cloud focus time is greater, use it
+      if profile.totalFocusTime > totalFocusTime {
+        totalFocusTime = profile.totalFocusTime
+        UserDefaults.standard.set(totalFocusTime, forKey: totalFocusTimeKey)
+      } else if totalFocusTime > profile.totalFocusTime {
+        // If local focus time is greater, update cloud
+        await syncUserStats()
+      }
+    }
+  }
+  
+  func addFocusTime(_ duration: TimeInterval) async {
+    totalFocusTime += duration
+    UserDefaults.standard.set(totalFocusTime, forKey: totalFocusTimeKey)
+    
+    // Sync to Supabase if authenticated
+    if supabaseManager.isAuthenticated && !supabaseManager.isGuest {
+      await syncUserStats()
+    }
+  }
+  
+  private func syncUserStats() async {
+    if supabaseManager.isGuest { return }
+    
+    await supabaseManager.updateUserStats(
+      totalFocusTime: totalFocusTime,
+      totalFishCaught: collectedFish.count
+    )
   }
 
   var fishCount: Int {
@@ -110,6 +152,9 @@ final class GameStateManager: ObservableObject {
     }
     // If just signed up/logged in, merge and sync
     await mergeCloudAndLocalData()
+    
+    // Also sync focus time
+    await syncUserStats()
   }
 
   private func mergeCloudAndLocalData() async {

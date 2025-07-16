@@ -373,6 +373,36 @@ class SupabaseManager: ObservableObject {
     let total_focus_time: Double
     let total_fish_caught: Int
   }
+  
+  func getUserProfile() async -> UserProfile? {
+    guard let userId = currentUser?.id, !isGuest else { return nil }
+    
+    do {
+      let response = try await client.from("user_profiles")
+        .select()
+        .eq("id", value: userId)
+        .single()
+        .execute()
+      
+      let decoder = JSONDecoder()
+      let dateFormatter = ISO8601DateFormatter()
+      dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+      
+      decoder.dateDecodingStrategy = .custom { decoder in
+        let container = try decoder.singleValueContainer()
+        let dateString = try container.decode(String.self)
+        if let date = dateFormatter.date(from: dateString) {
+          return date
+        }
+        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
+      }
+      
+      return try decoder.decode(UserProfile.self, from: response.data)
+    } catch {
+      print("Failed to get user profile: \(error)")
+      return nil
+    }
+  }
 
   // MARK: - Fish Database Operations
 
