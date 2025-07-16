@@ -33,9 +33,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
       } else {
         UIViewController.attemptRotationToDeviceOrientation()
       }
-
-      // No need to update bounds anymore
-      // We're always using landscape bounds
     }
   }
 }
