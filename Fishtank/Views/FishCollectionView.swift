@@ -51,7 +51,12 @@ struct FishCollectionView: View {
     case .time:
       sorted = fishList.sorted { $0.dateCaught > $1.dateCaught }
     case .rarity:
-      sorted = fishList.sorted { $0.rarity.sortOrder > $1.rarity.sortOrder }
+      sorted = fishList.sorted {
+        if $0.rarity.sortOrder == $1.rarity.sortOrder {
+          return $0.name < $1.name
+        }
+        return $0.rarity.sortOrder > $1.rarity.sortOrder
+      }
     }
     return sortDirection == .ascending ? Array(sorted.reversed()) : sorted
   }
