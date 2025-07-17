@@ -38,8 +38,8 @@ ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_fish ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for user_profiles
-CREATE POLICY "Users can view their own profile" ON public.user_profiles
-    FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can view all profiles" ON public.user_profiles
+    FOR SELECT USING (true);
 
 CREATE POLICY "Users can insert their own profile" ON public.user_profiles
     FOR INSERT WITH CHECK (auth.uid() = id);
