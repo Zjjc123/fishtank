@@ -83,8 +83,16 @@ CREATE TRIGGER update_user_fish_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.user_profiles (id)
-    VALUES (NEW.id);
+    INSERT INTO public.user_profiles (
+        id,
+        total_focus_time,
+        total_fish_caught
+    )
+    VALUES (
+        NEW.id,
+        0,
+        0
+    );
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

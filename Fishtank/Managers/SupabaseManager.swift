@@ -19,7 +19,8 @@ class SupabaseManager: ObservableObject {
   @Published var errorMessage: String?
   @Published var isGuest: Bool = false
   @Published var successMessage: String?
-  
+  @Published var needsUsernameSetup: Bool = false  // Add this property
+
   // User defaults keys
   private let guestModeKey = "isGuestMode"
 
@@ -28,7 +29,7 @@ class SupabaseManager: ObservableObject {
       supabaseURL: URL(string: SupabaseConfig.supabaseURL)!,
       supabaseKey: SupabaseConfig.supabaseAnonKey
     )
-    
+
     // Check if user previously selected guest mode
     if UserDefaults.standard.bool(forKey: guestModeKey) {
       self.isGuest = true
@@ -46,11 +47,11 @@ class SupabaseManager: ObservableObject {
   func continueAsGuest() {
     self.isGuest = true
     self.currentUser = nil
-    self.isAuthenticated = true // For UI flow
-    
+    self.isAuthenticated = true  // For UI flow
+
     // Save guest mode preference
     UserDefaults.standard.set(true, forKey: guestModeKey)
-    
+
     NotificationCenter.default.post(
       name: NSNotification.Name("SupabaseAuthStateChanged"),
       object: nil,
@@ -62,10 +63,10 @@ class SupabaseManager: ObservableObject {
   func exitGuestMode() {
     self.isGuest = false
     self.isAuthenticated = false
-    
+
     // Clear guest mode preference
     UserDefaults.standard.set(false, forKey: guestModeKey)
-    
+
     NotificationCenter.default.post(
       name: NSNotification.Name("SupabaseAuthStateChanged"),
       object: nil,
@@ -97,7 +98,7 @@ class SupabaseManager: ObservableObject {
         emailConfirmed: false
       )
       self.isAuthenticated = false
-      
+
       // If username is provided, update the user_profiles table
       if let username = username, !username.isEmpty {
         do {
@@ -109,16 +110,16 @@ class SupabaseManager: ObservableObject {
         } catch {
           print("Error updating username: \(error)")
           let errorString = error.localizedDescription.lowercased()
-          
+
           // Check if the error is related to uniqueness constraint
           if errorString.contains("unique") || errorString.contains("duplicate") {
             errorMessage = "Username already taken. Please choose another username."
-            
+
             // Clean up by signing out the user since we couldn't complete the full registration
             try? await client.auth.signOut()
             self.currentUser = nil
             self.isAuthenticated = false
-            
+
             isLoading = false
             return false
           }
@@ -182,11 +183,15 @@ class SupabaseManager: ObservableObject {
       )
       self.isAuthenticated = true
 
-      // Post notification about authentication state change
+      // Check if user has a username
+      let hasUsername = await checkIfUsernameExists()
+      self.needsUsernameSetup = !hasUsername
+
+      // Post notification about authentication state change with username info
       NotificationCenter.default.post(
         name: NSNotification.Name("SupabaseAuthStateChanged"),
         object: nil,
-        userInfo: ["isAuthenticated": true]
+        userInfo: ["isAuthenticated": true, "needsUsernameSetup": !hasUsername]
       )
 
       // Trigger fish collection sync after successful sign in
@@ -226,11 +231,11 @@ class SupabaseManager: ObservableObject {
       try await client.auth.signOut()
       self.currentUser = nil
       self.isAuthenticated = false
-      
+
       // Clear guest mode preference
       UserDefaults.standard.set(false, forKey: guestModeKey)
       self.isGuest = false
-      
+
       // Post notification about authentication state change
       NotificationCenter.default.post(
         name: NSNotification.Name("SupabaseAuthStateChanged"),
@@ -272,12 +277,12 @@ class SupabaseManager: ObservableObject {
       return false
     }
   }
-  
+
   @MainActor
   func verifyEmailWithOTP(email: String, token: String) async -> Bool {
     isLoading = true
     errorMessage = nil
-    
+
     do {
       // Call the Supabase API to verify the OTP token
       try await client.auth.verifyOTP(
@@ -285,12 +290,12 @@ class SupabaseManager: ObservableObject {
         token: token,
         type: .signup
       )
-      
+
       // After successful verification, check if the user is now authenticated
       if let session = try? await client.auth.session {
         let user = session.user
         let emailConfirmed = user.emailConfirmedAt != nil
-        
+
         self.currentUser = User(
           id: user.id.uuidString,
           email: user.email ?? "",
@@ -299,19 +304,23 @@ class SupabaseManager: ObservableObject {
           emailConfirmed: emailConfirmed
         )
         self.isAuthenticated = true
-        
-        // Post notification about authentication state change
+
+        // Check if user has a username
+        let hasUsername = await checkIfUsernameExists()
+        self.needsUsernameSetup = !hasUsername
+
+        // Post notification about authentication state change with username info
         NotificationCenter.default.post(
           name: NSNotification.Name("SupabaseAuthStateChanged"),
           object: nil,
-          userInfo: ["isAuthenticated": true]
+          userInfo: ["isAuthenticated": true, "needsUsernameSetup": !hasUsername]
         )
-        
+
         // Trigger fish collection sync after successful sign in
         Task {
           await GameStateManager.shared.triggerSupabaseSync()
         }
-        
+
         isLoading = false
         return true
       } else {
@@ -321,7 +330,7 @@ class SupabaseManager: ObservableObject {
       }
     } catch {
       let errorString = error.localizedDescription.lowercased()
-      
+
       if errorString.contains("invalid") && errorString.contains("token") {
         errorMessage = "Invalid verification code. Please try again."
       } else if errorString.contains("expired") {
@@ -335,7 +344,7 @@ class SupabaseManager: ObservableObject {
       return false
     }
   }
-  
+
   @MainActor
   func checkCurrentUser() async {
     do {
@@ -350,6 +359,7 @@ class SupabaseManager: ObservableObject {
         try await client.auth.signOut()
         self.currentUser = nil
         self.isAuthenticated = false
+        self.needsUsernameSetup = false
 
         // Post notification about authentication state change
         NotificationCenter.default.post(
@@ -369,11 +379,15 @@ class SupabaseManager: ObservableObject {
       )
       self.isAuthenticated = true
 
-      // Post notification about authentication state change
+      // Check if user has a username
+      let hasUsername = await checkIfUsernameExists()
+      self.needsUsernameSetup = !hasUsername
+
+      // Post notification about authentication state change with username info
       NotificationCenter.default.post(
         name: NSNotification.Name("SupabaseAuthStateChanged"),
         object: nil,
-        userInfo: ["isAuthenticated": true]
+        userInfo: ["isAuthenticated": true, "needsUsernameSetup": !hasUsername]
       )
 
       // Trigger fish collection sync if user is authenticated
@@ -383,6 +397,7 @@ class SupabaseManager: ObservableObject {
     } catch {
       // User is not signed in
       self.isAuthenticated = false
+      self.needsUsernameSetup = false
 
       // Post notification about authentication state change
       NotificationCenter.default.post(
@@ -400,30 +415,106 @@ class SupabaseManager: ObservableObject {
     let total_focus_time: Double
     let total_fish_caught: Int
   }
-  
+
+  // New method to check if user has a username
+  @MainActor
+  func checkIfUsernameExists() async -> Bool {
+    guard let userId = currentUser?.id, !isGuest else { return false }
+
+    do {
+      let response = try await client.from("user_profiles")
+        .select("username")
+        .eq("id", value: userId)
+        .single()
+        .execute()
+
+      print("🔍 checkIfUsernameExists: \(response)")
+
+      // Properly decode the response
+      struct UsernameResponse: Decodable {
+        let username: String?
+      }
+
+      do {
+        let usernameData = try JSONDecoder().decode(UsernameResponse.self, from: response.data)
+        // Return true if username exists and is not empty
+        return usernameData.username != nil && !usernameData.username!.isEmpty
+      } catch {
+        print("Error decoding username response: \(error)")
+        return false
+      }
+    } catch {
+      print("Failed to check username: \(error)")
+      return false
+    }
+  }
+
+  // New method to update username
+  @MainActor
+  func updateUsername(username: String) async -> Bool {
+    guard let userId = currentUser?.id, !isGuest else { return false }
+    errorMessage = nil
+    isLoading = true
+
+    do {
+      // Validate username format
+      let usernameRegex = "^[a-zA-Z0-9_]{5,20}$"
+      let usernameTest = NSPredicate(format: "SELF MATCHES %@", usernameRegex)
+      guard usernameTest.evaluate(with: username) else {
+        errorMessage =
+          "Username must be 5-20 characters and contain only letters, numbers, and underscores."
+        isLoading = false
+        return false
+      }
+
+      // Update the username in the user_profiles table
+      _ = try await client.from("user_profiles")
+        .update(["username": username])
+        .eq("id", value: userId)
+        .execute()
+
+      isLoading = false
+      successMessage = "Username updated successfully!"
+      needsUsernameSetup = false
+      return true
+    } catch {
+      let errorString = error.localizedDescription.lowercased()
+
+      if errorString.contains("unique") || errorString.contains("duplicate") {
+        errorMessage = "Username already taken. Please choose another username."
+      } else {
+        errorMessage = "Failed to update username. Please try again."
+      }
+
+      isLoading = false
+      return false
+    }
+  }
+
   func getUserProfile() async -> UserProfile? {
     guard let userId = currentUser?.id, !isGuest else { return nil }
-    
+
     do {
       let response = try await client.from("user_profiles")
         .select()
         .eq("id", value: userId)
         .single()
         .execute()
-      
+
       let decoder = JSONDecoder()
       let dateFormatter = ISO8601DateFormatter()
       dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-      
+
       decoder.dateDecodingStrategy = .custom { decoder in
         let container = try decoder.singleValueContainer()
         let dateString = try container.decode(String.self)
         if let date = dateFormatter.date(from: dateString) {
           return date
         }
-        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
+        throw DecodingError.dataCorruptedError(
+          in: container, debugDescription: "Invalid date format")
       }
-      
+
       return try decoder.decode(UserProfile.self, from: response.data)
     } catch {
       print("Failed to get user profile: \(error)")

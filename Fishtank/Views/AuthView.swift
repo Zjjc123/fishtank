@@ -68,6 +68,7 @@ struct AuthView: View {
   @State private var isSignUp = false
   @State private var showPassword = false
   @State private var showConfirmationMessage = false
+  @State private var showUsernameSetup = false  // This will now be controlled by supabaseManager.needsUsernameSetup
   @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
   @Environment(\.dismiss) private var dismiss
 
@@ -108,42 +109,53 @@ struct AuthView: View {
             dismissKeyboard()
           }
 
-          // Auth Form
-          AuthFormView(
-            email: $email,
-            password: $password,
-            confirmPassword: $confirmPassword,
-            isSignUp: $isSignUp,
-            showPassword: $showPassword,
-            showConfirmationMessage: $showConfirmationMessage,
-            shouldShowAuthView: $shouldShowAuthView,
-            supabaseManager: supabaseManager
-          )
-          .padding(.horizontal, 30)
-          .onTapGesture {
-            dismissKeyboard()
-          }
-
-          // Continue as Guest Button
-          Button(action: {
-            supabaseManager.continueAsGuest()
-          }) {
-            HStack(spacing: 6) {
-              Image(systemName: "person.crop.circle.badge.questionmark")
-                .font(.caption)
-              Text("Continue as Guest")
-                .font(.system(.caption, design: .rounded))
-                .fontWeight(.medium)
-            }
-            .foregroundColor(.white.opacity(0.8))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-              Capsule()
-                .fill(Color.gray.opacity(0.2))
+          // Show Username Setup if needed, otherwise show Auth Form
+          if supabaseManager.needsUsernameSetup {
+            UsernameSetupView(
+              showUsernameSetup: $showUsernameSetup,
+              shouldShowAuthView: $shouldShowAuthView,
+              supabaseManager: supabaseManager
             )
+            .padding(.horizontal, 30)
+          } else {
+            // Auth Form
+            AuthFormView(
+              email: $email,
+              password: $password,
+              confirmPassword: $confirmPassword,
+              isSignUp: $isSignUp,
+              showPassword: $showPassword,
+              showConfirmationMessage: $showConfirmationMessage,
+              showUsernameSetup: $showUsernameSetup,  // Pass the binding
+              shouldShowAuthView: $shouldShowAuthView,
+              supabaseManager: supabaseManager
+            )
+            .padding(.horizontal, 30)
+            .onTapGesture {
+              dismissKeyboard()
+            }
+
+            // Continue as Guest Button (only show when not in username setup)
+            Button(action: {
+              supabaseManager.continueAsGuest()
+            }) {
+              HStack(spacing: 6) {
+                Image(systemName: "person.crop.circle.badge.questionmark")
+                  .font(.caption)
+                Text("Continue as Guest")
+                  .font(.system(.caption, design: .rounded))
+                  .fontWeight(.medium)
+              }
+              .foregroundColor(.white.opacity(0.8))
+              .padding(.horizontal, 12)
+              .padding(.vertical, 8)
+              .background(
+                Capsule()
+                  .fill(Color.gray.opacity(0.2))
+              )
+            }
+            .padding(.top, 8)
           }
-          .padding(.top, 8)
 
           Spacer()
         }
@@ -172,16 +184,19 @@ struct AuthView: View {
     .onAppear {
       // Set portrait orientation using the recommended API
       if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-        let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
+        let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(
+          interfaceOrientations: .portrait)
         windowScene.requestGeometryUpdate(geometryPreferences)
       }
-      
+
       // Set app orientation mask
       AppDelegate.orientationLock = .portrait
       if #available(iOS 16.0, *) {
         UIApplication.shared.connectedScenes
           .compactMap { $0 as? UIWindowScene }
-          .forEach { $0.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations() }
+          .forEach {
+            $0.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+          }
       } else {
         UIViewController.attemptRotationToDeviceOrientation()
       }
@@ -190,7 +205,253 @@ struct AuthView: View {
       if shouldShowAuthView {
         isSignUp = true
       }
+
+      // No need to check for username here anymore, SupabaseManager handles it
     }
+    // Listen for changes to needsUsernameSetup
+    .onChange(of: supabaseManager.needsUsernameSetup) { needsSetup in
+      showUsernameSetup = needsSetup
+    }
+  }
+}
+
+// MARK: - Username Setup View
+struct UsernameSetupView: View {
+  @Binding var showUsernameSetup: Bool
+  @Binding var shouldShowAuthView: Bool
+  let supabaseManager: SupabaseManager
+  @State private var username: String = ""
+
+  // Extract common styles to reduce complexity
+  private func textFieldBackground() -> some View {
+    RoundedRectangle(cornerRadius: 8)
+      .fill(Color.white.opacity(0.15))
+  }
+
+  private func textFieldBorder() -> some View {
+    RoundedRectangle(cornerRadius: 8)
+      .stroke(Color.white.opacity(0.2), lineWidth: 1)
+  }
+
+  var body: some View {
+    VStack(spacing: 16) {
+      // Header
+      HStack(spacing: 6) {
+        Image(systemName: "person.text.rectangle.fill")
+          .font(.caption)
+          .foregroundColor(.white.opacity(0.9))
+
+        Text("Create Username")
+          .font(.system(.caption, design: .rounded))
+          .fontWeight(.semibold)
+          .foregroundColor(.white)
+      }
+
+      // Welcome message
+      Text("Welcome! Before you start, please create a username for your account.")
+        .font(.system(.caption, design: .rounded))
+        .foregroundColor(.white.opacity(0.8))
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 8)
+
+      // Username Field
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Username")
+          .font(.system(.caption2, design: .rounded))
+          .foregroundColor(.white.opacity(0.7))
+
+        TextField("Enter your username", text: $username)
+          .font(.system(.callout, design: .rounded))
+          .padding(8)
+          .frame(height: 36)
+          .background(textFieldBackground())
+          .overlay(textFieldBorder())
+          .foregroundColor(.white)
+          .autocapitalization(.none)
+          .disableAutocorrection(true)
+
+        // Username requirements helper text
+        Text("5-20 characters, letters, numbers, and underscores only")
+          .font(.system(.caption2, design: .rounded))
+          .foregroundColor(.white.opacity(0.6))
+          .padding(.top, 2)
+      }
+      .padding(.vertical, 8)
+
+      // Error Message
+      if let errorMessage = supabaseManager.errorMessage {
+        errorView(message: errorMessage)
+      }
+
+      // Success Message
+      if let successMessage = supabaseManager.successMessage {
+        successView(message: successMessage)
+      }
+
+      // Create Username Button
+      Button(action: {
+        Task {
+          let success = await supabaseManager.updateUsername(username: username)
+          if success {
+            // Username created successfully
+            shouldShowAuthView = false  // This will trigger MainView to show ContentView
+            showUsernameSetup = false
+            supabaseManager.needsUsernameSetup = false
+            
+            // Post notification to ensure MainView updates
+            NotificationCenter.default.post(
+              name: NSNotification.Name("SupabaseAuthStateChanged"),
+              object: nil,
+              userInfo: ["isAuthenticated": true, "needsUsernameSetup": false]
+            )
+          }
+        }
+      }) {
+        HStack(spacing: 6) {
+          if supabaseManager.isLoading {
+            ProgressView()
+              .progressViewStyle(CircularProgressViewStyle(tint: .white))
+              .scaleEffect(0.7)
+          } else {
+            Image(systemName: "checkmark.circle.fill")
+              .font(.caption)
+          }
+
+          Text("Create Username")
+            .font(.system(.caption, design: .rounded))
+            .fontWeight(.semibold)
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: 36)
+        .background(
+          RoundedRectangle(cornerRadius: 10)
+            .fill(Color.blue.opacity(0.6))
+            .overlay(
+              RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+            )
+        )
+      }
+      .disabled(supabaseManager.isLoading || !isValidUsername)
+      .opacity((supabaseManager.isLoading || !isValidUsername) ? 0.5 : 1)
+
+      // Sign out button
+      Button(action: {
+        Task {
+          await supabaseManager.signOut()
+          await MainActor.run {
+            showUsernameSetup = false
+          }
+        }
+      }) {
+        HStack(spacing: 4) {
+          Image(systemName: "arrow.backward.circle.fill")
+            .font(.caption2)
+          Text("Sign Out")
+            .font(.system(.caption2, design: .rounded))
+            .fontWeight(.medium)
+        }
+        .foregroundColor(.white.opacity(0.7))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+          Capsule()
+            .fill(Color.gray.opacity(0.2))
+            .overlay(
+              Capsule()
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+        )
+      }
+      .padding(.top, 8)
+    }
+    .padding(16)
+    .background(
+      RoundedRectangle(cornerRadius: 14)
+        .fill(.ultraThinMaterial)
+        .overlay(
+          RoundedRectangle(cornerRadius: 14)
+            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
+    )
+    .frame(maxWidth: 400)
+  }
+
+  private var isValidUsername: Bool {
+    // Username validation: 5-20 chars, alphanumeric + underscores only
+    return username.count >= 5 && username.count <= 20
+      && username.range(of: "^[a-zA-Z0-9_]+$", options: .regularExpression) != nil
+  }
+
+  @ViewBuilder
+  private func errorView(message: String) -> some View {
+    HStack(spacing: 6) {
+      Image(systemName: "exclamationmark.triangle.fill")
+        .font(.caption2)
+        .foregroundColor(.red)
+
+      Text(message)
+        .font(.system(.caption2, design: .rounded))
+        .foregroundColor(.red)
+        .multilineTextAlignment(.leading)
+        .fixedSize(horizontal: false, vertical: true)
+
+      Spacer()
+
+      Button(action: {
+        supabaseManager.errorMessage = nil
+      }) {
+        Image(systemName: "xmark.circle.fill")
+          .font(.caption2)
+          .foregroundColor(.red.opacity(0.7))
+      }
+    }
+    .padding(8)
+    .background(
+      RoundedRectangle(cornerRadius: 8)
+        .fill(Color.red.opacity(0.1))
+        .overlay(
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(Color.red.opacity(0.3), lineWidth: 1)
+        )
+    )
+    .transition(.opacity.combined(with: .scale))
+  }
+
+  @ViewBuilder
+  private func successView(message: String) -> some View {
+    HStack(spacing: 6) {
+      Image(systemName: "checkmark.circle.fill")
+        .font(.caption2)
+        .foregroundColor(.green)
+
+      Text(message)
+        .font(.system(.caption2, design: .rounded))
+        .foregroundColor(.green)
+        .multilineTextAlignment(.leading)
+        .fixedSize(horizontal: false, vertical: true)
+
+      Spacer()
+
+      Button(action: {
+        supabaseManager.successMessage = nil
+      }) {
+        Image(systemName: "xmark.circle.fill")
+          .font(.caption2)
+          .foregroundColor(.green.opacity(0.7))
+      }
+    }
+    .padding(8)
+    .background(
+      RoundedRectangle(cornerRadius: 8)
+        .fill(Color.green.opacity(0.1))
+        .overlay(
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(Color.green.opacity(0.3), lineWidth: 1)
+        )
+    )
+    .transition(.opacity.combined(with: .scale))
   }
 }
 
@@ -202,11 +463,9 @@ struct AuthFormView: View {
   @Binding var isSignUp: Bool
   @Binding var showPassword: Bool
   @Binding var showConfirmationMessage: Bool
+  @Binding var showUsernameSetup: Bool  // Add this binding
   @Binding var shouldShowAuthView: Bool
   let supabaseManager: SupabaseManager
-  
-  // Add username state
-  @State private var username: String = ""
 
   // Add state for OTP verification
   @State private var otpCode: String = ""
@@ -276,31 +535,6 @@ struct AuthFormView: View {
               .keyboardType(.emailAddress)
               .autocapitalization(.none)
               .disableAutocorrection(true)
-          }
-          
-          // Username Field (only for sign up)
-          if isSignUp {
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Username")
-                .font(.system(.caption2, design: .rounded))
-                .foregroundColor(.white.opacity(0.7))
-
-              TextField("Enter your username", text: $username)
-                .font(.system(.callout, design: .rounded))
-                .padding(8)
-                .frame(height: 36)
-                .background(textFieldBackground())
-                .overlay(textFieldBorder())
-                .foregroundColor(.white)
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-              
-              // Username requirements helper text
-              Text("5-20 characters, letters, numbers, and underscores only")
-                .font(.system(.caption2, design: .rounded))
-                .foregroundColor(.white.opacity(0.6))
-                .padding(.top, 2)
-            }
           }
 
           // Password Field
@@ -568,7 +802,6 @@ struct AuthFormView: View {
         email = ""
         password = ""
         confirmPassword = ""
-        username = ""
         otpCode = ""
         supabaseManager.errorMessage = nil
       }
@@ -678,7 +911,6 @@ struct AuthFormView: View {
           email = ""
           password = ""
           confirmPassword = ""
-          username = ""
           supabaseManager.errorMessage = nil
         }
       }) {
@@ -707,14 +939,9 @@ struct AuthFormView: View {
   private var isValidForm: Bool {
     let isEmailValid = email.contains("@") && email.contains(".")
     let isPasswordValid = password.count >= 6
-    
-    // Username validation: 5-20 chars, alphanumeric + underscores only
-    let isUsernameValid = !isSignUp || (username.count >= 5 && 
-                                       username.count <= 20 && 
-                                       username.range(of: "^[a-zA-Z0-9_]+$", options: .regularExpression) != nil)
 
     if isSignUp {
-      return isEmailValid && isPasswordValid && password == confirmPassword && isUsernameValid
+      return isEmailValid && isPasswordValid && password == confirmPassword
     } else {
       return isEmailValid && isPasswordValid
     }
@@ -734,7 +961,7 @@ struct AuthFormView: View {
       }
     }
 
-    let success = await supabaseManager.signUp(email: email, password: password, username: username)
+    let success = await supabaseManager.signUp(email: email, password: password)
     if success {
       // Successfully signed up - show confirmation message
       print("User signed up successfully")
@@ -779,20 +1006,32 @@ struct AuthFormView: View {
       email = ""
       password = ""
       confirmPassword = ""
-      // If previously guest, migrate local fish to Supabase
-      if wasGuest {
-        await GameStateManager.shared.migrateGuestDataIfNeeded()
-        await MainActor.run {
-          // Set success message about fish migration
-          supabaseManager.successMessage = "Your fish collection has been saved to your account!"
-        }
-      }
 
-      // Ensure isAuthenticated is true and force UI update
       await MainActor.run {
-        supabaseManager.isAuthenticated = true
-        // Reset shouldShowAuthView to ensure MainView shows ContentView
-        shouldShowAuthView = false
+        if supabaseManager.needsUsernameSetup {
+          // Show username setup screen is handled by the parent view
+          // through the onChange modifier watching supabaseManager.needsUsernameSetup
+          
+          // Keep shouldShowAuthView true to ensure AuthView stays visible for username setup
+          shouldShowAuthView = true
+        } else {
+          // If previously guest, migrate local fish to Supabase
+          if wasGuest {
+            Task {
+              await GameStateManager.shared.migrateGuestDataIfNeeded()
+              await MainActor.run {
+                // Set success message about fish migration
+                supabaseManager.successMessage =
+                  "Your fish collection has been saved to your account!"
+              }
+            }
+          }
+
+          // Ensure isAuthenticated is true and force UI update
+          supabaseManager.isAuthenticated = true
+          // Reset shouldShowAuthView to ensure MainView shows ContentView
+          shouldShowAuthView = false
+        }
       }
     } else {
       // Authentication failed - error message is already set in SupabaseManager
@@ -825,27 +1064,37 @@ struct AuthFormView: View {
       otpCode = ""
       showConfirmationMessage = false
 
-      // Show success message about automatic login
-      supabaseManager.successMessage = "Your account has been verified! You are now logged in."
-
-      // If previously guest, migrate local fish to Supabase and exit guest mode
-      if wasGuest {
-        await GameStateManager.shared.migrateGuestDataIfNeeded()
-        await MainActor.run {
-          // Guest mode should already be exited by successful authentication
-          // Just ensure it's false
-          supabaseManager.isGuest = false
-          // Set success message about fish migration
-          supabaseManager.successMessage =
-            "Your fish collection has been saved to your new account!"
-        }
-      }
-
-      // Ensure isAuthenticated is true and force UI update
       await MainActor.run {
-        supabaseManager.isAuthenticated = true
-        // Reset shouldShowAuthView to ensure MainView shows ContentView
-        shouldShowAuthView = false
+        if supabaseManager.needsUsernameSetup {
+          // Show username setup screen is handled by the parent view
+          // through the onChange modifier watching supabaseManager.needsUsernameSetup
+          
+          // Keep shouldShowAuthView true to ensure AuthView stays visible for username setup
+          shouldShowAuthView = true
+        } else {
+          // User already has a username, show success message
+          supabaseManager.successMessage = "Your account has been verified! You are now logged in."
+
+          // If previously guest, migrate local fish to Supabase and exit guest mode
+          if wasGuest {
+            Task {
+              await GameStateManager.shared.migrateGuestDataIfNeeded()
+              await MainActor.run {
+                // Guest mode should already be exited by successful authentication
+                // Just ensure it's false
+                supabaseManager.isGuest = false
+                // Set success message about fish migration
+                supabaseManager.successMessage =
+                  "Your fish collection has been saved to your new account!"
+              }
+            }
+          }
+
+          // Ensure isAuthenticated is true and force UI update
+          supabaseManager.isAuthenticated = true
+          // Reset shouldShowAuthView to ensure MainView shows ContentView
+          shouldShowAuthView = false
+        }
       }
     } else {
       // Verification failed - error message is already set in SupabaseManager

@@ -16,7 +16,7 @@ struct MainView: View {
 
   var body: some View {
     Group {
-      if (supabaseManager.isAuthenticated || supabaseManager.isGuest) && !shouldShowAuthView {
+      if (supabaseManager.isAuthenticated || supabaseManager.isGuest) && !shouldShowAuthView && !supabaseManager.needsUsernameSetup {
         ZStack(alignment: .top) {
           ContentView()
             .environmentObject(supabaseManager)
@@ -32,7 +32,8 @@ struct MainView: View {
             shouldShowAuthView = false
 
             // Only set landscape orientation if user is authenticated or guest
-            if supabaseManager.isAuthenticated || supabaseManager.isGuest {
+            // and doesn't need username setup
+            if (supabaseManager.isAuthenticated || supabaseManager.isGuest) && !supabaseManager.needsUsernameSetup {
               setOrientation(to: .landscape)
             }
           }
@@ -62,6 +63,13 @@ struct MainView: View {
       object: nil,
       queue: .main
     ) { notification in
+      // Check if user needs username setup
+      if let needsUsernameSetup = notification.userInfo?["needsUsernameSetup"] as? Bool, 
+         needsUsernameSetup {
+        // If username setup is needed, make sure we show the AuthView
+        self.shouldShowAuthView = true
+      }
+      
       // Force view to update when auth state changes
       self.forceUpdate.toggle()
     }
