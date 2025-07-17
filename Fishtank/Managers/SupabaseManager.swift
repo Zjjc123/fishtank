@@ -76,7 +76,7 @@ class SupabaseManager: ObservableObject {
   // MARK: - Authentication
 
   @MainActor
-  func signUp(email: String, password: String) async -> Bool {
+  func signUp(email: String, password: String, username: String? = nil) async -> Bool {
     isLoading = true
     errorMessage = nil
 
@@ -97,6 +97,34 @@ class SupabaseManager: ObservableObject {
         emailConfirmed: false
       )
       self.isAuthenticated = false
+      
+      // If username is provided, update the user_profiles table
+      if let username = username, !username.isEmpty {
+        do {
+          // Update the username in the user_profiles table
+          _ = try await client.from("user_profiles")
+            .update(["username": username])
+            .eq("id", value: user.id.uuidString)
+            .execute()
+        } catch {
+          print("Error updating username: \(error)")
+          let errorString = error.localizedDescription.lowercased()
+          
+          // Check if the error is related to uniqueness constraint
+          if errorString.contains("unique") || errorString.contains("duplicate") {
+            errorMessage = "Username already taken. Please choose another username."
+            
+            // Clean up by signing out the user since we couldn't complete the full registration
+            try? await client.auth.signOut()
+            self.currentUser = nil
+            self.isAuthenticated = false
+            
+            isLoading = false
+            return false
+          }
+          // Otherwise, don't fail the sign-up process if username update fails
+        }
+      }
 
       isLoading = false
       return true
@@ -369,7 +397,6 @@ class SupabaseManager: ObservableObject {
 
   struct UserProfileInsert: Encodable {
     let id: String
-    let email: String
     let total_focus_time: Double
     let total_fish_caught: Int
   }

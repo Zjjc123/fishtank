@@ -4,8 +4,7 @@
 -- Create user_profiles table
 CREATE TABLE IF NOT EXISTS public.user_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
-    username TEXT,
+    username TEXT UNIQUE,
     total_focus_time DOUBLE PRECISION DEFAULT 0,
     total_fish_caught INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
@@ -84,8 +83,8 @@ CREATE TRIGGER update_user_fish_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.user_profiles (id, email)
-    VALUES (NEW.id, NEW.email);
+    INSERT INTO public.user_profiles (id)
+    VALUES (NEW.id);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

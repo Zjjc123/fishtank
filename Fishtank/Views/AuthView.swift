@@ -204,6 +204,9 @@ struct AuthFormView: View {
   @Binding var showConfirmationMessage: Bool
   @Binding var shouldShowAuthView: Bool
   let supabaseManager: SupabaseManager
+  
+  // Add username state
+  @State private var username: String = ""
 
   // Add state for OTP verification
   @State private var otpCode: String = ""
@@ -273,6 +276,31 @@ struct AuthFormView: View {
               .keyboardType(.emailAddress)
               .autocapitalization(.none)
               .disableAutocorrection(true)
+          }
+          
+          // Username Field (only for sign up)
+          if isSignUp {
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Username")
+                .font(.system(.caption2, design: .rounded))
+                .foregroundColor(.white.opacity(0.7))
+
+              TextField("Enter your username", text: $username)
+                .font(.system(.callout, design: .rounded))
+                .padding(8)
+                .frame(height: 36)
+                .background(textFieldBackground())
+                .overlay(textFieldBorder())
+                .foregroundColor(.white)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+              
+              // Username requirements helper text
+              Text("5-20 characters, letters, numbers, and underscores only")
+                .font(.system(.caption2, design: .rounded))
+                .foregroundColor(.white.opacity(0.6))
+                .padding(.top, 2)
+            }
           }
 
           // Password Field
@@ -540,6 +568,7 @@ struct AuthFormView: View {
         email = ""
         password = ""
         confirmPassword = ""
+        username = ""
         otpCode = ""
         supabaseManager.errorMessage = nil
       }
@@ -649,6 +678,7 @@ struct AuthFormView: View {
           email = ""
           password = ""
           confirmPassword = ""
+          username = ""
           supabaseManager.errorMessage = nil
         }
       }) {
@@ -677,9 +707,14 @@ struct AuthFormView: View {
   private var isValidForm: Bool {
     let isEmailValid = email.contains("@") && email.contains(".")
     let isPasswordValid = password.count >= 6
+    
+    // Username validation: 5-20 chars, alphanumeric + underscores only
+    let isUsernameValid = !isSignUp || (username.count >= 5 && 
+                                       username.count <= 20 && 
+                                       username.range(of: "^[a-zA-Z0-9_]+$", options: .regularExpression) != nil)
 
     if isSignUp {
-      return isEmailValid && isPasswordValid && password == confirmPassword
+      return isEmailValid && isPasswordValid && password == confirmPassword && isUsernameValid
     } else {
       return isEmailValid && isPasswordValid
     }
@@ -699,7 +734,7 @@ struct AuthFormView: View {
       }
     }
 
-    let success = await supabaseManager.signUp(email: email, password: password)
+    let success = await supabaseManager.signUp(email: email, password: password, username: username)
     if success {
       // Successfully signed up - show confirmation message
       print("User signed up successfully")

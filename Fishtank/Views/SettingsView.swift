@@ -22,6 +22,7 @@ struct SettingsView: View {
   @State private var showPurchaseAlert = false
   @State private var selectedColorForPurchase: BackgroundColorOption?
   @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
+  @State private var userProfile: UserProfile?
 
   private func signOut() async {
     await supabaseManager.signOut()
@@ -40,6 +41,16 @@ struct SettingsView: View {
       } catch {
         await MainActor.run {
           isOnline = false
+        }
+      }
+    }
+  }
+
+  private func fetchUserProfile() {
+    Task {
+      if let profile = await supabaseManager.getUserProfile() {
+        await MainActor.run {
+          self.userProfile = profile
         }
       }
     }
@@ -80,6 +91,7 @@ struct SettingsView: View {
       .padding(.horizontal, 100)
       .onAppear {
         checkConnection()
+        fetchUserProfile()
         Task {
           await iapManager.ensureProductsLoaded()
         }
@@ -180,7 +192,7 @@ struct SettingsView: View {
         )
     )
   }
-  
+
   private var totalFocusTimeView: some View {
     HStack(spacing: 8) {
       Image(systemName: "hourglass")
@@ -209,11 +221,11 @@ struct SettingsView: View {
     )
     .padding(.vertical, 8)
   }
-  
+
   private func formatTimeInterval(_ interval: TimeInterval) -> String {
     let hours = Int(interval) / 3600
     let minutes = (Int(interval) % 3600) / 60
-    
+
     if hours > 0 {
       return "\(hours)h \(minutes)m"
     } else {
@@ -516,6 +528,34 @@ struct SettingsView: View {
                   .stroke(Color.white.opacity(0.2), lineWidth: 1)
               )
           )
+
+          // Username display
+          if let username = userProfile?.username, !username.isEmpty {
+            HStack(spacing: 8) {
+              Image(systemName: "person.text.rectangle")
+                .font(.title3)
+                .foregroundColor(.blue.opacity(0.9))
+
+              Text("Username")
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundColor(.white.opacity(0.8))
+
+              Spacer()
+
+              Text(username)
+                .font(.system(.caption, design: .rounded))
+                .foregroundColor(.blue.opacity(0.8))
+            }
+            .padding(12)
+            .background(
+              RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
+            )
+          }
         }
       }
     }
