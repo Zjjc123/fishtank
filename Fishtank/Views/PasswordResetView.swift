@@ -51,6 +51,7 @@ struct PasswordResetView: View {
           VStack(spacing: 16) {
             Image("Goldfish")
               .resizable()
+              .interpolation(.none)  // Disable antialiasing
               .scaledToFit()
               .frame(width: 80, height: 80)
 

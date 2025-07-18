@@ -89,7 +89,7 @@ struct UsernameSetupView: View {
             shouldShowAuthView = false  // This will trigger MainView to show ContentView
             showUsernameSetup = false
             supabaseManager.needsUsernameSetup = false
-            
+
             // Post notification to ensure MainView updates
             NotificationCenter.default.post(
               name: NSNotification.Name("SupabaseAuthStateChanged"),
@@ -136,7 +136,7 @@ struct UsernameSetupView: View {
             // Reset UI state
             showUsernameSetup = false
             shouldShowAuthView = true
-            
+
             // Post notification to ensure MainView updates
             NotificationCenter.default.post(
               name: NSNotification.Name("SupabaseAuthStateChanged"),
@@ -254,4 +254,4 @@ struct UsernameSetupView: View {
     )
     .transition(.opacity.combined(with: .scale))
   }
-} 
+}
