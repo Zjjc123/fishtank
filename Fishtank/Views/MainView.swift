@@ -16,7 +16,7 @@ struct MainView: View {
 
   var body: some View {
     Group {
-      if (supabaseManager.isAuthenticated || supabaseManager.isGuest) && !shouldShowAuthView && !supabaseManager.needsUsernameSetup {
+      if ((supabaseManager.isAuthenticated && !supabaseManager.needsUsernameSetup) || supabaseManager.isGuest) && !shouldShowAuthView {
         ZStack(alignment: .top) {
           ContentView()
             .environmentObject(supabaseManager)
@@ -28,12 +28,14 @@ struct MainView: View {
       } else {
         AuthView()
           .onDisappear {
-            // Reset the flag when auth view disappears
-            shouldShowAuthView = false
+            // Only reset the flag when auth view disappears if user is authenticated
+            if supabaseManager.isAuthenticated || supabaseManager.isGuest {
+              shouldShowAuthView = false
+            }
 
             // Only set landscape orientation if user is authenticated or guest
-            // and doesn't need username setup
-            if (supabaseManager.isAuthenticated || supabaseManager.isGuest) && !supabaseManager.needsUsernameSetup {
+            // and doesn't need username setup (or is guest)
+            if (supabaseManager.isAuthenticated && !supabaseManager.needsUsernameSetup) || supabaseManager.isGuest {
               setOrientation(to: .landscape)
             }
           }
@@ -63,10 +65,19 @@ struct MainView: View {
       object: nil,
       queue: .main
     ) { notification in
+      // Check if user is in guest mode
+      if let isGuest = notification.userInfo?["isGuest"] as? Bool, isGuest {
+        // If in guest mode, we should show ContentView
+        self.shouldShowAuthView = false
+      }
       // Check if user needs username setup
-      if let needsUsernameSetup = notification.userInfo?["needsUsernameSetup"] as? Bool, 
+      else if let needsUsernameSetup = notification.userInfo?["needsUsernameSetup"] as? Bool, 
          needsUsernameSetup {
         // If username setup is needed, make sure we show the AuthView
+        self.shouldShowAuthView = true
+      } else if let isAuthenticated = notification.userInfo?["isAuthenticated"] as? Bool,
+                !isAuthenticated {
+        // If user is not authenticated, make sure we show the AuthView
         self.shouldShowAuthView = true
       }
       

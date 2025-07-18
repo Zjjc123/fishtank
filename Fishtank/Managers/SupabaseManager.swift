@@ -48,6 +48,7 @@ class SupabaseManager: ObservableObject {
     self.isGuest = true
     self.currentUser = nil
     self.isAuthenticated = true  // For UI flow
+    self.needsUsernameSetup = false  // Guests don't need username setup
 
     // Save guest mode preference
     UserDefaults.standard.set(true, forKey: guestModeKey)
@@ -55,7 +56,7 @@ class SupabaseManager: ObservableObject {
     NotificationCenter.default.post(
       name: NSNotification.Name("SupabaseAuthStateChanged"),
       object: nil,
-      userInfo: ["isAuthenticated": true, "isGuest": true]
+      userInfo: ["isAuthenticated": true, "isGuest": true, "needsUsernameSetup": false]
     )
   }
 
@@ -181,11 +182,13 @@ class SupabaseManager: ObservableObject {
         updatedAt: user.updatedAt,
         emailConfirmed: emailConfirmed
       )
-      self.isAuthenticated = true
 
-      // Check if user has a username
+      // Check if user has a username BEFORE setting isAuthenticated
       let hasUsername = await checkIfUsernameExists()
       self.needsUsernameSetup = !hasUsername
+
+      // Now set isAuthenticated
+      self.isAuthenticated = true
 
       // Post notification about authentication state change with username info
       NotificationCenter.default.post(
@@ -231,6 +234,7 @@ class SupabaseManager: ObservableObject {
       try await client.auth.signOut()
       self.currentUser = nil
       self.isAuthenticated = false
+      self.needsUsernameSetup = false  // Reset the username setup flag
 
       // Clear guest mode preference
       UserDefaults.standard.set(false, forKey: guestModeKey)
@@ -240,7 +244,7 @@ class SupabaseManager: ObservableObject {
       NotificationCenter.default.post(
         name: NSNotification.Name("SupabaseAuthStateChanged"),
         object: nil,
-        userInfo: ["isAuthenticated": false]
+        userInfo: ["isAuthenticated": false, "needsUsernameSetup": false]
       )
       // Clear all local fish data on logout
       GameStateManager.shared.clearLocalFishData()
@@ -303,11 +307,13 @@ class SupabaseManager: ObservableObject {
           updatedAt: user.updatedAt,
           emailConfirmed: emailConfirmed
         )
-        self.isAuthenticated = true
 
-        // Check if user has a username
+        // Check if user has a username BEFORE setting isAuthenticated
         let hasUsername = await checkIfUsernameExists()
         self.needsUsernameSetup = !hasUsername
+
+        // Now set isAuthenticated
+        self.isAuthenticated = true
 
         // Post notification about authentication state change with username info
         NotificationCenter.default.post(
@@ -377,11 +383,13 @@ class SupabaseManager: ObservableObject {
         updatedAt: user.updatedAt,
         emailConfirmed: emailConfirmed
       )
-      self.isAuthenticated = true
 
-      // Check if user has a username
+      // Check if user has a username BEFORE setting isAuthenticated
       let hasUsername = await checkIfUsernameExists()
       self.needsUsernameSetup = !hasUsername
+
+      // Now set isAuthenticated
+      self.isAuthenticated = true
 
       // Post notification about authentication state change with username info
       NotificationCenter.default.post(
@@ -419,7 +427,8 @@ class SupabaseManager: ObservableObject {
   // New method to check if user has a username
   @MainActor
   func checkIfUsernameExists() async -> Bool {
-    guard let userId = currentUser?.id, !isGuest else { return false }
+    // Guests don't need usernames, so always return true for them
+    guard let userId = currentUser?.id, !isGuest else { return true }
 
     do {
       let response = try await client.from("user_profiles")
@@ -474,7 +483,6 @@ class SupabaseManager: ObservableObject {
         .execute()
 
       isLoading = false
-      successMessage = "Username updated successfully!"
       needsUsernameSetup = false
       return true
     } catch {

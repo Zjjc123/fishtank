@@ -205,8 +205,9 @@ struct AuthView: View {
       if shouldShowAuthView {
         isSignUp = true
       }
-
-      // No need to check for username here anymore, SupabaseManager handles it
+      
+      // Immediately set showUsernameSetup if needed
+      showUsernameSetup = supabaseManager.needsUsernameSetup
     }
     // Listen for changes to needsUsernameSetup
     .onChange(of: supabaseManager.needsUsernameSetup) { needsSetup in
@@ -341,7 +342,16 @@ struct UsernameSetupView: View {
         Task {
           await supabaseManager.signOut()
           await MainActor.run {
+            // Reset UI state
             showUsernameSetup = false
+            shouldShowAuthView = true
+            
+            // Post notification to ensure MainView updates
+            NotificationCenter.default.post(
+              name: NSNotification.Name("SupabaseAuthStateChanged"),
+              object: nil,
+              userInfo: ["isAuthenticated": false]
+            )
           }
         }
       }) {
