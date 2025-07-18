@@ -424,6 +424,37 @@ class SupabaseManager: ObservableObject {
     let total_fish_caught: Int
   }
 
+  // Password reset method
+  @MainActor
+  func resetPassword(email: String) async -> Bool {
+    isLoading = true
+    errorMessage = nil
+
+    do {
+      // Set the redirect URL for password reset
+      let redirectURL = URL(string: "https://fishtankapp.io/reset-password")
+      try await client.auth.resetPasswordForEmail(email, redirectTo: redirectURL)
+      successMessage = "Password reset instructions sent to your email"
+      isLoading = false
+      return true
+    } catch {
+      let errorString = error.localizedDescription.lowercased()
+
+      if errorString.contains("invalid") && errorString.contains("email") {
+        errorMessage = "Please enter a valid email address."
+      } else if errorString.contains("network") || errorString.contains("connection") {
+        errorMessage = "Connection failed. Please check your internet and try again."
+      } else if errorString.contains("not found") {
+        errorMessage = "No account found with this email address."
+      } else {
+        errorMessage = "Failed to send password reset email. Please try again."
+      }
+
+      isLoading = false
+      return false
+    }
+  }
+
   // New method to check if user has a username
   @MainActor
   func checkIfUsernameExists() async -> Bool {
