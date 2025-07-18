@@ -33,7 +33,6 @@ struct User: Identifiable, Codable {
 
 struct UserProfile: Codable {
     let id: String
-    let email: String
     let username: String?
     let totalFocusTime: TimeInterval
     let totalFishCaught: Int
@@ -42,7 +41,6 @@ struct UserProfile: Codable {
     
     enum CodingKeys: String, CodingKey {
         case id
-        case email
         case username
         case totalFocusTime = "total_focus_time"
         case totalFishCaught = "total_fish_caught"

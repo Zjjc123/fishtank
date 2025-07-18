@@ -4,8 +4,7 @@
 -- Create user_profiles table
 CREATE TABLE IF NOT EXISTS public.user_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
-    username TEXT,
+    username TEXT UNIQUE,
     total_focus_time DOUBLE PRECISION DEFAULT 0,
     total_fish_caught INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
@@ -38,8 +37,8 @@ ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_fish ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for user_profiles
-CREATE POLICY "Users can view their own profile" ON public.user_profiles
-    FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can view all profiles" ON public.user_profiles
+    FOR SELECT USING (true);
 
 CREATE POLICY "Users can insert their own profile" ON public.user_profiles
     FOR INSERT WITH CHECK (auth.uid() = id);
@@ -84,8 +83,16 @@ CREATE TRIGGER update_user_fish_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.user_profiles (id, email)
-    VALUES (NEW.id, NEW.email);
+    INSERT INTO public.user_profiles (
+        id,
+        total_focus_time,
+        total_fish_caught
+    )
+    VALUES (
+        NEW.id,
+        0,
+        0
+    );
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
