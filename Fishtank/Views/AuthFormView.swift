@@ -19,6 +19,9 @@ struct AuthFormView: View {
   @Binding var shouldShowAuthView: Bool
   let supabaseManager: SupabaseManager
 
+  // Add binding for password reset
+  @Binding var showPasswordReset: Bool
+
   // Add state for OTP verification
   @State private var otpCode: String = ""
   @State private var isVerifyingOTP: Bool = false
@@ -482,8 +485,8 @@ struct AuthFormView: View {
               )
           )
         }
-        .disabled(supabaseManager.isLoading || email.isEmpty || !email.contains("@"))
-        .opacity((supabaseManager.isLoading || email.isEmpty || !email.contains("@")) ? 0.5 : 1)
+        .disabled(supabaseManager.isLoading)
+        .opacity(supabaseManager.isLoading ? 0.5 : 1)
       }
 
       // Toggle Auth Mode
@@ -593,7 +596,7 @@ struct AuthFormView: View {
         if supabaseManager.needsUsernameSetup {
           // Show username setup screen is handled by the parent view
           // through the onChange modifier watching supabaseManager.needsUsernameSetup
-          
+
           // Keep shouldShowAuthView true to ensure AuthView stays visible for username setup
           shouldShowAuthView = true
         } else {
@@ -650,7 +653,7 @@ struct AuthFormView: View {
         if supabaseManager.needsUsernameSetup {
           // Show username setup screen is handled by the parent view
           // through the onChange modifier watching supabaseManager.needsUsernameSetup
-          
+
           // Keep shouldShowAuthView true to ensure AuthView stays visible for username setup
           shouldShowAuthView = true
         } else {
@@ -689,27 +692,13 @@ struct AuthFormView: View {
       }
     }
   }
-  
+
   // Add the forgot password handler
   private func handleForgotPassword() async {
-    guard !email.isEmpty && email.contains("@") else {
-      supabaseManager.errorMessage = "Please enter a valid email address"
-      return
-    }
-    
+    // Show the password reset view without validation
+    // The email field will be pre-filled if the user has entered one
     await MainActor.run {
-      supabaseManager.isLoading = true
-    }
-    
-    // Send password reset email
-    let success = await supabaseManager.resetPassword(email: email)
-    
-    await MainActor.run {
-      supabaseManager.isLoading = false
-      if success {
-        supabaseManager.successMessage = "Password reset instructions sent to your email"
-      }
-      // Error message is set by SupabaseManager if there was an error
+      showPasswordReset = true
     }
   }
-} 
+}

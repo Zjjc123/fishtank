@@ -17,6 +17,7 @@ struct AuthView: View {
   @State private var showPassword = false
   @State private var showConfirmationMessage = false
   @State private var showUsernameSetup = false  // This will now be controlled by supabaseManager.needsUsernameSetup
+  @State private var showPasswordReset = false  // Add this state variable
   @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
   @Environment(\.dismiss) private var dismiss
 
@@ -76,7 +77,8 @@ struct AuthView: View {
               showConfirmationMessage: $showConfirmationMessage,
               showUsernameSetup: $showUsernameSetup,
               shouldShowAuthView: $shouldShowAuthView,
-              supabaseManager: supabaseManager
+              supabaseManager: supabaseManager,
+              showPasswordReset: $showPasswordReset
             )
             .padding(.horizontal, 30)
             .onTapGesture {
@@ -129,6 +131,14 @@ struct AuthView: View {
       }
     }
     .navigationBarHidden(true)
+    .fullScreenCover(
+      isPresented: $showPasswordReset,
+      content: {
+        PasswordResetView(initialEmail: email)
+          .transition(.identity)  // Remove transition animation
+      }
+    )
+    .animation(nil, value: showPasswordReset)  // Disable animation for the state change
     .onAppear {
       // Set portrait orientation using the recommended API
       if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
@@ -153,7 +163,7 @@ struct AuthView: View {
       if shouldShowAuthView {
         isSignUp = true
       }
-      
+
       // Immediately set showUsernameSetup if needed
       showUsernameSetup = supabaseManager.needsUsernameSetup
     }
@@ -165,6 +175,11 @@ struct AuthView: View {
     .onChange(of: supabaseManager.needsUsernameSetup) { needsSetup in
       showUsernameSetup = needsSetup
     }
+  }
+
+  func dismissKeyboard() {
+    UIApplication.shared.sendAction(
+      #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
   }
 }
 

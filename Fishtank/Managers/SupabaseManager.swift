@@ -424,7 +424,7 @@ class SupabaseManager: ObservableObject {
     let total_fish_caught: Int
   }
 
-  // Password reset method
+  // Password reset methods
   @MainActor
   func resetPassword(email: String) async -> Bool {
     isLoading = true
@@ -450,6 +450,92 @@ class SupabaseManager: ObservableObject {
         errorMessage = "Failed to send password reset email. Please try again."
       }
 
+      isLoading = false
+      return false
+    }
+  }
+  
+  // New method to send password reset OTP
+  @MainActor
+  func resetPasswordForEmail(email: String) async -> Bool {
+    isLoading = true
+    errorMessage = nil
+
+    do {
+      try await client.auth.resetPasswordForEmail(email)
+      isLoading = false
+      return true
+    } catch {
+      let errorString = error.localizedDescription.lowercased()
+
+      if errorString.contains("invalid") && errorString.contains("email") {
+        errorMessage = "Please enter a valid email address."
+      } else if errorString.contains("network") || errorString.contains("connection") {
+        errorMessage = "Connection failed. Please check your internet and try again."
+      } else if errorString.contains("not found") {
+        errorMessage = "No account found with this email address."
+      } else {
+        errorMessage = "Failed to send verification code. Please try again."
+      }
+
+      isLoading = false
+      return false
+    }
+  }
+  
+  // Method to verify OTP for password reset
+  @MainActor
+  func verifyOTP(email: String, token: String, type: EmailOTPType) async -> Bool {
+    isLoading = true
+    errorMessage = nil
+
+    do {
+      // Call the Supabase API to verify the OTP token
+      try await client.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: type
+      )
+      
+      isLoading = false
+      return true
+    } catch {
+      let errorString = error.localizedDescription.lowercased()
+
+      if errorString.contains("invalid") && errorString.contains("token") {
+        errorMessage = "Invalid verification code. Please try again."
+      } else if errorString.contains("expired") {
+        errorMessage = "Verification code has expired. Please request a new one."
+      } else if errorString.contains("network") || errorString.contains("connection") {
+        errorMessage = "Connection failed. Please check your internet and try again."
+      } else {
+        errorMessage = "Failed to verify the code. Please try again."
+      }
+      isLoading = false
+      return false
+    }
+  }
+  
+  // Method to update password after verification
+  @MainActor
+  func updatePassword(newPassword: String) async -> Bool {
+    isLoading = true
+    errorMessage = nil
+
+    do {
+      try await client.auth.update(user: UserAttributes(password: newPassword))
+      isLoading = false
+      return true
+    } catch {
+      let errorString = error.localizedDescription.lowercased()
+
+      if errorString.contains("weak") && errorString.contains("password") {
+        errorMessage = "Password is too weak. Please use at least 6 characters."
+      } else if errorString.contains("network") || errorString.contains("connection") {
+        errorMessage = "Connection failed. Please check your internet and try again."
+      } else {
+        errorMessage = "Failed to update password. Please try again."
+      }
       isLoading = false
       return false
     }
