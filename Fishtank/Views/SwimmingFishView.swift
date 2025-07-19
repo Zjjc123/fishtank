@@ -12,25 +12,13 @@ struct SwimmingFishView: View {
   @ObservedObject var fishTankManager: FishTankManager
   @State private var glowOpacity: Double = 0.15
   // Almost white with slight warm tint
-  private let glowColor = Color(red: 1.0, green: 0.9, blue: 0.6)
+  private let glowColor = Color(red: 1.0, green: 0.85, blue: 0.55)
 
   var body: some View {
     ZStack {
       // Glow effect for shiny fish
       if fish.collectedFish.isShiny {
-        // Outer glow layer (largest, most diffused)
-        Image(fish.imageName)
-          .resizable()
-          .renderingMode(.template)
-          .interpolation(.none)
-          .aspectRatio(contentMode: .fit)
-          .frame(width: fish.size * 1.3, height: fish.size * 1.3)
-          .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
-          .blur(radius: 18)
-          .foregroundColor(glowColor)
-          .opacity(glowOpacity)
-
-        // Middle glow layer
+        // Outer glow layer
         Image(fish.imageName)
           .resizable()
           .renderingMode(.template)
@@ -38,9 +26,9 @@ struct SwimmingFishView: View {
           .aspectRatio(contentMode: .fit)
           .frame(width: fish.size * 1.15, height: fish.size * 1.15)
           .scaleEffect(x: fish.direction > 0 ? 1 : -1, y: 1)
-          .blur(radius: 10)
+          .blur(radius: 15)
           .foregroundColor(glowColor)
-          .opacity(glowOpacity + 0.05)
+          .opacity(glowOpacity + 0.3)
 
         // Inner bright glow layer
         Image(fish.imageName)
@@ -118,7 +106,7 @@ struct SwimmingFishView: View {
       // Animate glow opacity for shiny fish
       if fish.collectedFish.isShiny {
         withAnimation(Animation.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-          glowOpacity = glowOpacity + 0.08
+          glowOpacity = glowOpacity + 0.15
         }
       }
     }
