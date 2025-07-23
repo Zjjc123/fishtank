@@ -198,12 +198,6 @@ struct ContentView: View {
         UIViewController.attemptRotationToDeviceOrientation()
       }
 
-      // Ensure bounds are properly initialized in landscape mode
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-        // No need to update bounds on orientation change anymore
-        // We're always using landscape bounds
-      }
-
       appStartTime = Date()
       // Initialize swimming fish with all visible fish
       fishTankManager.updateSwimmingFish(with: statsManager.getVisibleFish())
@@ -213,6 +207,13 @@ struct ContentView: View {
         Task {
           await statsManager.triggerSupabaseSync()
         }
+      }
+      
+      // Set up commitment completion callback
+      commitmentManager.onCommitmentCompleted = { completedCommitment in
+        showRewardMessage(
+          "🏆 \(completedCommitment.rawValue) completed! \(completedCommitment.lootboxType.emoji) \(completedCommitment.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."
+        )
       }
     }
     // Remove orientation change notification handler
@@ -247,14 +248,6 @@ struct ContentView: View {
     .onReceive(timer) { _ in
       currentTime = Date()
       timeSpent = Date().timeIntervalSince(appStartTime)
-
-      // Check progress in foreground
-      if let completedCommitment = commitmentManager.checkBackgroundProgress() {
-        fishTankManager.spawnLootbox(type: completedCommitment.lootboxType)
-        showRewardMessage(
-          "🏆 \(completedCommitment.rawValue) completed! \(completedCommitment.lootboxType.emoji) \(completedCommitment.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."
-        )
-      }
     }
     .onReceive(fishTimer) { _ in
       fishTankManager.animateFish()
