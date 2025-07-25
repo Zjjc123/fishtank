@@ -5,8 +5,8 @@
 //  Created by Jiajun Zhang on 6/19/25.
 //
 
-import Foundation
 import Combine
+import Foundation
 import SwiftUI
 
 // MARK: - Commitment Manager
@@ -27,15 +27,24 @@ final class CommitmentManager: ObservableObject {
   @Published private(set) var elapsedTime: TimeInterval = 0
   private var lastUpdateTime = Date()
 
+  // Keys for UserDefaults
+  private let commitmentStateKey = "commitmentState"
+  private let commitmentTypeKey = "commitmentType"
+  private let startTimeKey = "startTime"
+  private let elapsedTimeKey = "elapsedTime"
+  private let lastSaveTimeKey = "lastSaveTime"
+
   // Completion callback
   var onCommitmentCompleted: ((FocusCommitment) -> Void)?
 
   // MARK: - Timer
-  private var completionCheckTimer: Timer?
   private var timerCancellable: AnyCancellable?
 
   // MARK: - Initialization
   init() {
+    // Load saved state first
+    loadState()
+
     // Set up timer to check for commitment completion
     timerCancellable = Timer.publish(every: 1, on: .main, in: .common)
       .autoconnect()
@@ -43,65 +52,128 @@ final class CommitmentManager: ObservableObject {
         self?.updateProgress()
       }
 
-    // Load saved state
-    loadState()
+    // Register for app lifecycle notifications
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(appWillResignActive),
+      name: UIApplication.willResignActiveNotification,
+      object: nil
+    )
+
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(appDidBecomeActive),
+      name: UIApplication.didBecomeActiveNotification,
+      object: nil
+    )
   }
 
   deinit {
     timerCancellable?.cancel()
+    NotificationCenter.default.removeObserver(self)
+  }
+
+  // MARK: - App Lifecycle
+  @objc private func appWillResignActive() {
+    // Save state when app goes to background
+    saveState()
+  }
+
+  @objc private func appDidBecomeActive() {
+    // Update progress when app comes to foreground
+    if isActive {
+      updateProgressAfterBackground()
+    }
   }
 
   // MARK: - State Management
   private func saveState() {
-    let encoder = JSONEncoder()
-    
-    // Prepare data for saving
-    var data: [String: Any] = [:]
-    
+    let defaults = UserDefaults.standard
+
+    // Save commitment type
     if let commitment = currentCommitment {
-      data["commitment"] = commitment.rawValue
+      defaults.set(commitment.rawValue, forKey: commitmentTypeKey)
+    } else {
+      defaults.removeObject(forKey: commitmentTypeKey)
     }
-    
+
+    // Save start time
     if let startTime = commitmentStartTime {
-      data["startTime"] = startTime.timeIntervalSince1970
+      defaults.set(startTime.timeIntervalSince1970, forKey: startTimeKey)
+    } else {
+      defaults.removeObject(forKey: startTimeKey)
     }
-    
-    // Convert to JSON data
-    if let jsonData = try? JSONSerialization.data(withJSONObject: data) {
-      UserDefaults.standard.set(jsonData, forKey: "commitmentState")
+
+    // Save elapsed time
+    defaults.set(elapsedTime, forKey: elapsedTimeKey)
+
+    // Save current time as last save time
+    defaults.set(Date().timeIntervalSince1970, forKey: lastSaveTimeKey)
+
+    // Synchronize to ensure data is saved immediately
+    defaults.synchronize()
+  }
+
+  private func loadState() {
+    let defaults = UserDefaults.standard
+
+    // Load commitment type
+    if let commitmentString = defaults.string(forKey: commitmentTypeKey),
+      let commitment = FocusCommitment(rawValue: commitmentString)
+    {
+      currentCommitment = commitment
+    }
+
+    // Load start time
+    if let startTimeInterval = defaults.object(forKey: startTimeKey) as? TimeInterval {
+      commitmentStartTime = Date(timeIntervalSince1970: startTimeInterval)
+    }
+
+    // Load elapsed time
+    elapsedTime = defaults.double(forKey: elapsedTimeKey)
+
+    // Update progress based on time passed while app was closed
+    if isActive {
+      updateProgressAfterBackground()
     }
   }
-  
-  private func loadState() {
-    // Load saved state from UserDefaults
-    if let jsonData = UserDefaults.standard.data(forKey: "commitmentState"),
-       let data = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-      
-      // Load commitment
-      if let commitmentString = data["commitment"] as? String,
-         let commitment = FocusCommitment(rawValue: commitmentString) {
-        currentCommitment = commitment
-      }
-      
-      // Load start time
-      if let startTimeInterval = data["startTime"] as? TimeInterval {
-        commitmentStartTime = Date(timeIntervalSince1970: startTimeInterval)
-      }
-      
-      // Check if we need to complete the commitment
-      if isActive {
-        lastUpdateTime = Date()
+
+  private func updateProgressAfterBackground() {
+    guard let commitment = currentCommitment else { return }
+
+    let defaults = UserDefaults.standard
+
+    // Get the last time we saved state
+    if let lastSaveTimeInterval = defaults.object(forKey: lastSaveTimeKey) as? TimeInterval {
+      let lastSaveTime = Date(timeIntervalSince1970: lastSaveTimeInterval)
+      let now = Date()
+
+      // Calculate time passed since last save
+      let timeSinceLastSave = now.timeIntervalSince(lastSaveTime)
+
+      if timeSinceLastSave > 0 {
+        // Apply speed boost to the background time
+        let boostedBackgroundTime = timeSinceLastSave * getProgressRate()
+
+        // Add the background time to elapsed time
+        elapsedTime += boostedBackgroundTime
+
+        // Check if commitment should be completed
+        if elapsedTime >= commitment.duration && !isCompleted {
+          completeCommitment()
+        }
       }
     }
+
+    // Update lastUpdateTime to now
+    lastUpdateTime = Date()
   }
 
   // MARK: - Computed Properties
   var progress: Double {
-    guard let startTime = commitmentStartTime,
-      let commitment = currentCommitment
-    else { return 0 }
+    guard let commitment = currentCommitment else { return 0 }
 
-    // Use the elapsedTime property which is updated with speed boost
+    // Calculate progress based on elapsed time
     let progressValue = min(elapsedTime / commitment.duration, 1.0)
 
     // Force progress to 100% if we've exceeded the duration significantly
@@ -113,10 +185,9 @@ final class CommitmentManager: ObservableObject {
   }
 
   var timeRemaining: TimeInterval {
-    guard let commitment = currentCommitment
-    else { return 0 }
+    guard let commitment = currentCommitment else { return 0 }
 
-    // Use the elapsedTime property which is updated with speed boost
+    // Calculate remaining time based on elapsed time
     let remaining = max(commitment.duration - elapsedTime, 0)
 
     // Force remaining time to 0 if we've exceeded the duration
@@ -128,52 +199,48 @@ final class CommitmentManager: ObservableObject {
   }
 
   var isActive: Bool {
-    let active = currentCommitment != nil && commitmentStartTime != nil
-    return active
+    return currentCommitment != nil && commitmentStartTime != nil && !isCompleted
   }
 
   var isAppRestrictionEnabled: Bool {
-    appRestrictionManager.isAuthorized
+    return appRestrictionManager.isAuthorized
   }
-
-  // Add this method to CommitmentManager class to calculate progress with speed boost
 
   // Get the current progress rate (1.0 for normal, higher for speed boost)
   func getProgressRate() -> Double {
     // Check if speed boost is active
     if UserPreferences.shared.hasSpeedBoost {
-      return 1.5 // 50% faster progress with speed boost
+      return 1.5  // 50% faster progress with speed boost
     }
-    return 1.0 // Normal progress rate
+    return 1.0  // Normal progress rate
   }
 
-  // Update the updateProgress method to use the speed boost
+  // Update progress during active app usage
   func updateProgress() {
-    guard isActive, let commitment = currentCommitment else { return }
-    
+    guard isActive, !isCompleted else { return }
+
     // Calculate elapsed time since last update
     let now = Date()
     let elapsed = now.timeIntervalSince(lastUpdateTime)
     lastUpdateTime = now
-    
+
     // Apply speed boost if active
     let boostedElapsed = elapsed * getProgressRate()
-    
-    // Update elapsed time only - progress and timeRemaining are computed properties
+
+    // Update elapsed time
     elapsedTime += boostedElapsed
-    
+
     // Check for completion
-    let currentProgress = min(elapsedTime / commitment.duration, 1.0)
-    if currentProgress >= 1.0 && !isCompleted {
+    if let commitment = currentCommitment, elapsedTime >= commitment.duration {
       completeCommitment()
     }
   }
 
   private func completeCommitment() {
     guard let commitment = currentCommitment, !isCompleted else { return }
-    
+
     isCompleted = true
-    
+
     // Session is complete, stop app restriction
     if appRestrictionManager.isRestrictionActive {
       appRestrictionManager.stopAppRestriction()
@@ -191,21 +258,26 @@ final class CommitmentManager: ObservableObject {
     if let callback = onCommitmentCompleted {
       callback(commitment)
     }
-    
+
     // Clear state after a short delay to allow UI to show completion
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-      self?.currentCommitment = nil
-      self?.commitmentStartTime = nil
-      self?.isCompleted = false
-      self?.saveState()
+      self?.resetCommitment()
     }
+  }
+
+  private func resetCommitment() {
+    currentCommitment = nil
+    commitmentStartTime = nil
+    elapsedTime = 0
+    isCompleted = false
+    saveState()
   }
 
   func startCommitment(_ commitment: FocusCommitment) {
     currentCommitment = commitment
     commitmentStartTime = Date()
-    elapsedTime = 0 // Initialize elapsedTime
-    lastUpdateTime = Date() // Initialize lastUpdateTime
+    elapsedTime = 0
+    lastUpdateTime = Date()
     isCompleted = false
 
     // Start app restriction if authorized
@@ -232,12 +304,8 @@ final class CommitmentManager: ObservableObject {
     // Cancel any pending notifications
     notificationManager.cancelAllPendingNotifications()
 
-    // Clear state
-    currentCommitment = nil
-    commitmentStartTime = nil
-    elapsedTime = 0
-    isCompleted = false
-    saveState()
+    // Reset state
+    resetCommitment()
 
     return cancelled
   }
