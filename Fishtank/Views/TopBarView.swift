@@ -8,35 +8,19 @@
 import SwiftUI
 
 struct TopBarView: View {
-  let currentTime: Date
   let isSyncing: Bool
   let onSettingsTapped: () -> Void
   let onStoreTapped: () -> Void
   let onShareTapped: () -> Void
   let fishSpeciesCount: Int
-  
+
   @ObservedObject private var userPreferences = UserPreferences.shared
-  
+
   var body: some View {
     HStack {
-      // Left side: Clock
-      ClockDisplayView(currentTime: currentTime)
-        .padding(.leading, 15)
-      
+      // Clock removed from here
       Spacer()
-      
-      // Center: Fish count
-      HStack(spacing: 4) {
-        Image(systemName: "fish")
-          .foregroundColor(.white)
-        Text("\(fishSpeciesCount)")
-          .foregroundColor(.white)
-          .font(.system(size: 16, weight: .bold))
-      }
-      .padding(8)
-      .background(Color.black.opacity(0.3))
-      .cornerRadius(8)
-      
+
       // Speed boost indicator if active
       if userPreferences.hasSpeedBoost {
         HStack(spacing: 4) {
@@ -50,9 +34,9 @@ struct TopBarView: View {
         .background(Color.black.opacity(0.3))
         .cornerRadius(8)
       }
-      
+
       Spacer()
-      
+
       // Right side: Buttons
       HStack(spacing: 15) {
         // Store button
@@ -64,7 +48,7 @@ struct TopBarView: View {
             .background(Color.black.opacity(0.3))
             .cornerRadius(8)
         }
-        
+
         // Share button
         Button(action: onShareTapped) {
           Image(systemName: "square.and.arrow.up")
@@ -74,7 +58,7 @@ struct TopBarView: View {
             .background(Color.black.opacity(0.3))
             .cornerRadius(8)
         }
-        
+
         // Settings button
         Button(action: onSettingsTapped) {
           Image(systemName: "gear")
@@ -97,7 +81,7 @@ struct TopBarView: View {
       .padding(.trailing, 15)
     }
     .frame(height: 50)
-    .background(Color.black.opacity(0.2))
+    // Removed the background
   }
 }
 
@@ -105,7 +89,6 @@ struct TopBarView: View {
   ZStack {
     Color.blue
     TopBarView(
-      currentTime: Date(),
       isSyncing: false,
       onSettingsTapped: {},
       onStoreTapped: {},

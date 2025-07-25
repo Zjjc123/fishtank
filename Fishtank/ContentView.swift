@@ -55,34 +55,50 @@ struct ContentView: View {
           }
         )
 
+        // Position ClockDisplayView at the top left
+        VStack {
+          HStack {
+            ClockDisplayView(currentTime: currentTime)
+            Spacer()
+          }
+          .padding(.top, 50)
+          .padding(.leading, 20)
+
+          Spacer()
+        }
+
         VStack {
           // Top Bar
-          TopBarView(
-            currentTime: currentTime,
-            isSyncing: statsManager.isSyncing,
-            onSettingsTapped: {
-              showSettings = true
-            },
-            onStoreTapped: {
-              showStore = true
-            },
-            onShareTapped: {
-              isShareSheetPresented = true
-            },
-            fishSpeciesCount: getUniqueSpeciesCount()
-          )
+          HStack {
+            Spacer()
 
-          // Commitment Progress
+            TopBarView(
+              isSyncing: statsManager.isSyncing,
+              onSettingsTapped: {
+                showSettings = true
+              },
+              onStoreTapped: {
+                showStore = true
+              },
+              onShareTapped: {
+                isShareSheetPresented = true
+              },
+              fishSpeciesCount: getUniqueSpeciesCount()
+            )
+          }
+          .padding(.top, 25)  // Added top padding to lower the position
+
+          Spacer()
+
+          // Commitment Progress - moved right above bottom action bar
           if let commitment = commitmentManager.currentCommitment {
             CommitmentProgressView(
               commitment: commitment,
               progress: commitmentManager.progress,
               timeRemaining: commitmentManager.timeRemaining
             )
-            .padding(.top, 35)
+            .padding(.bottom, 10)
           }
-
-          Spacer()
 
           // Bottom Action Buttons
           BottomActionBarView(
@@ -201,7 +217,7 @@ struct ContentView: View {
           await statsManager.triggerSupabaseSync()
         }
       }
-      
+
       // Set up commitment completion callback
       commitmentManager.onCommitmentCompleted = { completedCommitment in
         showRewardMessage(
@@ -295,9 +311,9 @@ struct ContentView: View {
   private func createShareSheet() -> ShareSheet {
     let uniqueSpecies = getUniqueSpeciesCount()
     let rarityCount = getRarityCount()
-    
+
     var message = "🐠 I've collected \(uniqueSpecies) different fish species in my Fishtank!\n\n"
-    
+
     // Add total focus time
     message += "⏱️ Total Focus Time: \(formatTimeInterval(statsManager.totalFocusTime))\n\n"
 
@@ -308,21 +324,21 @@ struct ContentView: View {
         message += "\(rarity.emoji) \(rarity.rawValue): \(count)\n"
       }
     }
-    
+
     message += "\nDownload Fishtank - Focus App!"
-    
+
     let appStoreURL = URL(string: "https://apps.apple.com/us/app/fishtank-focus-app/id6747935306")!
-    
+
     let itemsToShare: [Any] = [message, appStoreURL]
-    
+
     return ShareSheet(activityItems: itemsToShare)
   }
-  
+
   // Helper function to format time interval
   private func formatTimeInterval(_ interval: TimeInterval) -> String {
     let hours = Int(interval) / 3600
     let minutes = (Int(interval) % 3600) / 60
-    
+
     if hours > 0 {
       return "\(hours)h \(minutes)m"
     } else {

@@ -29,6 +29,10 @@ struct StoreView: View {
         .ignoresSafeArea()
 
         VStack {
+          Text("Store")
+            .font(.title2)
+            .fontWeight(.bold)
+
           storeItemsView
 
           Spacer()
@@ -45,18 +49,9 @@ struct StoreView: View {
           }
           .padding(.bottom)
         }
-        .padding()
-        .navigationTitle("Store")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarBackground(Color.blue.opacity(0.1), for: .navigationBar)
+        .padding(.top, 10)
         .toolbar {
-          ToolbarItem(placement: .principal) {
-            Text("Store")
-              .font(.headline.bold())
-              .padding(.top, 8)
-          }
-          ToolbarItem(placement: .navigationBarLeading) {
+          ToolbarItem(placement: .navigationBarTrailing) {
             Button(action: {
               isPresented = false
             }) {
@@ -86,48 +81,46 @@ struct StoreView: View {
 
   // Combined store items view
   private var storeItemsView: some View {
-    ScrollView {
-      VStack(spacing: 20) {
-        // Platinum lootbox card
-        storeItemCard(
-          title: "Platinum Lootbox",
-          description: "Highest chance for rare and legendary fish!",
-          icon: "👑",
-          price: iapManager.getPlatinumLootboxPrice(),
-          action: {
-            purchasePlatinumLootbox()
-          }
-        )
-
-        // Current boost status
-        if userPreferences.hasSpeedBoost {
-          VStack {
-            Text("Active Speed Boost")
-              .font(.headline)
-              .foregroundColor(.green)
-
-            Text(userPreferences.formattedSpeedBoostTimeRemaining())
-              .font(.subheadline)
-          }
-          .padding()
-          .frame(maxWidth: .infinity)
-          .background(Color.green.opacity(0.1))
-          .cornerRadius(12)
+    VStack(spacing: 20) {
+      // Platinum lootbox card
+      storeItemCard(
+        title: "Platinum Lootbox",
+        description: "Highest chance for rare and legendary fish!",
+        icon: "👑",
+        price: iapManager.getPlatinumLootboxPrice(),
+        action: {
+          purchasePlatinumLootbox()
         }
+      )
 
-        // Speed boost card
-        storeItemCard(
-          title: "Speed Boost (24 Hours)",
-          description: "Complete commitments 50% faster for 24 hours!",
-          icon: "⚡️",
-          price: iapManager.getSpeedBoostPrice(),
-          action: {
-            purchaseSpeedBoost()
-          }
-        )
+      // Current boost status
+      if userPreferences.hasSpeedBoost {
+        VStack {
+          Text("Active Speed Boost")
+            .font(.headline)
+            .foregroundColor(.green)
+
+          Text(userPreferences.formattedSpeedBoostTimeRemaining())
+            .font(.subheadline)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color.green.opacity(0.1))
+        .cornerRadius(12)
       }
-      .padding()
+
+      // Speed boost card
+      storeItemCard(
+        title: "Speed Boost (24 Hours)",
+        description: "Complete commitments 50% faster for 24 hours!",
+        icon: "⚡️",
+        price: iapManager.getSpeedBoostPrice(),
+        action: {
+          purchaseSpeedBoost()
+        }
+      )
     }
+    .padding()
   }
 
   // Reusable store item card
