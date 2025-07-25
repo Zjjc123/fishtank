@@ -20,10 +20,14 @@ final class InAppPurchaseManager: ObservableObject {
   private var products: [Product] = []
   private let skipProductID = "dev.jasonzhang.fishtank.skip"
   private let backgroundsProductID = AppConfig.backgroundsProductID
+  private let platinumLootboxProductID = AppConfig.platinumLootboxProductID
+  private let speedBoostProductID = AppConfig.speedBoostProductID
   private var transactionListener: Task<Void, Error>?
   
   // User preferences reference
   private let userPreferences = UserPreferences.shared
+  // FishTank manager reference for lootbox spawning
+  private let fishTankManager = FishTankManager.shared
 
   private init() {
     // Start listening for transactions
@@ -67,6 +71,16 @@ final class InAppPurchaseManager: ObservableObject {
       await MainActor.run {
         userPreferences.unlockedBackgrounds = true
       }
+    } else if transaction.productID == platinumLootboxProductID {
+      await MainActor.run {
+        // Spawn a platinum lootbox in the tank
+        fishTankManager.spawnLootbox(type: .platinum)
+      }
+    } else if transaction.productID == speedBoostProductID {
+      await MainActor.run {
+        // Activate speed boost for 24 hours
+        userPreferences.activateSpeedBoost()
+      }
     }
     
     print("Handling transaction: \(transaction.id) for product: \(transaction.productID)")
@@ -83,7 +97,12 @@ final class InAppPurchaseManager: ObservableObject {
     purchaseError = nil
 
     do {
-      let productIdentifiers = Set([skipProductID, backgroundsProductID])
+      let productIdentifiers = Set([
+        skipProductID, 
+        backgroundsProductID, 
+        platinumLootboxProductID, 
+        speedBoostProductID
+      ])
       products = try await Product.products(for: productIdentifiers)
       print("Loaded \(products.count) products")
     } catch {
@@ -106,6 +125,24 @@ final class InAppPurchaseManager: ObservableObject {
   @MainActor
   func getBackgroundsPrice() -> String {
     guard let product = products.first(where: { $0.id == backgroundsProductID }) else {
+      return "Loading..."
+    }
+
+    return product.displayPrice
+  }
+  
+  @MainActor
+  func getPlatinumLootboxPrice() -> String {
+    guard let product = products.first(where: { $0.id == platinumLootboxProductID }) else {
+      return "Loading..."
+    }
+
+    return product.displayPrice
+  }
+  
+  @MainActor
+  func getSpeedBoostPrice() -> String {
+    guard let product = products.first(where: { $0.id == speedBoostProductID }) else {
       return "Loading..."
     }
 
@@ -176,13 +213,38 @@ final class InAppPurchaseManager: ObservableObject {
       purchaseError = "Backgrounds product not available"
       return false
     }
-
+    
+    return await purchaseProduct(product)
+  }
+  
+  @MainActor
+  func purchasePlatinumLootbox() async -> Bool {
+    guard let product = products.first(where: { $0.id == platinumLootboxProductID }) else {
+      purchaseError = "Platinum lootbox product not available"
+      return false
+    }
+    
+    return await purchaseProduct(product)
+  }
+  
+  @MainActor
+  func purchaseSpeedBoost() async -> Bool {
+    guard let product = products.first(where: { $0.id == speedBoostProductID }) else {
+      purchaseError = "Speed boost product not available"
+      return false
+    }
+    
+    return await purchaseProduct(product)
+  }
+  
+  @MainActor
+  private func purchaseProduct(_ product: Product) async -> Bool {
     isPurchasing = true
     purchaseError = nil
-
+    
     do {
       let result = try await product.purchase()
-
+      
       switch result {
       case .success(let verification):
         // Verify the transaction
@@ -191,35 +253,35 @@ final class InAppPurchaseManager: ObservableObject {
           // Handle successful purchase
           await handle(transaction: transaction)
           await transaction.finish()
-          print("Backgrounds purchase successful")
+          print("Purchase successful for \(product.id)")
           isPurchasing = false
           return true
-
+          
         case .unverified(_, let error):
           purchaseError = "Transaction verification failed: \(error.localizedDescription)"
           print("Transaction verification failed: \(error)")
           isPurchasing = false
           return false
         }
-
+        
       case .userCancelled:
-        print("User cancelled backgrounds purchase")
+        print("User cancelled purchase")
         isPurchasing = false
         return false
-
+        
       case .pending:
         purchaseError = "Purchase is pending approval"
         print("Purchase is pending approval")
         isPurchasing = false
         return false
-
+        
       @unknown default:
         purchaseError = "Unknown purchase result"
         print("Unknown purchase result")
         isPurchasing = false
         return false
       }
-
+      
     } catch {
       purchaseError = "Purchase failed: \(error.localizedDescription)"
       print("Purchase failed: \(error)")
@@ -228,8 +290,6 @@ final class InAppPurchaseManager: ObservableObject {
     }
   }
 
-  // MARK: - Transaction Management
-  @MainActor
   func checkForUnfinishedTransactions() async {
     for await result in StoreKit.Transaction.currentEntitlements {
       switch result {
@@ -253,6 +313,9 @@ final class InAppPurchaseManager: ObservableObject {
       if case .verified(let transaction) = result {
         if transaction.productID == backgroundsProductID {
           userPreferences.unlockedBackgrounds = true
+        } else if transaction.productID == speedBoostProductID {
+          // For consumable products like speed boost, we don't restore them
+          // but we could check if there's an active boost period in UserDefaults
         }
       }
     }

@@ -11,62 +11,106 @@ struct TopBarView: View {
   let currentTime: Date
   let isSyncing: Bool
   let onSettingsTapped: () -> Void
+  let onStoreTapped: () -> Void
   let onShareTapped: () -> Void
   let fishSpeciesCount: Int
-
+  
+  @ObservedObject private var userPreferences = UserPreferences.shared
+  
   var body: some View {
     HStack {
+      // Left side: Clock
       ClockDisplayView(currentTime: currentTime)
-        .padding(.leading, 25)
-        .padding(.top, 40)
-
+        .padding(.leading, 15)
+      
       Spacer()
-
-      // Share button
-      Button(action: onShareTapped) {
-        Image(systemName: "square.and.arrow.up")
-          .font(.title2)
+      
+      // Center: Fish count
+      HStack(spacing: 4) {
+        Image(systemName: "fish")
           .foregroundColor(.white)
-          .opacity(0.6)
-          .padding(12)
-          .padding(.bottom, 3)
-          .background(.ultraThinMaterial)
-          .clipShape(Circle())
-          .contentShape(Circle())  // Ensure the entire circle is tappable
-      }
-
-      // Sync indicator
-      if isSyncing {
-        ProgressView()
-          .progressViewStyle(CircularProgressViewStyle(tint: .white))
-          .scaleEffect(0.8)
-          .opacity(0.6)
-          .padding(.trailing, 10)
-      }
-
-      Button(action: onSettingsTapped) {
-        Image(systemName: "gearshape.fill")
-          .font(.title2)
+        Text("\(fishSpeciesCount)")
           .foregroundColor(.white)
-          .opacity(0.6)
-          .padding(12)
-          .background(.ultraThinMaterial)
-          .clipShape(Circle())
-          .contentShape(Circle())  // Ensure the entire circle is tappable
+          .font(.system(size: 16, weight: .bold))
       }
-      .padding(.trailing, 25)
+      .padding(8)
+      .background(Color.black.opacity(0.3))
+      .cornerRadius(8)
+      
+      // Speed boost indicator if active
+      if userPreferences.hasSpeedBoost {
+        HStack(spacing: 4) {
+          Image(systemName: "bolt.fill")
+            .foregroundColor(.yellow)
+          Text(userPreferences.formattedSpeedBoostTimeRemaining())
+            .foregroundColor(.white)
+            .font(.system(size: 14))
+        }
+        .padding(8)
+        .background(Color.black.opacity(0.3))
+        .cornerRadius(8)
+      }
+      
+      Spacer()
+      
+      // Right side: Buttons
+      HStack(spacing: 15) {
+        // Store button
+        Button(action: onStoreTapped) {
+          Image(systemName: "cart")
+            .font(.system(size: 20))
+            .foregroundColor(.white)
+            .padding(8)
+            .background(Color.black.opacity(0.3))
+            .cornerRadius(8)
+        }
+        
+        // Share button
+        Button(action: onShareTapped) {
+          Image(systemName: "square.and.arrow.up")
+            .font(.system(size: 20))
+            .foregroundColor(.white)
+            .padding(8)
+            .background(Color.black.opacity(0.3))
+            .cornerRadius(8)
+        }
+        
+        // Settings button
+        Button(action: onSettingsTapped) {
+          Image(systemName: "gear")
+            .font(.system(size: 20))
+            .foregroundColor(.white)
+            .padding(8)
+            .background(Color.black.opacity(0.3))
+            .cornerRadius(8)
+            .overlay(
+              Group {
+                if isSyncing {
+                  ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(0.7)
+                }
+              }
+            )
+        }
+      }
+      .padding(.trailing, 15)
     }
-    .padding(.top, 20)
+    .frame(height: 50)
+    .background(Color.black.opacity(0.2))
   }
 }
 
 #Preview {
-  TopBarView(
-    currentTime: Date(),
-    isSyncing: false,
-    onSettingsTapped: {},
-    onShareTapped: {},
-    fishSpeciesCount: 15
-  )
-  .background(Color.blue)
+  ZStack {
+    Color.blue
+    TopBarView(
+      currentTime: Date(),
+      isSyncing: false,
+      onSettingsTapped: {},
+      onStoreTapped: {},
+      onShareTapped: {},
+      fishSpeciesCount: 15
+    )
+  }
 }

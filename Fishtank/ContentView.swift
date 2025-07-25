@@ -21,6 +21,7 @@ struct ContentView: View {
   @State private var showCommitmentSelection = false
   @State private var showFishCollection = false
   @State private var showSettings = false
+  @State private var showStore = false
   @State private var showReward = false
   @State private var rewardMessage = ""
   @State private var notificationTimer: DispatchWorkItem?
@@ -61,6 +62,9 @@ struct ContentView: View {
             isSyncing: statsManager.isSyncing,
             onSettingsTapped: {
               showSettings = true
+            },
+            onStoreTapped: {
+              showStore = true
             },
             onShareTapped: {
               isShareSheetPresented = true
@@ -113,6 +117,7 @@ struct ContentView: View {
           showCommitmentSelection: $showCommitmentSelection,
           showFishCollection: $showFishCollection,
           showSettings: $showSettings,
+          showStore: $showStore,
           showCaseOpening: $showCaseOpening,
           caseOpeningLootbox: $caseOpeningLootbox,
           caseOpeningRewards: $caseOpeningRewards,

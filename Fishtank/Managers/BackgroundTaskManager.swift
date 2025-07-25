@@ -54,29 +54,30 @@ final class BackgroundTaskManager {
       }
     }
 
-    // Check and complete any finished commitments
-    if let commitment = await CommitmentManager.shared.checkBackgroundProgress() {
-      // First stop app restrictions
-      AppRestrictionManager.shared.stopAppRestriction()
-
-      // Track completed focus time
-      await GameStateManager.shared.addFocusTime(commitment.duration)
+    // Check if there's an active commitment
+    let commitmentManager = CommitmentManager.shared
+    if commitmentManager.isActive, let commitment = commitmentManager.currentCommitment {
+      // Force an update of the progress
+      commitmentManager.updateProgress()
       
-      // Then spawn lootbox and save state
-      await FishTankManager.shared.spawnLootbox(type: commitment.lootboxType)
-
-      // Send an immediate notification since we're completing now
-      notificationManager.sendImmediateNotification(
-        title: "Focus Session Complete! 🎉",
-        body: "\(commitment.rawValue) completed! You earned a \(commitment.lootboxType.rawValue) lootbox!"
-      )
-
-      print("Successfully completed focus session in background and removed app restrictions")
+      // If the commitment is completed (progress is 1.0), we need to handle it
+      if commitmentManager.progress >= 1.0 {
+        // First stop app restrictions
+        AppRestrictionManager.shared.stopAppRestriction()
+        
+        // Send an immediate notification
+        notificationManager.sendImmediateNotification(
+          title: "Focus Session Complete! 🎉",
+          body: "\(commitment.rawValue) completed! You earned a \(commitment.lootboxType.rawValue) lootbox!"
+        )
+        
+        print("Successfully completed focus session in background and removed app restrictions")
+      }
     }
 
     // Schedule next check if needed
-    if let nextCompletionTime = await CommitmentManager.shared.getNextCompletionTime() {
-      await scheduleBackgroundTask(for: nextCompletionTime)
+    if let nextCompletionTime = CommitmentManager.shared.getNextCompletionTime() {
+      scheduleBackgroundTask(for: nextCompletionTime)
     }
 
     // End background task and complete
