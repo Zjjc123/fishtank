@@ -19,14 +19,12 @@ struct ModalsContainerView: View {
   @Binding var showFishCollection: Bool
   @Binding var showSettings: Bool
   @Binding var showCaseOpening: Bool
-  @Binding var showSkipConfirmation: Bool
   @Binding var caseOpeningLootbox: CommitmentLootbox?
   @Binding var caseOpeningRewards: [CollectedFish]
   
   // Callbacks
   let onCommitmentSelected: (FocusCommitment) -> Void
   let onLootboxOpened: ([CollectedFish]) -> Void
-  let onSkipConfirmed: (FocusCommitment) -> Void
   let showRewardMessage: (String) -> Void
   
   var body: some View {
@@ -122,15 +120,7 @@ struct ModalsContainerView: View {
         }
       }
 
-      if showSkipConfirmation, let commitment = commitmentManager.currentCommitment {
-        SkipConfirmationView(
-          isPresented: $showSkipConfirmation,
-          commitment: commitment,
-          commitmentManager: commitmentManager
-        ) { skippedCommitment in
-          onSkipConfirmed(skippedCommitment)
-        }
-      }
+
     }
   }
 }
@@ -145,12 +135,10 @@ struct ModalsContainerView: View {
     showFishCollection: .constant(false),
     showSettings: .constant(false),
     showCaseOpening: .constant(false),
-    showSkipConfirmation: .constant(false),
     caseOpeningLootbox: .constant(nil),
     caseOpeningRewards: .constant([]),
     onCommitmentSelected: { _ in },
     onLootboxOpened: { _ in },
-    onSkipConfirmed: { _ in },
     showRewardMessage: { _ in }
   )
 } 

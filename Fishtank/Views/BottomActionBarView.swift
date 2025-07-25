@@ -11,7 +11,6 @@ struct BottomActionBarView: View {
   let isCommitmentActive: Bool
   let onFocusTapped: () -> Void
   let onCancelTapped: () -> Void
-  let onSkipTapped: () -> Void
   let onCollectionTapped: () -> Void
 
   var body: some View {
@@ -56,26 +55,6 @@ struct BottomActionBarView: View {
               )
           )
         }
-
-        Button(action: onSkipTapped) {
-          HStack(spacing: 8) {
-            Image(systemName: "creditcard")
-              .font(.title3)
-            Text("Skip")
-              .font(.headline)
-          }
-          .foregroundColor(.white)
-          .frame(maxWidth: .infinity)
-          .frame(height: 50)
-          .background(
-            RoundedRectangle(cornerRadius: 16)
-              .fill(Color.green.opacity(0.2))
-              .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                  .stroke(Color.green.opacity(0.2), lineWidth: 1)
-              )
-          )
-        }
       }
 
       Button(action: onCollectionTapped) {
@@ -108,7 +87,6 @@ struct BottomActionBarView: View {
     isCommitmentActive: false,
     onFocusTapped: {},
     onCancelTapped: {},
-    onSkipTapped: {},
     onCollectionTapped: {}
   )
   .background(Color.blue)
