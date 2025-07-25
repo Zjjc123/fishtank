@@ -9,18 +9,62 @@
       }
     ]
   },
-  "identifier" : "6A118290",
+  "identifier" : "2AD7A666",
   "nonRenewingSubscriptions" : [
 
   ],
   "products" : [
-
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "1000000001",
+      "localizations" : [
+        {
+          "description" : "Unlock premium backgrounds for your fish tank",
+          "displayName" : "Premium Backgrounds",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "dev.jasonzhang.fishtank.backgrounds",
+      "referenceName" : "Premium Backgrounds",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "1000000002",
+      "localizations" : [
+        {
+          "description" : "Highest chance for rare and legendary fish!",
+          "displayName" : "Platinum Lootbox",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "dev.jasonzhang.fishtank.platinumlootbox",
+      "referenceName" : "Platinum Lootbox",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "1000000003",
+      "localizations" : [
+        {
+          "description" : "Complete commitments 50% faster for 24 hours!",
+          "displayName" : "Speed Boost (24 Hours)",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "dev.jasonzhang.fishtank.speedboost",
+      "referenceName" : "Speed Boost",
+      "type" : "Consumable"
+    }
   ],
   "settings" : {
     "_applicationInternalID" : "6747935306",
     "_developerTeamID" : "JAT3GYBPJ4",
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 772870425.171839,
+    "_lastSynchronizedDate" : 775104490.08254099,
     "_locale" : "en_US",
     "_storefront" : "USA",
     "_storeKitErrors" : [

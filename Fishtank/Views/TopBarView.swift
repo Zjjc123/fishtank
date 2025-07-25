@@ -8,65 +8,92 @@
 import SwiftUI
 
 struct TopBarView: View {
-  let currentTime: Date
   let isSyncing: Bool
   let onSettingsTapped: () -> Void
+  let onStoreTapped: () -> Void
   let onShareTapped: () -> Void
   let fishSpeciesCount: Int
 
+  @ObservedObject private var userPreferences = UserPreferences.shared
+
+  private let buttonSize: CGFloat = 20
+  private let buttonWidth: CGFloat = 40
+
   var body: some View {
     HStack {
-      ClockDisplayView(currentTime: currentTime)
-        .padding(.leading, 25)
-        .padding(.top, 40)
-
+      // Clock removed from here
       Spacer()
 
-      // Share button
-      Button(action: onShareTapped) {
-        Image(systemName: "square.and.arrow.up")
-          .font(.title2)
-          .foregroundColor(.white)
-          .opacity(0.6)
-          .padding(12)
-          .padding(.bottom, 3)
-          .background(.ultraThinMaterial)
-          .clipShape(Circle())
-          .contentShape(Circle())  // Ensure the entire circle is tappable
-      }
+      // Right side: Buttons
+      HStack(spacing: 15) {
+        // Speed boost indicator if active
+        if userPreferences.hasSpeedBoost {
+          HStack(spacing: 4) {
+            Image(systemName: "bolt.fill")
+              .foregroundColor(.yellow)
+            Text(userPreferences.formattedSpeedBoostTimeRemaining())
+              .foregroundColor(.white)
+              .font(.system(size: 14))
+          }
+          .padding(8)
+          .background(Color.black.opacity(0.15))
+          .cornerRadius(8)
+        }
 
-      // Sync indicator
-      if isSyncing {
-        ProgressView()
-          .progressViewStyle(CircularProgressViewStyle(tint: .white))
-          .scaleEffect(0.8)
-          .opacity(0.6)
-          .padding(.trailing, 10)
-      }
+        // Store button
+        Button(action: onStoreTapped) {
+          Image(systemName: "cart")
+            .font(.system(size: buttonSize))
+            .foregroundColor(.white)
+            .frame(width: buttonWidth, height: buttonWidth)
+            .background(Color.black.opacity(0.15))
+            .cornerRadius(8)
+        }
 
-      Button(action: onSettingsTapped) {
-        Image(systemName: "gearshape.fill")
-          .font(.title2)
-          .foregroundColor(.white)
-          .opacity(0.6)
-          .padding(12)
-          .background(.ultraThinMaterial)
-          .clipShape(Circle())
-          .contentShape(Circle())  // Ensure the entire circle is tappable
+        // Share button
+        Button(action: onShareTapped) {
+          Image(systemName: "square.and.arrow.up")
+            .font(.system(size: buttonSize))
+            .foregroundColor(.white)
+            .frame(width: buttonWidth, height: buttonWidth)
+            .background(Color.black.opacity(0.15))
+            .cornerRadius(8)
+        }
+
+        // Settings button
+        Button(action: onSettingsTapped) {
+          Image(systemName: "gear")
+            .font(.system(size: buttonSize))
+            .foregroundColor(.white)
+            .frame(width: buttonWidth, height: buttonWidth)
+            .background(Color.black.opacity(0.15))
+            .cornerRadius(8)
+            .overlay(
+              Group {
+                if isSyncing {
+                  ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(0.7)
+                }
+              }
+            )
+        }
       }
-      .padding(.trailing, 25)
+      .padding(.trailing, 15)
     }
-    .padding(.top, 20)
+    .frame(height: 50)
   }
 }
 
 #Preview {
-  TopBarView(
-    currentTime: Date(),
-    isSyncing: false,
-    onSettingsTapped: {},
-    onShareTapped: {},
-    fishSpeciesCount: 15
-  )
-  .background(Color.blue)
+  ZStack {
+    Color.blue
+    TopBarView(
+      isSyncing: false,
+      onSettingsTapped: {},
+      onStoreTapped: {},
+      onShareTapped: {},
+      fishSpeciesCount: 15
+    )
+  }
 }

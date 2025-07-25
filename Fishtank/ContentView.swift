@@ -21,6 +21,7 @@ struct ContentView: View {
   @State private var showCommitmentSelection = false
   @State private var showFishCollection = false
   @State private var showSettings = false
+  @State private var showStore = false
   @State private var showReward = false
   @State private var rewardMessage = ""
   @State private var notificationTimer: DispatchWorkItem?
@@ -54,31 +55,50 @@ struct ContentView: View {
           }
         )
 
+        // Position ClockDisplayView at the top left
+        VStack {
+          HStack {
+            ClockDisplayView(currentTime: currentTime)
+            Spacer()
+          }
+          .padding(.top, 50)
+          .padding(.leading, 20)
+
+          Spacer()
+        }
+
         VStack {
           // Top Bar
-          TopBarView(
-            currentTime: currentTime,
-            isSyncing: statsManager.isSyncing,
-            onSettingsTapped: {
-              showSettings = true
-            },
-            onShareTapped: {
-              isShareSheetPresented = true
-            },
-            fishSpeciesCount: getUniqueSpeciesCount()
-          )
+          HStack {
+            Spacer()
 
-          // Commitment Progress
+            TopBarView(
+              isSyncing: statsManager.isSyncing,
+              onSettingsTapped: {
+                showSettings = true
+              },
+              onStoreTapped: {
+                showStore = true
+              },
+              onShareTapped: {
+                isShareSheetPresented = true
+              },
+              fishSpeciesCount: getUniqueSpeciesCount()
+            )
+          }
+          .padding(.top, 25)  // Added top padding to lower the position
+
+          Spacer()
+
+          // Commitment Progress - moved right above bottom action bar
           if let commitment = commitmentManager.currentCommitment {
             CommitmentProgressView(
               commitment: commitment,
               progress: commitmentManager.progress,
               timeRemaining: commitmentManager.timeRemaining
             )
-            .padding(.top, 35)
+            .padding(.bottom, 10)
           }
-
-          Spacer()
 
           // Bottom Action Buttons
           BottomActionBarView(
@@ -113,6 +133,7 @@ struct ContentView: View {
           showCommitmentSelection: $showCommitmentSelection,
           showFishCollection: $showFishCollection,
           showSettings: $showSettings,
+          showStore: $showStore,
           showCaseOpening: $showCaseOpening,
           caseOpeningLootbox: $caseOpeningLootbox,
           caseOpeningRewards: $caseOpeningRewards,
@@ -196,7 +217,7 @@ struct ContentView: View {
           await statsManager.triggerSupabaseSync()
         }
       }
-      
+
       // Set up commitment completion callback
       commitmentManager.onCommitmentCompleted = { completedCommitment in
         showRewardMessage(
@@ -213,25 +234,13 @@ struct ContentView: View {
     .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
       Button("Yes", role: .destructive) {
         if let cancelled = commitmentManager.cancelCommitment() {
-          // Get a random fish from all collected fish
-          if let randomFish = statsManager.collectedFish.randomElement() {
-            // Remove the fish from collection and update swimming fish
-            Task {
-              await statsManager.removeFish(randomFish, fishTankManager: fishTankManager)
-              let shinyIndicator = randomFish.isShiny ? " ✨" : ""
-              showRewardMessage(
-                "🚨 \(cancelled.rawValue) session cancelled.\n😢 \(randomFish.name) swam away forever!\(shinyIndicator)\nApp restrictions removed."
-              )
-            }
-          } else {
-            showRewardMessage(
-              "🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
-          }
+          showRewardMessage(
+            "🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
         }
       }
       Button("No", role: .cancel) {}
     } message: {
-      Text("If you cancel, one of your fish will swim away FOREVER! Are you sure?")
+      Text("Are you sure you want to cancel your focus session?")
     }
     .onReceive(timer) { _ in
       currentTime = Date()
@@ -290,9 +299,9 @@ struct ContentView: View {
   private func createShareSheet() -> ShareSheet {
     let uniqueSpecies = getUniqueSpeciesCount()
     let rarityCount = getRarityCount()
-    
+
     var message = "🐠 I've collected \(uniqueSpecies) different fish species in my Fishtank!\n\n"
-    
+
     // Add total focus time
     message += "⏱️ Total Focus Time: \(formatTimeInterval(statsManager.totalFocusTime))\n\n"
 
@@ -303,21 +312,21 @@ struct ContentView: View {
         message += "\(rarity.emoji) \(rarity.rawValue): \(count)\n"
       }
     }
-    
+
     message += "\nDownload Fishtank - Focus App!"
-    
+
     let appStoreURL = URL(string: "https://apps.apple.com/us/app/fishtank-focus-app/id6747935306")!
-    
+
     let itemsToShare: [Any] = [message, appStoreURL]
-    
+
     return ShareSheet(activityItems: itemsToShare)
   }
-  
+
   // Helper function to format time interval
   private func formatTimeInterval(_ interval: TimeInterval) -> String {
     let hours = Int(interval) / 3600
     let minutes = (Int(interval) % 3600) / 60
-    
+
     if hours > 0 {
       return "\(hours)h \(minutes)m"
     } else {

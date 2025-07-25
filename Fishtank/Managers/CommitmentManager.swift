@@ -6,6 +6,7 @@
 //
 
 import Combine
+import Foundation
 import SwiftUI
 
 // MARK: - Commitment Manager
@@ -13,98 +14,166 @@ import SwiftUI
 final class CommitmentManager: ObservableObject {
   static let shared = CommitmentManager()
 
-  @Published var currentCommitment: FocusCommitment?
-  @Published var commitmentStartTime: Date?
-
-  // MARK: - Dependencies
+  // Dependencies
   private let appRestrictionManager = AppRestrictionManager.shared
   private let notificationManager = NotificationManager.shared
   private let backgroundTaskManager = BackgroundTaskManager.shared
   private let fishTankManager = FishTankManager.shared
 
-  // MARK: - Timer
-  private var completionCheckTimer: Timer?
-  private var timerCancellable: AnyCancellable?
+  // State
+  @Published private(set) var currentCommitment: FocusCommitment?
+  @Published private(set) var commitmentStartTime: Date?
+  @Published private(set) var isCompleted = false
+  @Published private(set) var elapsedTime: TimeInterval = 0
+  private var lastUpdateTime = Date()
 
-  // MARK: - Completion Callback
+  // Keys for UserDefaults
+  private let commitmentStateKey = "commitmentState"
+  private let commitmentTypeKey = "commitmentType"
+  private let startTimeKey = "startTime"
+  private let elapsedTimeKey = "elapsedTime"
+  private let lastSaveTimeKey = "lastSaveTime"
+
+  // Completion callback
   var onCommitmentCompleted: ((FocusCommitment) -> Void)?
 
+  // MARK: - Timer
+  private var timerCancellable: AnyCancellable?
+
   // MARK: - Initialization
-  private init() {
+  init() {
+    // Load saved state first
     loadState()
-    setupCompletionCheckTimer()
+
+    // Set up timer to check for commitment completion
+    timerCancellable = Timer.publish(every: 1, on: .main, in: .common)
+      .autoconnect()
+      .sink { [weak self] _ in
+        self?.updateProgress()
+      }
+
+    // Register for app lifecycle notifications
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(appWillResignActive),
+      name: UIApplication.willResignActiveNotification,
+      object: nil
+    )
+
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(appDidBecomeActive),
+      name: UIApplication.didBecomeActiveNotification,
+      object: nil
+    )
   }
 
   deinit {
     timerCancellable?.cancel()
+    NotificationCenter.default.removeObserver(self)
   }
 
-  // Setup a timer to periodically check if the commitment should be completed
-  private func setupCompletionCheckTimer() {
-    // Cancel any existing timer
-    timerCancellable?.cancel()
+  // MARK: - App Lifecycle
+  @objc private func appWillResignActive() {
+    // Save state when app goes to background
+    saveState()
+  }
 
-    // Create a timer that fires every second
-    let timer = Timer.publish(every: 1, on: .main, in: .common)
-
-    // Connect and store the cancellable
-    let connected = timer.connect()
-
-    // Subscribe to the timer events
-    let subscription =
-      timer
-      .sink { [weak self] _ in
-        guard let self = self else { return }
-
-        // Only check if there's an active commitment
-        if self.isActive {
-          let _ = self.checkBackgroundProgress()
-        }
-      }
-
-    // Store both cancellables in a single one
-    timerCancellable = AnyCancellable {
-      subscription.cancel()
-      connected.cancel()
+  @objc private func appDidBecomeActive() {
+    // Update progress when app comes to foreground
+    if isActive {
+      updateProgressAfterBackground()
     }
   }
 
   // MARK: - State Management
+  private func saveState() {
+    let defaults = UserDefaults.standard
+
+    // Save commitment type
+    if let commitment = currentCommitment {
+      defaults.set(commitment.rawValue, forKey: commitmentTypeKey)
+    } else {
+      defaults.removeObject(forKey: commitmentTypeKey)
+    }
+
+    // Save start time
+    if let startTime = commitmentStartTime {
+      defaults.set(startTime.timeIntervalSince1970, forKey: startTimeKey)
+    } else {
+      defaults.removeObject(forKey: startTimeKey)
+    }
+
+    // Save elapsed time
+    defaults.set(elapsedTime, forKey: elapsedTimeKey)
+
+    // Save current time as last save time
+    defaults.set(Date().timeIntervalSince1970, forKey: lastSaveTimeKey)
+
+    // Synchronize to ensure data is saved immediately
+    defaults.synchronize()
+  }
+
   private func loadState() {
-    if let savedCommitmentData = UserDefaults.standard.dictionary(forKey: "CurrentCommitment"),
-      let commitmentString = savedCommitmentData["commitment"] as? String,
-      let commitment = FocusCommitment(rawValue: commitmentString),
-      let startTimeInterval = savedCommitmentData["startTime"] as? TimeInterval
+    let defaults = UserDefaults.standard
+
+    // Load commitment type
+    if let commitmentString = defaults.string(forKey: commitmentTypeKey),
+      let commitment = FocusCommitment(rawValue: commitmentString)
     {
       currentCommitment = commitment
-      commitmentStartTime = Date(timeIntervalSince1970: startTimeInterval)
+    }
 
-      // If we have an active commitment, make sure app restrictions are active
-      if isActive && appRestrictionManager.isAuthorized {
-        appRestrictionManager.startAppRestriction()
-      }
+    // Load start time
+    if let startTimeInterval = defaults.object(forKey: startTimeKey) as? TimeInterval {
+      commitmentStartTime = Date(timeIntervalSince1970: startTimeInterval)
+    }
+
+    // Load elapsed time
+    elapsedTime = defaults.double(forKey: elapsedTimeKey)
+
+    // Update progress based on time passed while app was closed
+    if isActive {
+      updateProgressAfterBackground()
     }
   }
 
-  private func saveState() {
-    if let commitment = currentCommitment, let startTime = commitmentStartTime {
-      let commitmentData: [String: Any] = [
-        "commitment": commitment.rawValue,
-        "startTime": startTime.timeIntervalSince1970,
-      ]
-      UserDefaults.standard.set(commitmentData, forKey: "CurrentCommitment")
-    } else {
-      UserDefaults.standard.removeObject(forKey: "CurrentCommitment")
+  private func updateProgressAfterBackground() {
+    guard let commitment = currentCommitment else { return }
+
+    let defaults = UserDefaults.standard
+
+    // Get the last time we saved state
+    if let lastSaveTimeInterval = defaults.object(forKey: lastSaveTimeKey) as? TimeInterval {
+      let lastSaveTime = Date(timeIntervalSince1970: lastSaveTimeInterval)
+      let now = Date()
+
+      // Calculate time passed since last save
+      let timeSinceLastSave = now.timeIntervalSince(lastSaveTime)
+
+      if timeSinceLastSave > 0 {
+        // Apply speed boost to the background time
+        let boostedBackgroundTime = timeSinceLastSave * getProgressRate()
+
+        // Add the background time to elapsed time
+        elapsedTime += boostedBackgroundTime
+
+        // Check if commitment should be completed
+        if elapsedTime >= commitment.duration && !isCompleted {
+          completeCommitment()
+        }
+      }
     }
+
+    // Update lastUpdateTime to now
+    lastUpdateTime = Date()
   }
 
   // MARK: - Computed Properties
   var progress: Double {
-    guard let startTime = commitmentStartTime,
-      let commitment = currentCommitment
-    else { return 0 }
+    guard let commitment = currentCommitment else { return 0 }
 
-    let elapsedTime = Date().timeIntervalSince(startTime)
+    // Calculate progress based on elapsed time
     let progressValue = min(elapsedTime / commitment.duration, 1.0)
 
     // Force progress to 100% if we've exceeded the duration significantly
@@ -116,11 +185,9 @@ final class CommitmentManager: ObservableObject {
   }
 
   var timeRemaining: TimeInterval {
-    guard let startTime = commitmentStartTime,
-      let commitment = currentCommitment
-    else { return 0 }
+    guard let commitment = currentCommitment else { return 0 }
 
-    let elapsedTime = Date().timeIntervalSince(startTime)
+    // Calculate remaining time based on elapsed time
     let remaining = max(commitment.duration - elapsedTime, 0)
 
     // Force remaining time to 0 if we've exceeded the duration
@@ -132,19 +199,86 @@ final class CommitmentManager: ObservableObject {
   }
 
   var isActive: Bool {
-    let active = currentCommitment != nil && commitmentStartTime != nil
-    return active
+    return currentCommitment != nil && commitmentStartTime != nil && !isCompleted
   }
 
   var isAppRestrictionEnabled: Bool {
-    appRestrictionManager.isAuthorized
+    return appRestrictionManager.isAuthorized
   }
 
+  // Get the current progress rate (1.0 for normal, higher for speed boost)
+  func getProgressRate() -> Double {
+    // Check if speed boost is active
+    if UserPreferences.shared.hasSpeedBoost {
+      return 1.5  // 50% faster progress with speed boost
+    }
+    return 1.0  // Normal progress rate
+  }
 
+  // Update progress during active app usage
+  func updateProgress() {
+    guard isActive, !isCompleted else { return }
+
+    // Calculate elapsed time since last update
+    let now = Date()
+    let elapsed = now.timeIntervalSince(lastUpdateTime)
+    lastUpdateTime = now
+
+    // Apply speed boost if active
+    let boostedElapsed = elapsed * getProgressRate()
+
+    // Update elapsed time
+    elapsedTime += boostedElapsed
+
+    // Check for completion
+    if let commitment = currentCommitment, elapsedTime >= commitment.duration {
+      completeCommitment()
+    }
+  }
+
+  private func completeCommitment() {
+    guard let commitment = currentCommitment, !isCompleted else { return }
+
+    isCompleted = true
+
+    // Session is complete, stop app restriction
+    if appRestrictionManager.isRestrictionActive {
+      appRestrictionManager.stopAppRestriction()
+    }
+
+    // Track completed focus time
+    Task {
+      await GameStateManager.shared.addFocusTime(commitment.duration)
+    }
+
+    // Spawn lootbox reward
+    fishTankManager.spawnLootbox(type: commitment.lootboxType)
+
+    // Call completion callback if available
+    if let callback = onCommitmentCompleted {
+      callback(commitment)
+    }
+
+    // Clear state after a short delay to allow UI to show completion
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+      self?.resetCommitment()
+    }
+  }
+
+  private func resetCommitment() {
+    currentCommitment = nil
+    commitmentStartTime = nil
+    elapsedTime = 0
+    isCompleted = false
+    saveState()
+  }
 
   func startCommitment(_ commitment: FocusCommitment) {
     currentCommitment = commitment
     commitmentStartTime = Date()
+    elapsedTime = 0
+    lastUpdateTime = Date()
+    isCompleted = false
 
     // Start app restriction if authorized
     if appRestrictionManager.isAuthorized {
@@ -170,64 +304,10 @@ final class CommitmentManager: ObservableObject {
     // Cancel any pending notifications
     notificationManager.cancelAllPendingNotifications()
 
-    // Clear state
-    currentCommitment = nil
-    commitmentStartTime = nil
-    saveState()
+    // Reset state
+    resetCommitment()
 
     return cancelled
-  }
-
-  func checkBackgroundProgress() -> FocusCommitment? {
-    guard let commitment = currentCommitment,
-      let startTime = commitmentStartTime,
-      isActive
-    else { return nil }
-
-    let elapsedTime = Date().timeIntervalSince(startTime)
-    let remainingTime = max(commitment.duration - elapsedTime, 0)
-
-    // Check if commitment should be completed
-    // Use a small epsilon value to account for floating point precision issues
-    let epsilon = 0.001
-
-    // Commitment should complete if:
-    // 1. Elapsed time exceeds commitment duration, or
-    // 2. Remaining time is 0 or less, or
-    // 3. Progress is at or above 100%
-    let shouldComplete =
-      elapsedTime >= (commitment.duration - epsilon) || remainingTime <= epsilon
-      || (elapsedTime / commitment.duration) >= 1.0
-
-    if shouldComplete {
-      // Session is complete, stop app restriction
-      if appRestrictionManager.isRestrictionActive {
-        appRestrictionManager.stopAppRestriction()
-      }
-
-      // Clear state
-      let completed = currentCommitment
-      currentCommitment = nil
-      commitmentStartTime = nil
-      saveState()
-
-      // Track completed focus time
-      Task {
-        await GameStateManager.shared.addFocusTime(commitment.duration)
-      }
-
-      // Spawn lootbox reward
-      fishTankManager.spawnLootbox(type: commitment.lootboxType)
-
-      // Call completion callback if available
-      if let completed = completed, let callback = onCommitmentCompleted {
-        callback(completed)
-      }
-
-      return completed
-    }
-
-    return nil
   }
 
   func getNextCompletionTime() -> Date? {
@@ -243,6 +323,4 @@ final class CommitmentManager: ObservableObject {
   func requestAppRestrictionAuthorization() {
     appRestrictionManager.requestAuthorization()
   }
-
-
 }

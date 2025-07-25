@@ -92,4 +92,4 @@ struct CaseOpeningWheelView: View {
     let fish = FishDatabase.randomFish(from: lootboxType)
     return CollectedFish(fish: fish)
   }
-} 
+}

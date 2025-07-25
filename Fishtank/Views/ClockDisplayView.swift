@@ -20,7 +20,7 @@ struct ClockDisplayView: View {
   }
 
   var body: some View {
-    VStack(spacing: 8) {
+    VStack(alignment: .center, spacing: 8) {
       Text(timeString(from: displayTime))
         .font(.custom("Gill Sans", size: 72, relativeTo: .largeTitle))
         .fontWeight(.regular)

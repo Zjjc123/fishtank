@@ -18,6 +18,7 @@ struct ModalsContainerView: View {
   @Binding var showCommitmentSelection: Bool
   @Binding var showFishCollection: Bool
   @Binding var showSettings: Bool
+  @Binding var showStore: Bool
   @Binding var showCaseOpening: Bool
   @Binding var caseOpeningLootbox: CommitmentLootbox?
   @Binding var caseOpeningRewards: [CollectedFish]
@@ -108,6 +109,10 @@ struct ModalsContainerView: View {
           fishTankManager: fishTankManager
         )
       }
+      
+      if showStore {
+        StoreView(isPresented: $showStore)
+      }
 
       if showCaseOpening, let lootbox = caseOpeningLootbox, !caseOpeningRewards.isEmpty {
         CaseOpeningWheelView(
@@ -134,6 +139,7 @@ struct ModalsContainerView: View {
     showCommitmentSelection: .constant(false),
     showFishCollection: .constant(false),
     showSettings: .constant(false),
+    showStore: .constant(false),
     showCaseOpening: .constant(false),
     caseOpeningLootbox: .constant(nil),
     caseOpeningRewards: .constant([]),
