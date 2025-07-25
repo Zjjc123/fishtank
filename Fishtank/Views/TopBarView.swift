@@ -16,6 +16,9 @@ struct TopBarView: View {
 
   @ObservedObject private var userPreferences = UserPreferences.shared
 
+  private let buttonSize: CGFloat = 20
+  private let buttonWidth: CGFloat = 40
+
   var body: some View {
     HStack {
       // Clock removed from here
@@ -31,7 +34,7 @@ struct TopBarView: View {
             .font(.system(size: 14))
         }
         .padding(8)
-        .background(Color.black.opacity(0.3))
+        .background(Color.black.opacity(0.15))
         .cornerRadius(8)
       }
 
@@ -42,30 +45,30 @@ struct TopBarView: View {
         // Store button
         Button(action: onStoreTapped) {
           Image(systemName: "cart")
-            .font(.system(size: 20))
+            .font(.system(size: buttonSize))
             .foregroundColor(.white)
-            .padding(8)
-            .background(Color.black.opacity(0.3))
+            .frame(width: buttonWidth, height: buttonWidth)
+            .background(Color.black.opacity(0.15))
             .cornerRadius(8)
         }
 
         // Share button
         Button(action: onShareTapped) {
           Image(systemName: "square.and.arrow.up")
-            .font(.system(size: 20))
+            .font(.system(size: buttonSize))
             .foregroundColor(.white)
-            .padding(8)
-            .background(Color.black.opacity(0.3))
+            .frame(width: buttonWidth, height: buttonWidth)
+            .background(Color.black.opacity(0.15))
             .cornerRadius(8)
         }
 
         // Settings button
         Button(action: onSettingsTapped) {
           Image(systemName: "gear")
-            .font(.system(size: 20))
+            .font(.system(size: buttonSize))
             .foregroundColor(.white)
-            .padding(8)
-            .background(Color.black.opacity(0.3))
+            .frame(width: buttonWidth, height: buttonWidth)
+            .background(Color.black.opacity(0.15))
             .cornerRadius(8)
             .overlay(
               Group {
@@ -81,7 +84,6 @@ struct TopBarView: View {
       .padding(.trailing, 15)
     }
     .frame(height: 50)
-    // Removed the background
   }
 }
 
