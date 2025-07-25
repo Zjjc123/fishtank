@@ -28,7 +28,6 @@ struct ContentView: View {
   @State private var caseOpeningLootbox: CommitmentLootbox?
   @State private var caseOpeningRewards: [CollectedFish] = []
   @State private var showAppRestrictionAlert = false
-  @State private var showSkipConfirmation = false
   @State private var showCancelConfirmation = false
   @State private var isRefreshingData = false
   @State private var isShareSheetPresented = false
@@ -90,9 +89,6 @@ struct ContentView: View {
             onCancelTapped: {
               showCancelConfirmation = true
             },
-            onSkipTapped: {
-              showSkipConfirmation = true
-            },
             onCollectionTapped: {
               // Refresh data from Supabase before showing collection
               if supabaseManager.isAuthenticated && !statsManager.isSyncing {
@@ -118,7 +114,6 @@ struct ContentView: View {
           showFishCollection: $showFishCollection,
           showSettings: $showSettings,
           showCaseOpening: $showCaseOpening,
-          showSkipConfirmation: $showSkipConfirmation,
           caseOpeningLootbox: $caseOpeningLootbox,
           caseOpeningRewards: $caseOpeningRewards,
           onCommitmentSelected: { commitment in
@@ -168,13 +163,6 @@ struct ContentView: View {
               caseOpeningLootbox = nil
               caseOpeningRewards = []
             }
-          },
-          onSkipConfirmed: { skippedCommitment in
-            // Handle successful skip
-            fishTankManager.spawnLootbox(type: skippedCommitment.lootboxType)
-            showRewardMessage(
-              "💳 \(skippedCommitment.rawValue) skipped! \(skippedCommitment.lootboxType.emoji) \(skippedCommitment.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."
-            )
           },
           showRewardMessage: showRewardMessage
         )

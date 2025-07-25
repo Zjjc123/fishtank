@@ -18,7 +18,6 @@ final class CommitmentManager: ObservableObject {
 
   // MARK: - Dependencies
   private let appRestrictionManager = AppRestrictionManager.shared
-  private let purchaseManager = InAppPurchaseManager.shared
   private let notificationManager = NotificationManager.shared
   private let backgroundTaskManager = BackgroundTaskManager.shared
   private let fishTankManager = FishTankManager.shared
@@ -141,30 +140,7 @@ final class CommitmentManager: ObservableObject {
     appRestrictionManager.isAuthorized
   }
 
-  // MARK: - Purchase Properties
-  var isPurchasing: Bool {
-    purchaseManager.isPurchasing
-  }
 
-  var isLoadingProducts: Bool {
-    purchaseManager.isLoadingProducts
-  }
-
-  var purchaseError: String? {
-    purchaseManager.purchaseError
-  }
-
-  func getSkipPrice(for commitment: FocusCommitment) -> String {
-    purchaseManager.getSkipPrice(for: commitment)
-  }
-
-  func getPurchaseError() -> String? {
-    purchaseManager.purchaseError
-  }
-
-  func ensureProductsLoaded() async {
-    await purchaseManager.ensureProductsLoaded()
-  }
 
   func startCommitment(_ commitment: FocusCommitment) {
     currentCommitment = commitment
@@ -268,38 +244,5 @@ final class CommitmentManager: ObservableObject {
     appRestrictionManager.requestAuthorization()
   }
 
-  // MARK: - Skip Functionality
-  func skipCommitmentWithPurchase() async -> FocusCommitment? {
-    guard let commitment = currentCommitment else { return nil }
 
-    let success = await purchaseManager.purchaseSkip(for: commitment)
-
-    if success {
-      // Purchase successful, complete the commitment
-      let skippedCommitment = commitment
-      currentCommitment = nil
-      commitmentStartTime = nil
-
-      // Stop app restriction
-      appRestrictionManager.stopAppRestriction()
-
-      // Cancel any pending notifications
-      notificationManager.cancelAllPendingNotifications()
-
-      // Save state to persist the skipped session
-      saveState()
-
-      // Track focus time for skipped sessions
-      Task {
-        await GameStateManager.shared.addFocusTime(commitment.duration)
-      }
-
-      // Spawn lootbox reward
-      fishTankManager.spawnLootbox(type: commitment.lootboxType)
-
-      return skippedCommitment
-    }
-
-    return nil
-  }
 }
