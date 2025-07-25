@@ -234,25 +234,13 @@ struct ContentView: View {
     .alert("Cancel Focus Session?", isPresented: $showCancelConfirmation) {
       Button("Yes", role: .destructive) {
         if let cancelled = commitmentManager.cancelCommitment() {
-          // Get a random fish from all collected fish
-          if let randomFish = statsManager.collectedFish.randomElement() {
-            // Remove the fish from collection and update swimming fish
-            Task {
-              await statsManager.removeFish(randomFish, fishTankManager: fishTankManager)
-              let shinyIndicator = randomFish.isShiny ? " ✨" : ""
-              showRewardMessage(
-                "🚨 \(cancelled.rawValue) session cancelled.\n😢 \(randomFish.name) swam away forever!\(shinyIndicator)\nApp restrictions removed."
-              )
-            }
-          } else {
-            showRewardMessage(
-              "🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
-          }
+          showRewardMessage(
+            "🚨 \(cancelled.rawValue) session cancelled.\nApp restrictions removed.")
         }
       }
       Button("No", role: .cancel) {}
     } message: {
-      Text("If you cancel, one of your fish will swim away FOREVER! Are you sure?")
+      Text("Are you sure you want to cancel your focus session?")
     }
     .onReceive(timer) { _ in
       currentTime = Date()
