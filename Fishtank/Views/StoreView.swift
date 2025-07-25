@@ -93,31 +93,18 @@ struct StoreView: View {
         }
       )
 
-      // Current boost status
-      if userPreferences.hasSpeedBoost {
-        VStack {
-          Text("Active Speed Boost")
-            .font(.headline)
-            .foregroundColor(.green)
-
-          Text(userPreferences.formattedSpeedBoostTimeRemaining())
-            .font(.subheadline)
-        }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(Color.green.opacity(0.1))
-        .cornerRadius(12)
-      }
-
       // Speed boost card
       storeItemCard(
         title: "Speed Boost (24 Hours)",
-        description: "Complete commitments 50% faster for 24 hours!",
+        description: userPreferences.hasSpeedBoost ? 
+          "Already active: \(userPreferences.formattedSpeedBoostTimeRemaining())" : 
+          "Complete commitments 50% faster for 24 hours!",
         icon: "⚡️",
         price: iapManager.getSpeedBoostPrice(),
         action: {
           purchaseSpeedBoost()
-        }
+        },
+        disabled: userPreferences.hasSpeedBoost
       )
     }
     .padding()
@@ -125,7 +112,8 @@ struct StoreView: View {
 
   // Reusable store item card
   private func storeItemCard(
-    title: String, description: String, icon: String, price: String, action: @escaping () -> Void
+    title: String, description: String, icon: String, price: String, action: @escaping () -> Void,
+    disabled: Bool = false
   ) -> some View {
     VStack {
       HStack(spacing: 15) {
@@ -149,11 +137,11 @@ struct StoreView: View {
             .fontWeight(.bold)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.blue)
+            .background(disabled ? Color.gray : Color.blue)
             .foregroundColor(.white)
             .cornerRadius(8)
         }
-        .disabled(isPurchasing)
+        .disabled(isPurchasing || disabled)
       }
       .padding()
       .background(Color.white.opacity(0.1))
@@ -185,14 +173,17 @@ struct StoreView: View {
             .fontWeight(.bold)
             .padding(.horizontal, 30)
             .padding(.vertical, 10)
-            .background(Color.blue)
+            .background(Color.white.opacity(0.2))
             .foregroundColor(.white)
             .cornerRadius(8)
         }
       }
       .padding(30)
-      .background(Color.gray.opacity(0.8))
-      .cornerRadius(16)
+      .background(
+        RoundedRectangle(cornerRadius: 16)
+          .fill(Color.blue.opacity(0.7))
+          .shadow(radius: 10)
+      )
     }
     .transition(.opacity)
   }
@@ -203,17 +194,21 @@ struct StoreView: View {
       Color.black.opacity(0.4)
         .ignoresSafeArea()
 
-      VStack {
+      VStack(spacing: 15) {
         ProgressView()
           .scaleEffect(1.5)
+          .tint(.white)
 
         Text("Processing Purchase...")
+          .font(.headline)
           .foregroundColor(.white)
-          .padding(.top)
       }
       .padding(30)
-      .background(Color.gray.opacity(0.8))
-      .cornerRadius(16)
+      .background(
+        RoundedRectangle(cornerRadius: 16)
+          .fill(Color.blue.opacity(0.7))
+          .shadow(radius: 10)
+      )
     }
   }
 

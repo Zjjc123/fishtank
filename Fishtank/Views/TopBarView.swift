@@ -24,24 +24,22 @@ struct TopBarView: View {
       // Clock removed from here
       Spacer()
 
-      // Speed boost indicator if active
-      if userPreferences.hasSpeedBoost {
-        HStack(spacing: 4) {
-          Image(systemName: "bolt.fill")
-            .foregroundColor(.yellow)
-          Text(userPreferences.formattedSpeedBoostTimeRemaining())
-            .foregroundColor(.white)
-            .font(.system(size: 14))
-        }
-        .padding(8)
-        .background(Color.black.opacity(0.15))
-        .cornerRadius(8)
-      }
-
-      Spacer()
-
       // Right side: Buttons
       HStack(spacing: 15) {
+        // Speed boost indicator if active
+        if userPreferences.hasSpeedBoost {
+          HStack(spacing: 4) {
+            Image(systemName: "bolt.fill")
+              .foregroundColor(.yellow)
+            Text(userPreferences.formattedSpeedBoostTimeRemaining())
+              .foregroundColor(.white)
+              .font(.system(size: 14))
+          }
+          .padding(8)
+          .background(Color.black.opacity(0.15))
+          .cornerRadius(8)
+        }
+
         // Store button
         Button(action: onStoreTapped) {
           Image(systemName: "cart")
