@@ -13,9 +13,6 @@ struct StoreView: View {
   @StateObject private var iapManager = InAppPurchaseManager.shared
   @ObservedObject private var userPreferences = UserPreferences.shared
   @ObservedObject private var fishTankManager = FishTankManager.shared
-  @State private var isPurchasing = false
-  @State private var showPurchaseSuccess = false
-  @State private var purchaseSuccessMessage = ""
 
   var body: some View {
     NavigationView {
@@ -60,16 +57,6 @@ struct StoreView: View {
             }
           }
         }
-
-        // Purchase success overlay
-        if showPurchaseSuccess {
-          purchaseSuccessOverlay
-        }
-
-        // Loading overlay
-        if isPurchasing || iapManager.isPurchasing {
-          loadingOverlay
-        }
       }
       .onAppear {
         Task {
@@ -96,9 +83,9 @@ struct StoreView: View {
       // Speed boost card
       storeItemCard(
         title: "Speed Boost (24 Hours)",
-        description: userPreferences.hasSpeedBoost ? 
-          "Already active: \(userPreferences.formattedSpeedBoostTimeRemaining())" : 
-          "Complete commitments 50% faster for 24 hours!",
+        description: userPreferences.hasSpeedBoost
+          ? "Already active: \(userPreferences.formattedSpeedBoostTimeRemaining())"
+          : "Complete commitments 50% faster for 24 hours!",
         icon: "⚡️",
         price: iapManager.getSpeedBoostPrice(),
         action: {
@@ -141,7 +128,7 @@ struct StoreView: View {
             .foregroundColor(.white)
             .cornerRadius(8)
         }
-        .disabled(isPurchasing || disabled)
+        .disabled(disabled || iapManager.isPurchasing)
       }
       .padding()
       .background(Color.white.opacity(0.1))
@@ -149,107 +136,16 @@ struct StoreView: View {
     }
   }
 
-  // Purchase success overlay
-  private var purchaseSuccessOverlay: some View {
-    ZStack {
-      Color.black.opacity(0.6)
-        .ignoresSafeArea()
-
-      VStack(spacing: 20) {
-        Text("Purchase Successful!")
-          .font(.headline)
-          .foregroundColor(.white)
-
-        Text(purchaseSuccessMessage)
-          .multilineTextAlignment(.center)
-          .foregroundColor(.white)
-
-        Button(action: {
-          withAnimation {
-            showPurchaseSuccess = false
-          }
-        }) {
-          Text("OK")
-            .fontWeight(.bold)
-            .padding(.horizontal, 30)
-            .padding(.vertical, 10)
-            .background(Color.white.opacity(0.2))
-            .foregroundColor(.white)
-            .cornerRadius(8)
-        }
-      }
-      .padding(30)
-      .background(
-        RoundedRectangle(cornerRadius: 16)
-          .fill(Color.blue.opacity(0.7))
-          .shadow(radius: 10)
-      )
-    }
-    .transition(.opacity)
-  }
-
-  // Loading overlay
-  private var loadingOverlay: some View {
-    ZStack {
-      Color.black.opacity(0.4)
-        .ignoresSafeArea()
-
-      VStack(spacing: 15) {
-        ProgressView()
-          .scaleEffect(1.5)
-          .tint(.white)
-
-        Text("Processing Purchase...")
-          .font(.headline)
-          .foregroundColor(.white)
-      }
-      .padding(30)
-      .background(
-        RoundedRectangle(cornerRadius: 16)
-          .fill(Color.blue.opacity(0.7))
-          .shadow(radius: 10)
-      )
-    }
-  }
-
   // Purchase functions
   private func purchasePlatinumLootbox() {
-    isPurchasing = true
-
     Task {
-      let success = await iapManager.purchasePlatinumLootbox()
-
-      await MainActor.run {
-        isPurchasing = false
-
-        if success {
-          purchaseSuccessMessage =
-            "Your Platinum Lootbox has been added to your tank! Tap it to open and discover new fish!"
-          withAnimation {
-            showPurchaseSuccess = true
-          }
-        }
-      }
+      await iapManager.purchasePlatinumLootbox()
     }
   }
 
   private func purchaseSpeedBoost() {
-    isPurchasing = true
-
     Task {
-      let success = await iapManager.purchaseSpeedBoost()
-
-      await MainActor.run {
-        isPurchasing = false
-
-        if success {
-          purchaseSuccessMessage =
-            "Speed Boost activated! Your commitments will progress 50% faster for the next 24 hours."
-          withAnimation {
-            showPurchaseSuccess = true
-          }
-        }
-      }
+      await iapManager.purchaseSpeedBoost()
     }
   }
 }
