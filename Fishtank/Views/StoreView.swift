@@ -33,18 +33,6 @@ struct StoreView: View {
           storeItemsView
 
           Spacer()
-
-          // Restore purchases button
-          Button(action: {
-            Task {
-              await iapManager.restorePurchases()
-            }
-          }) {
-            Text("Restore Purchases")
-              .font(.footnote)
-              .foregroundColor(.secondary)
-          }
-          .padding(.bottom)
         }
         .padding(.top, 10)
         .toolbar {
