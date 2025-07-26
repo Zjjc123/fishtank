@@ -60,20 +60,22 @@ struct FishDatabase {
     Fish(name: "Tarpon", imageName: "Tarpon", rarity: .epic, size: .large),
     Fish(name: "Sea Turtle", imageName: "Sea Turtle", rarity: .epic, size: .large),
     Fish(name: "Ocean Sunfish", imageName: "Ocean Sunfish", rarity: .epic, size: .huge),
-    Fish(name: "Manta Ray", imageName: "Manta Ray", rarity: .epic, size: .huge),
     Fish(name: "Narwhal", imageName: "Narwhal", rarity: .epic, size: .large),
-    Fish(name: "Coelacanth", imageName: "Coelacanth", rarity: .epic, size: .large),
-    Fish(name: "Giant Oarfish", imageName: "Giant Oarfish", rarity: .epic, size: .huge),
     Fish(name: "Beluga Whale", imageName: "Beluga Whale", rarity: .epic, size: .large),
 
     // Legendary Fish
+    Fish(name: "Manta Ray", imageName: "Manta Ray", rarity: .legendary, size: .huge),
+    Fish(name: "Coelacanth", imageName: "Coelacanth", rarity: .legendary, size: .large),
+    Fish(name: "Giant Oarfish", imageName: "Giant Oarfish", rarity: .legendary, size: .huge),
     Fish(name: "Blue Whale", imageName: "Blue Whale", rarity: .legendary, size: .giant),
     Fish(name: "Orca", imageName: "Orca", rarity: .legendary, size: .giant),
     Fish(name: "Megalodon", imageName: "Megalodon", rarity: .legendary, size: .giant),
-    Fish(name: "Leviathan", imageName: "Leviathan", rarity: .legendary, size: .giant),
-    Fish(name: "Kraken", imageName: "Kraken", rarity: .legendary, size: .giant),
-    Fish(name: "Loch Ness Monster", imageName: "Loch Ness Monster", rarity: .legendary, size: .giant),
-    Fish(name: "Sea Serpent", imageName: "Sea Serpent", rarity: .legendary, size: .giant),
+
+    // Mythic Fish
+    Fish(name: "Leviathan", imageName: "Leviathan", rarity: .mythic, size: .giant),
+    Fish(name: "Kraken", imageName: "Kraken", rarity: .mythic, size: .giant),
+    Fish(name: "Loch Ness Monster", imageName: "Loch Ness Monster", rarity: .mythic, size: .giant),
+    Fish(name: "Sea Serpent", imageName: "Sea Serpent", rarity: .mythic, size: .giant),
   ]
 
   static func fishByRarity(_ rarity: FishRarity) -> [Fish] {

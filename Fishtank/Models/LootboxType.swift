@@ -50,6 +50,7 @@ enum LootboxType: String, CaseIterable {
         .rare: 0.05,
         .epic: 0.00,
         .legendary: 0.00,
+        .mythic: 0.00,
       ]
     case .silver:
       return [
@@ -58,6 +59,7 @@ enum LootboxType: String, CaseIterable {
         .rare: 0.15,
         .epic: 0.03,
         .legendary: 0.00,
+        .mythic: 0.00,
       ]
     case .gold:
       return [
@@ -66,6 +68,7 @@ enum LootboxType: String, CaseIterable {
         .rare: 0.26,
         .epic: 0.09,
         .legendary: 0.02,
+        .mythic: 0.00,
       ]
     case .platinum:
       return [
@@ -74,6 +77,7 @@ enum LootboxType: String, CaseIterable {
         .rare: 0.32,
         .epic: 0.17,
         .legendary: 0.051,
+        .mythic: 0.005,
       ]
     }
   }
