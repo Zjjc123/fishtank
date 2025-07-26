@@ -14,6 +14,8 @@ enum FishRarity: String, CaseIterable, Codable {
   case rare = "Rare"
   case epic = "Epic"
   case legendary = "Legendary"
+  case mythic = "Mythic"
+  case unique = "Unique"
 
   var sortOrder: Int {
     switch self {
@@ -22,6 +24,8 @@ enum FishRarity: String, CaseIterable, Codable {
     case .rare: return 2
     case .epic: return 3
     case .legendary: return 4
+    case .mythic: return 5
+    case .unique: return 6
     }
   }
 
@@ -32,6 +36,8 @@ enum FishRarity: String, CaseIterable, Codable {
     case .rare: return .blue
     case .epic: return .purple
     case .legendary: return .orange
+    case .mythic: return .red
+    case .unique: return .yellow
     }
   }
   
@@ -42,6 +48,8 @@ enum FishRarity: String, CaseIterable, Codable {
     case .rare: return "🔵"
     case .epic: return "🟣"
     case .legendary: return "🟠"
+    case .mythic: return "🔴"
+    case .unique: return "🟡"
     }
   }
 }
@@ -68,6 +76,7 @@ extension FishRarity {
     // If the rarity is a spinner (not winner), we want to increase the chances of getting a legendary or epic fish
     if isSpinner {
       var adjustedProbabilities = probabilities
+      adjustedProbabilities[.mythic] = (probabilities[.mythic] ?? 0) * 2
       adjustedProbabilities[.legendary] = (probabilities[.legendary] ?? 0) * 2
       adjustedProbabilities[.epic] = (probabilities[.epic] ?? 0) * 2
       adjustedProbabilities[.uncommon] = (probabilities[.uncommon] ?? 0) * 0.5
@@ -75,7 +84,7 @@ extension FishRarity {
       probabilities = adjustedProbabilities
     }
 
-    for rarity in FishRarity.allCases {
+    for rarity in FishRarity.allCases.filter({ $0 != .unique }) { // Exclude unique from random selection
       cumulative += probabilities[rarity] ?? 0
       if random <= cumulative {
         return rarity
