@@ -76,6 +76,9 @@ struct FishDatabase {
     Fish(name: "Kraken", imageName: "Kraken", rarity: .mythic, size: .giant),
     Fish(name: "Loch Ness Monster", imageName: "Loch Ness Monster", rarity: .mythic, size: .giant),
     Fish(name: "Sea Serpent", imageName: "Sea Serpent", rarity: .mythic, size: .giant),
+
+    // Unique Fish
+    Fish(name: "Clownfish", imageName: "Clownfish", rarity: .unique, size: .small),
   ]
 
   static func fishByRarity(_ rarity: FishRarity) -> [Fish] {

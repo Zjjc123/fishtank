@@ -15,6 +15,7 @@ enum FishRarity: String, CaseIterable, Codable {
   case epic = "Epic"
   case legendary = "Legendary"
   case mythic = "Mythic"
+  case unique = "Unique"
 
   var sortOrder: Int {
     switch self {
@@ -24,6 +25,7 @@ enum FishRarity: String, CaseIterable, Codable {
     case .epic: return 3
     case .legendary: return 4
     case .mythic: return 5
+    case .unique: return 6
     }
   }
 
@@ -35,6 +37,7 @@ enum FishRarity: String, CaseIterable, Codable {
     case .epic: return .purple
     case .legendary: return .orange
     case .mythic: return .red
+    case .unique: return .yellow
     }
   }
   
@@ -46,6 +49,7 @@ enum FishRarity: String, CaseIterable, Codable {
     case .epic: return "🟣"
     case .legendary: return "🟠"
     case .mythic: return "🔴"
+    case .unique: return "🟡"
     }
   }
 }
@@ -80,7 +84,7 @@ extension FishRarity {
       probabilities = adjustedProbabilities
     }
 
-    for rarity in FishRarity.allCases {
+    for rarity in FishRarity.allCases.filter({ $0 != .unique }) { // Exclude unique from random selection
       cumulative += probabilities[rarity] ?? 0
       if random <= cumulative {
         return rarity
