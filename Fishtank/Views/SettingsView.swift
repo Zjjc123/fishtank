@@ -450,11 +450,6 @@ struct SettingsView: View {
           .foregroundColor(.white.opacity(0.8))
 
         Spacer()
-
-        Text(appRestrictionManager.isAuthorized ? "Enabled" : "Not Configured")
-          .font(.system(.caption, design: .rounded))
-          .foregroundColor(
-            appRestrictionManager.isAuthorized ? .green.opacity(0.8) : .orange.opacity(0.8))
       }
 
       Button(action: {
