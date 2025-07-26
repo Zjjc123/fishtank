@@ -308,9 +308,7 @@ struct ContentView: View {
     // Add rarity breakdown
     message += "📊 My collection:\n"
     for (rarity, count) in rarityCount.sorted(by: { $0.key.sortOrder > $1.key.sortOrder }) {
-      if count > 0 {
-        message += "\(rarity.emoji) \(rarity.rawValue): \(count)\n"
-      }
+      message += "\(rarity.emoji) \(rarity.rawValue): \(count)\n"
     }
 
     message += "\nDownload Fishtank - Focus App!"

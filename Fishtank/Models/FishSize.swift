@@ -18,9 +18,9 @@ enum FishSize: String, CaseIterable, Codable {
 
   var displaySize: CGFloat {
     switch self {
-    case .tiny: return 10.0
-    case .small: return 20.0
-    case .medium: return 30.0
+    case .tiny: return 20.0
+    case .small: return 30.0
+    case .medium: return 45.0
     case .large: return 60.0
     case .huge: return 80.0
     case .giant: return 100.0
@@ -37,4 +37,4 @@ enum FishSize: String, CaseIterable, Codable {
     case .giant: return 5
     }
   }
-} 
+}
