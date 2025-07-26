@@ -23,6 +23,7 @@ struct SettingsView: View {
   @State private var selectedColorForPurchase: BackgroundColorOption?
   @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
   @State private var userProfile: UserProfile?
+  @StateObject private var appRestrictionManager = AppRestrictionManager.shared
 
   private func signOut() async {
     await supabaseManager.signOut()
@@ -73,9 +74,10 @@ struct SettingsView: View {
         ScrollView {
           connectionStatusView
           totalFocusTimeView
-          storageInfoView
+          parentalControlsView
           backgroundColorSelectionView
           restorePurchasesButton
+          storageInfoView
           accountButtonsView
         }
       }
@@ -433,6 +435,98 @@ struct SettingsView: View {
           )
       )
     }
+    .padding(.vertical, 8)
+  }
+
+  private var parentalControlsView: some View {
+    VStack(spacing: 8) {
+      HStack(spacing: 8) {
+        Image(systemName: "lock.shield.fill")
+          .font(.title3)
+          .foregroundColor(.indigo.opacity(0.9))
+
+        Text("Parental Controls")
+          .font(.system(.subheadline, design: .rounded))
+          .foregroundColor(.white.opacity(0.8))
+
+        Spacer()
+
+        Text(appRestrictionManager.isAuthorized ? "Enabled" : "Not Configured")
+          .font(.system(.caption, design: .rounded))
+          .foregroundColor(
+            appRestrictionManager.isAuthorized ? .green.opacity(0.8) : .orange.opacity(0.8))
+      }
+
+      Button(action: {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+          UIApplication.shared.open(url)
+        }
+      }) {
+        HStack(spacing: 8) {
+          Image(systemName: "gear")
+            .font(.subheadline)
+          Text("Enable Parental Controls")
+            .font(.system(.subheadline, design: .rounded))
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: 40)
+        .background(
+          RoundedRectangle(cornerRadius: 12)
+            .fill(Color.indigo.opacity(0.7))
+            .overlay(
+              RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.indigo.opacity(0.3), lineWidth: 1)
+            )
+        )
+      }
+
+      Button(action: {
+        // Show instructions alert
+        let alert = UIAlertController(
+          title: "Screen Time Settings Needed",
+          message:
+            "To configure app blocking, please go to Settings > Screen Time > App Limits and set up limits for apps you want to block during focus time.",
+          preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+
+        // Get the current window scene
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+          let rootViewController = windowScene.windows.first?.rootViewController
+        {
+          rootViewController.present(alert, animated: true)
+        }
+      }) {
+        HStack(spacing: 8) {
+          Image(systemName: "hourglass")
+            .font(.subheadline)
+          Text("Configure App Blocking")
+            .font(.system(.subheadline, design: .rounded))
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: 40)
+        .background(
+          RoundedRectangle(cornerRadius: 12)
+            .fill(Color.blue.opacity(0.7))
+            .overlay(
+              RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+            )
+        )
+        .padding(.top, 4)
+      }
+    }
+    .padding(12)
+    .background(
+      RoundedRectangle(cornerRadius: 12)
+        .fill(.ultraThinMaterial)
+        .overlay(
+          RoundedRectangle(cornerRadius: 12)
+            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+        )
+    )
     .padding(.vertical, 8)
   }
 
