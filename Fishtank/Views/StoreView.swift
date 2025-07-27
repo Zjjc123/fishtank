@@ -67,6 +67,17 @@ struct StoreView: View {
           purchasePlatinumLootbox()
         }
       )
+      
+      // 10x Platinum lootboxes card
+      storeItemCard(
+        title: "10x Platinum Lootboxes",
+        description: "Bundle of 10 platinum lootboxes at a discounted price!",
+        icon: "👑👑",
+        price: iapManager.getPlatinumLootbox10Price(),
+        action: {
+          purchase10PlatinumLootboxes()
+        }
+      )
 
       // Speed boost card
       storeItemCard(
@@ -128,6 +139,12 @@ struct StoreView: View {
   private func purchasePlatinumLootbox() {
     Task {
       await iapManager.purchasePlatinumLootbox()
+    }
+  }
+  
+  private func purchase10PlatinumLootboxes() {
+    Task {
+      await iapManager.purchasePlatinumLootbox10()
     }
   }
 
