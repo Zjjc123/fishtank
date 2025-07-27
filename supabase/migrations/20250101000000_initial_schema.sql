@@ -48,6 +48,9 @@ CREATE POLICY "Users can update their own profile" ON public.user_profiles
 CREATE POLICY "Users can view their own fish" ON public.user_fish
     FOR SELECT USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can view other users' visible fish" ON public.user_fish
+    FOR SELECT USING (is_visible = true);
+
 CREATE POLICY "Users can insert their own fish" ON public.user_fish
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
