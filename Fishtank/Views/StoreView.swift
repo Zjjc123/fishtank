@@ -38,10 +38,12 @@ struct StoreView: View {
               .padding(.bottom, 2)
 
             storeItemsView
-              .padding(.horizontal, 16)
+              .frame(maxWidth: 600)  // Slightly narrower width constraint
           }
           .padding(.horizontal, 16)
+          .frame(maxWidth: .infinity, alignment: .center)  // Center the content
         }
+        .frame(maxWidth: .infinity)
 
         // Close button
         VStack {
@@ -167,16 +169,17 @@ struct StoreView: View {
     price: String, action: @escaping () -> Void, disabled: Bool = false
   ) -> some View {
     VStack {
-      HStack(spacing: 10) {
+      HStack(spacing: 8) {  // Reduced spacing between elements
         // Icon container
         ZStack {
           Circle()
             .fill(Color.white.opacity(0.2))
-            .frame(width: 40, height: 40)
+            .frame(width: 38, height: 38)  // Slightly smaller icon
 
           iconView()
         }
-        .frame(width: 40, height: 40)
+        .frame(width: 38, height: 38)  // Match the circle size
+        .padding(.leading, 2)  // Reduced left padding
 
         // Text content
         VStack(alignment: .leading, spacing: 1) {
@@ -189,6 +192,7 @@ struct StoreView: View {
             .foregroundColor(.secondary)
             .lineLimit(1)
         }
+        .padding(.leading, 2)  // Add a bit of padding
 
         Spacer()
 
@@ -222,11 +226,12 @@ struct StoreView: View {
                 .font(.footnote)
             }
           }
-          .frame(width: 60, height: 28)
+          .frame(width: 58, height: 28)  // Slightly narrower button
         }
         .disabled(disabled || iapManager.isPurchasing)
+        .padding(.trailing, 2)  // Reduced right padding
       }
-      .padding(8)
+      .padding(6)  // Reduced padding around the HStack
       .background(
         RoundedRectangle(cornerRadius: 10)
           .fill(Color.white.opacity(0.15))
