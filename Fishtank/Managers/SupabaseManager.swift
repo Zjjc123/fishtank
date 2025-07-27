@@ -654,8 +654,7 @@ class SupabaseManager: ObservableObject {
     let user_id: String
     let fish_name: String
     let fish_image_name: String
-    let fish_rarity: String
-    let fish_size: String
+    // Removed fish_rarity and fish_size fields as they can be derived from FishDatabase
     let custom_name: String
     let date_caught: String
     let is_visible: Bool
@@ -673,8 +672,7 @@ class SupabaseManager: ObservableObject {
           user_id: userId,
           fish_name: f.fish.name,
           fish_image_name: f.fish.imageName,
-          fish_rarity: f.rarity.rawValue,
-          fish_size: f.fish.size.rawValue,
+          // Removed fish_rarity and fish_size fields
           custom_name: f.name,
           date_caught: ISO8601DateFormatter().string(from: f.dateCaught),
           is_visible: f.isVisible,
@@ -706,8 +704,7 @@ class SupabaseManager: ObservableObject {
         user_id: userId,
         fish_name: fish.fish.name,
         fish_image_name: fish.fish.imageName,
-        fish_rarity: fish.rarity.rawValue,
-        fish_size: fish.fish.size.rawValue,
+        // Removed fish_rarity and fish_size fields
         custom_name: fish.name,
         date_caught: ISO8601DateFormatter().string(from: fish.dateCaught),
         is_visible: fish.isVisible,
@@ -734,8 +731,7 @@ class SupabaseManager: ObservableObject {
           user_id: userId,
           fish_name: f.fish.name,
           fish_image_name: f.fish.imageName,
-          fish_rarity: f.rarity.rawValue,
-          fish_size: f.fish.size.rawValue,
+          // Removed fish_rarity and fish_size fields
           custom_name: f.name,
           date_caught: ISO8601DateFormatter().string(from: f.dateCaught),
           is_visible: f.isVisible,
@@ -846,8 +842,7 @@ class SupabaseManager: ObservableObject {
         let user_id: String
         let fish_name: String
         let fish_image_name: String
-        let fish_rarity: String
-        let fish_size: String
+        // Removed fish_rarity and fish_size fields from the response struct
         let custom_name: String
         let date_caught: String
         let is_visible: Bool
@@ -858,8 +853,7 @@ class SupabaseManager: ObservableObject {
           case user_id
           case fish_name
           case fish_image_name
-          case fish_rarity
-          case fish_size
+          // Removed fish_rarity and fish_size fields
           case custom_name
           case date_caught
           case is_visible
@@ -876,24 +870,21 @@ class SupabaseManager: ObservableObject {
         return fishObjects.compactMap { f in
           guard
             let id = UUID(uuidString: f.id),
-            let rarity = FishRarity(rawValue: f.fish_rarity),
-            let size = FishSize(rawValue: f.fish_size),
             let dateCaught = ISO8601DateFormatter().date(from: f.date_caught)
           else {
             print("❌ Failed to parse fish: \(f.id)")
             return nil
           }
-
-          let fish = Fish(
-            name: f.fish_name,
-            imageName: f.fish_image_name,
-            rarity: rarity,
-            size: size
-          )
+          
+          // Look up the fish from FishDatabase using the name
+          guard let fishFromDB = FishDatabase.allFish.first(where: { $0.name == f.fish_name }) else {
+            print("❌ Failed to find fish in database: \(f.fish_name)")
+            return nil
+          }
 
           return CollectedFish(
             id: id,
-            fish: fish,
+            fish: fishFromDB, // Use the fish from the database
             name: f.custom_name,
             dateCaught: dateCaught,
             isVisible: f.is_visible,
@@ -914,10 +905,6 @@ class SupabaseManager: ObservableObject {
                 let id = UUID(uuidString: idString),
                 let fishName = dict["fish_name"] as? String,
                 let fishImageName = dict["fish_image_name"] as? String,
-                let fishRarityString = dict["fish_rarity"] as? String,
-                let fishRarity = FishRarity(rawValue: fishRarityString),
-                let fishSizeString = dict["fish_size"] as? String,
-                let fishSize = FishSize(rawValue: fishSizeString),
                 let customName = dict["custom_name"] as? String,
                 let dateCaughtString = dict["date_caught"] as? String,
                 let dateCaught = ISO8601DateFormatter().date(from: dateCaughtString),
@@ -927,17 +914,16 @@ class SupabaseManager: ObservableObject {
                 print("❌ Failed to parse fish dictionary")
                 return nil
               }
-
-              let fish = Fish(
-                name: fishName,
-                imageName: fishImageName,
-                rarity: fishRarity,
-                size: fishSize
-              )
+              
+              // Look up the fish from FishDatabase using the name
+              guard let fishFromDB = FishDatabase.allFish.first(where: { $0.name == fishName }) else {
+                print("❌ Failed to find fish in database: \(fishName)")
+                return nil
+              }
 
               return CollectedFish(
                 id: id,
-                fish: fish,
+                fish: fishFromDB, // Use the fish from the database
                 name: customName,
                 dateCaught: dateCaught,
                 isVisible: isVisible,
@@ -986,8 +972,7 @@ struct FishRecord: Codable {
   let userId: String
   let fishName: String
   let fishImageName: String
-  let fishRarity: String
-  let fishSize: String
+  // Removed fishRarity and fishSize fields as they can be derived from FishDatabase
   let customName: String
   let dateCaught: String
   let isVisible: Bool
@@ -998,8 +983,7 @@ struct FishRecord: Codable {
     case userId = "user_id"
     case fishName = "fish_name"
     case fishImageName = "fish_image_name"
-    case fishRarity = "fish_rarity"
-    case fishSize = "fish_size"
+    // Removed fishRarity and fishSize fields
     case customName = "custom_name"
     case dateCaught = "date_caught"
     case isVisible = "is_visible"

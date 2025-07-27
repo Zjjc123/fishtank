@@ -17,8 +17,6 @@ CREATE TABLE IF NOT EXISTS public.user_fish (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     fish_name TEXT NOT NULL,
     fish_image_name TEXT NOT NULL,
-    fish_rarity TEXT NOT NULL,
-    fish_size TEXT NOT NULL,
     custom_name TEXT NOT NULL,
     date_caught TIMESTAMP WITH TIME ZONE NOT NULL,
     is_visible BOOLEAN DEFAULT true,
@@ -29,7 +27,7 @@ CREATE TABLE IF NOT EXISTS public.user_fish (
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_user_fish_user_id ON public.user_fish(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_fish_rarity ON public.user_fish(fish_rarity);
+-- Removed index on fish_rarity as we no longer store this field
 CREATE INDEX IF NOT EXISTS idx_user_fish_date_caught ON public.user_fish(date_caught);
 
 -- Enable Row Level Security

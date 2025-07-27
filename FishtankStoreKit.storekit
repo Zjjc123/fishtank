@@ -58,6 +58,21 @@
       "productID" : "dev.jasonzhang.fishtank.speedboost",
       "referenceName" : "Speed Boost",
       "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "6.99",
+      "familyShareable" : false,
+      "internalID" : "1000000004",
+      "localizations" : [
+        {
+          "description" : "Bundle of 10 platinum lootboxes at a discounted price!",
+          "displayName" : "10x Platinum Lootboxes",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "dev.jasonzhang.fishtank.platinumlootbox10",
+      "referenceName" : "10x Platinum Lootboxes",
+      "type" : "Consumable"
     }
   ],
   "settings" : {

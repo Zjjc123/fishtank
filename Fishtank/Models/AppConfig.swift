@@ -29,5 +29,6 @@ struct AppConfig {
   // MARK: - In-App Purchase IDs
   static let backgroundsProductID = "dev.jasonzhang.fishtank.backgrounds"
   static let platinumLootboxProductID = "dev.jasonzhang.fishtank.platinumlootbox"
+  static let platinumLootbox10ProductID = "dev.jasonzhang.fishtank.platinumlootbox10"
   static let speedBoostProductID = "dev.jasonzhang.fishtank.speedboost"
 }

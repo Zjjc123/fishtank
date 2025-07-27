@@ -21,6 +21,7 @@ final class InAppPurchaseManager: ObservableObject {
   private let skipProductID = "dev.jasonzhang.fishtank.skip"
   private let backgroundsProductID = AppConfig.backgroundsProductID
   private let platinumLootboxProductID = AppConfig.platinumLootboxProductID
+  private let platinumLootbox10ProductID = AppConfig.platinumLootbox10ProductID
   private let speedBoostProductID = AppConfig.speedBoostProductID
   private var transactionListener: Task<Void, Error>?
   
@@ -76,6 +77,13 @@ final class InAppPurchaseManager: ObservableObject {
         // Spawn a platinum lootbox in the tank
         fishTankManager.spawnLootbox(type: .platinum)
       }
+    } else if transaction.productID == platinumLootbox10ProductID {
+      await MainActor.run {
+        // Spawn 10 platinum lootboxes in the tank
+        for _ in 0..<10 {
+          fishTankManager.spawnLootbox(type: .platinum)
+        }
+      }
     } else if transaction.productID == speedBoostProductID {
       await MainActor.run {
         // Activate speed boost for 24 hours
@@ -100,7 +108,8 @@ final class InAppPurchaseManager: ObservableObject {
       let productIdentifiers = Set([
         skipProductID, 
         backgroundsProductID, 
-        platinumLootboxProductID, 
+        platinumLootboxProductID,
+        platinumLootbox10ProductID,
         speedBoostProductID
       ])
       products = try await Product.products(for: productIdentifiers)
@@ -134,6 +143,15 @@ final class InAppPurchaseManager: ObservableObject {
   @MainActor
   func getPlatinumLootboxPrice() -> String {
     guard let product = products.first(where: { $0.id == platinumLootboxProductID }) else {
+      return "Loading..."
+    }
+
+    return product.displayPrice
+  }
+  
+  @MainActor
+  func getPlatinumLootbox10Price() -> String {
+    guard let product = products.first(where: { $0.id == platinumLootbox10ProductID }) else {
       return "Loading..."
     }
 
@@ -221,6 +239,16 @@ final class InAppPurchaseManager: ObservableObject {
   func purchasePlatinumLootbox() async -> Bool {
     guard let product = products.first(where: { $0.id == platinumLootboxProductID }) else {
       purchaseError = "Platinum lootbox product not available"
+      return false
+    }
+    
+    return await purchaseProduct(product)
+  }
+  
+  @MainActor
+  func purchasePlatinumLootbox10() async -> Bool {
+    guard let product = products.first(where: { $0.id == platinumLootbox10ProductID }) else {
+      purchaseError = "10x Platinum lootboxes product not available"
       return false
     }
     
