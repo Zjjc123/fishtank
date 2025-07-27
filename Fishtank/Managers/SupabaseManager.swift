@@ -103,9 +103,12 @@ class SupabaseManager: ObservableObject {
       // If username is provided, update the user_profiles table
       if let username = username, !username.isEmpty {
         do {
+          // Ensure username is lowercase
+          let lowercasedUsername = username.lowercased()
+          
           // Update the username in the user_profiles table
           _ = try await client.from("user_profiles")
-            .update(["username": username])
+            .update(["username": lowercasedUsername])
             .eq("id", value: user.id.uuidString)
             .execute()
         } catch {
@@ -583,10 +586,13 @@ class SupabaseManager: ObservableObject {
     isLoading = true
 
     do {
+      // Ensure username is lowercase
+      let lowercasedUsername = username.lowercased()
+      
       // Validate username format
       let usernameRegex = "^[a-zA-Z0-9_]{5,20}$"
       let usernameTest = NSPredicate(format: "SELF MATCHES %@", usernameRegex)
-      guard usernameTest.evaluate(with: username) else {
+      guard usernameTest.evaluate(with: lowercasedUsername) else {
         errorMessage =
           "Username must be 5-20 characters and contain only letters, numbers, and underscores."
         isLoading = false
@@ -595,7 +601,7 @@ class SupabaseManager: ObservableObject {
 
       // Update the username in the user_profiles table
       _ = try await client.from("user_profiles")
-        .update(["username": username])
+        .update(["username": lowercasedUsername])
         .eq("id", value: userId)
         .execute()
 

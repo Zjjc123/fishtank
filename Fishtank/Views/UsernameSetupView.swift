@@ -83,7 +83,9 @@ struct UsernameSetupView: View {
       // Create Username Button
       Button(action: {
         Task {
-          let success = await supabaseManager.updateUsername(username: username)
+          // Convert username to lowercase before submitting
+          let lowercasedUsername = username.lowercased()
+          let success = await supabaseManager.updateUsername(username: lowercasedUsername)
           if success {
             // Username created successfully
             shouldShowAuthView = false  // This will trigger MainView to show ContentView
