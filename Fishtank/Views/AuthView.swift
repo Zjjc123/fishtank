@@ -33,7 +33,7 @@ struct AuthView: View {
           endPoint: .bottom
         )
         .ignoresSafeArea()
-        
+
         if isCheckingAuth {
           // Show only a centered loading indicator during initial auth check
           VStack(spacing: 16) {
@@ -132,7 +132,7 @@ struct AuthView: View {
             }
 
             Spacer()
-            
+
             // Version display at bottom
             HStack {
               Text(AppConfig.versionAndBuild)
@@ -148,31 +148,6 @@ struct AuthView: View {
             dismissKeyboard()
           }
           .keyboardAdaptive()
-          
-          // Loading overlay for explicit auth operations (not initial check)
-          if supabaseManager.isLoading {
-            ZStack {
-              Color.black.opacity(0.4)
-                .ignoresSafeArea()
-              
-              VStack(spacing: 16) {
-                ProgressView()
-                  .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                  .scaleEffect(1.5)
-                
-                Text("Loading...")
-                  .font(.system(.body, design: .rounded))
-                  .fontWeight(.medium)
-                  .foregroundColor(.white)
-              }
-              .padding(24)
-              .background(
-                RoundedRectangle(cornerRadius: 12)
-                  .fill(Color.black.opacity(0.6))
-              )
-            }
-            .transition(.opacity)
-          }
         }
       }
     }
@@ -215,12 +190,12 @@ struct AuthView: View {
 
       // Immediately set showUsernameSetup if needed
       showUsernameSetup = supabaseManager.needsUsernameSetup
-      
+
       // Check authentication status
       Task {
         await supabaseManager.checkCurrentUser()
         // Delay for at least a short time to avoid flickering
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        try? await Task.sleep(nanoseconds: 500_000_000)  // 0.5 seconds
         await MainActor.run {
           isCheckingAuth = false
         }
