@@ -18,6 +18,8 @@ struct AuthView: View {
   @State private var showConfirmationMessage = false
   @State private var showUsernameSetup = false  // This will now be controlled by supabaseManager.needsUsernameSetup
   @State private var showPasswordReset = false  // Add this state variable
+  @State private var isGuestLoading = false  // Track guest mode loading state
+  @State private var isCheckingAuth = true  // Track initial auth check state
   @AppStorage("shouldShowAuthView") private var shouldShowAuthView = false
   @Environment(\.dismiss) private var dismiss
 
@@ -31,104 +33,147 @@ struct AuthView: View {
           endPoint: .bottom
         )
         .ignoresSafeArea()
-        .onTapGesture {
-          dismissKeyboard()
-        }
-
-        // Main content - vertical layout only
-        VStack(spacing: 30) {
-          // App Logo/Title
+        
+        if isCheckingAuth {
+          // Show only a centered loading indicator during initial auth check
           VStack(spacing: 16) {
-            Image("Goldfish")
-              .resizable()
-              .interpolation(.none)  // Disable antialiasing
-              .scaledToFit()
-              .frame(width: 80, height: 80)
-
-            Text("Fishtank")
-              .font(.system(.largeTitle, design: .rounded))
-              .fontWeight(.bold)
-              .foregroundColor(.white)
-
-            Text("Focus and collect fish")
-              .font(.system(.subheadline, design: .rounded))
-              .foregroundColor(.white.opacity(0.8))
+            ProgressView()
+              .progressViewStyle(CircularProgressViewStyle(tint: .white))
+              .scaleEffect(1.5)
           }
-          .padding(.top, 60)
-          .onTapGesture {
-            dismissKeyboard()
-          }
+        } else {
+          // Main content - only show after auth check completes
+          VStack(spacing: 30) {
+            // App Logo/Title
+            VStack(spacing: 16) {
+              Image("Goldfish")
+                .resizable()
+                .interpolation(.none)  // Disable antialiasing
+                .scaledToFit()
+                .frame(width: 80, height: 80)
 
-          // Show Username Setup if needed, otherwise show Auth Form
-          if supabaseManager.needsUsernameSetup {
-            UsernameSetupView(
-              showUsernameSetup: $showUsernameSetup,
-              shouldShowAuthView: $shouldShowAuthView,
-              supabaseManager: supabaseManager
-            )
-            .padding(.horizontal, 30)
-          } else {
-            // Auth Form
-            AuthFormView(
-              email: $email,
-              password: $password,
-              confirmPassword: $confirmPassword,
-              isSignUp: $isSignUp,
-              showPassword: $showPassword,
-              showConfirmationMessage: $showConfirmationMessage,
-              showUsernameSetup: $showUsernameSetup,
-              shouldShowAuthView: $shouldShowAuthView,
-              supabaseManager: supabaseManager,
-              showPasswordReset: $showPasswordReset
-            )
-            .padding(.horizontal, 30)
+              Text("Fishtank")
+                .font(.system(.largeTitle, design: .rounded))
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+
+              Text("Focus and collect fish")
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundColor(.white.opacity(0.8))
+            }
+            .padding(.top, 60)
             .onTapGesture {
               dismissKeyboard()
             }
 
-            // Continue as Guest Button (only show when not in username setup)
-            Button(action: {
-              supabaseManager.continueAsGuest()
-            }) {
-              HStack(spacing: 6) {
-                Image(systemName: "person.crop.circle.badge.questionmark")
-                  .font(.caption)
-                Text("Continue as Guest")
-                  .font(.system(.caption, design: .rounded))
-                  .fontWeight(.medium)
+            // Show Username Setup if needed, otherwise show Auth Form
+            if supabaseManager.needsUsernameSetup {
+              UsernameSetupView(
+                showUsernameSetup: $showUsernameSetup,
+                shouldShowAuthView: $shouldShowAuthView,
+                supabaseManager: supabaseManager
+              )
+              .padding(.horizontal, 30)
+            } else {
+              // Auth Form
+              AuthFormView(
+                email: $email,
+                password: $password,
+                confirmPassword: $confirmPassword,
+                isSignUp: $isSignUp,
+                showPassword: $showPassword,
+                showConfirmationMessage: $showConfirmationMessage,
+                showUsernameSetup: $showUsernameSetup,
+                shouldShowAuthView: $shouldShowAuthView,
+                supabaseManager: supabaseManager,
+                showPasswordReset: $showPasswordReset
+              )
+              .padding(.horizontal, 30)
+              .onTapGesture {
+                dismissKeyboard()
               }
-              .foregroundColor(.white.opacity(0.8))
-              .padding(.horizontal, 12)
-              .padding(.vertical, 8)
+
+              // Continue as Guest Button (only show when not in username setup)
+              Button(action: {
+                isGuestLoading = true
+                // Use slight delay to ensure the loading state is visible
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                  supabaseManager.continueAsGuest()
+                  // Reset loading state after a short delay to ensure animation completes
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    isGuestLoading = false
+                  }
+                }
+              }) {
+                HStack(spacing: 6) {
+                  if isGuestLoading {
+                    ProgressView()
+                      .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                      .scaleEffect(0.7)
+                  } else {
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                      .font(.caption)
+                  }
+                  Text("Continue as Guest")
+                    .font(.system(.caption, design: .rounded))
+                    .fontWeight(.medium)
+                }
+                .foregroundColor(.white.opacity(0.8))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                  Capsule()
+                    .fill(Color.gray.opacity(0.2))
+                )
+              }
+              .disabled(supabaseManager.isLoading || isGuestLoading)
+              .opacity((supabaseManager.isLoading || isGuestLoading) ? 0.5 : 1)
+              .padding(.top, 8)
+            }
+
+            Spacer()
+            
+            // Version display at bottom
+            HStack {
+              Text(AppConfig.versionAndBuild)
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundColor(.white.opacity(0.5))
+                .padding(.leading, 12)
+                .padding(.bottom, 8)
+              Spacer()
+            }
+          }
+          .contentShape(Rectangle())
+          .onTapGesture {
+            dismissKeyboard()
+          }
+          .keyboardAdaptive()
+          
+          // Loading overlay for explicit auth operations (not initial check)
+          if supabaseManager.isLoading {
+            ZStack {
+              Color.black.opacity(0.4)
+                .ignoresSafeArea()
+              
+              VStack(spacing: 16) {
+                ProgressView()
+                  .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                  .scaleEffect(1.5)
+                
+                Text("Loading...")
+                  .font(.system(.body, design: .rounded))
+                  .fontWeight(.medium)
+                  .foregroundColor(.white)
+              }
+              .padding(24)
               .background(
-                Capsule()
-                  .fill(Color.gray.opacity(0.2))
+                RoundedRectangle(cornerRadius: 12)
+                  .fill(Color.black.opacity(0.6))
               )
             }
-            .padding(.top, 8)
-          }
-
-          Spacer()
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-          dismissKeyboard()
-        }
-        .keyboardAdaptive()
-
-        // Version display in bottom left corner
-        VStack {
-          Spacer()
-          HStack {
-            Text(AppConfig.versionAndBuild)
-              .font(.system(.caption2, design: .monospaced))
-              .foregroundColor(.white.opacity(0.5))
-              .padding(.leading, 12)
-              .padding(.bottom, 8)
-            Spacer()
+            .transition(.opacity)
           }
         }
-        .ignoresSafeArea(.keyboard)  // Ignore keyboard to stay fixed at bottom
       }
     }
     .navigationBarHidden(true)
@@ -139,6 +184,9 @@ struct AuthView: View {
           .transition(.identity)  // Remove transition animation
       }
     )
+    .animation(.easeInOut(duration: 0.2), value: supabaseManager.isLoading)
+    .animation(.easeInOut(duration: 0.2), value: isGuestLoading)
+    .animation(.easeInOut(duration: 0.2), value: isCheckingAuth)
     .animation(nil, value: showPasswordReset)  // Disable animation for the state change
     .onAppear {
       // Set portrait orientation using the recommended API
@@ -167,6 +215,16 @@ struct AuthView: View {
 
       // Immediately set showUsernameSetup if needed
       showUsernameSetup = supabaseManager.needsUsernameSetup
+      
+      // Check authentication status
+      Task {
+        await supabaseManager.checkCurrentUser()
+        // Delay for at least a short time to avoid flickering
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        await MainActor.run {
+          isCheckingAuth = false
+        }
+      }
     }
     .onDisappear {
       // Clear success messages when the view disappears
