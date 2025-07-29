@@ -51,6 +51,7 @@ struct FishDatabase {
     Fish(name: "Red Snapper", imageName: "Red Snapper", rarity: .rare, size: .medium),
     Fish(name: "Rockfish", imageName: "Rockfish", rarity: .rare, size: .medium),
     Fish(name: "Jellyfish", imageName: "Jellyfish", rarity: .rare, size: .medium),
+    Fish(name: "Arapaima", imageName: "Arapaima", rarity: .rare, size: .huge),
 
     // Epic Fish
     Fish(name: "Shark", imageName: "Shark", rarity: .epic, size: .huge),
@@ -62,6 +63,7 @@ struct FishDatabase {
     Fish(name: "Ocean Sunfish", imageName: "Ocean Sunfish", rarity: .epic, size: .huge),
     Fish(name: "Narwhal", imageName: "Narwhal", rarity: .epic, size: .large),
     Fish(name: "Beluga Whale", imageName: "Beluga Whale", rarity: .epic, size: .large),
+    Fish(name: "Yellow Fin Tuna", imageName: "Yellow Fin Tuna", rarity: .epic, size: .large),
 
     // Legendary Fish
     Fish(name: "Manta Ray", imageName: "Manta Ray", rarity: .legendary, size: .huge),
