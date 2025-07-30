@@ -32,6 +32,7 @@ struct ContentView: View {
   @State private var showCancelConfirmation = false
   @State private var isRefreshingData = false
   @State private var isShareSheetPresented = false
+  @State private var showHelpPopup = false
 
   private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
   private let fishTimer = Timer.publish(every: 1.0 / 60.0, on: .main, in: .common).autoconnect()  // 60 FPS
@@ -82,6 +83,9 @@ struct ContentView: View {
               },
               onShareTapped: {
                 isShareSheetPresented = true
+              },
+              onHelpTapped: {
+                showHelpPopup = true
               },
               fishSpeciesCount: getUniqueSpeciesCount()
             )
@@ -187,6 +191,15 @@ struct ContentView: View {
           },
           showRewardMessage: showRewardMessage
         )
+        
+        // Help popup
+        if showHelpPopup {
+          HelpPopupView(onClose: {
+            showHelpPopup = false
+            // Mark that the user has seen the help popup
+            userPreferences.hasSeenHelpPopup = true
+          })
+        }
       }
       .sheet(isPresented: $isShareSheetPresented) {
         createShareSheet()
@@ -223,6 +236,11 @@ struct ContentView: View {
         showRewardMessage(
           "🏆 \(completedCommitment.rawValue) completed! \(completedCommitment.lootboxType.emoji) \(completedCommitment.lootboxType.rawValue) lootbox earned!\n📱 App restrictions removed."
         )
+      }
+      
+      // Show help popup on first launch
+      if !userPreferences.hasSeenHelpPopup {
+        showHelpPopup = true
       }
     }
     // Remove orientation change notification handler
