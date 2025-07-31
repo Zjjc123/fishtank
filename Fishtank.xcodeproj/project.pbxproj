@@ -61,15 +61,11 @@
 		};
 		96C2BF942E04094900B253A7 /* FishtankTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = FishtankTests;
 			sourceTree = "<group>";
 		};
 		96C2BF9E2E04094900B253A7 /* FishtankUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = FishtankUITests;
 			sourceTree = "<group>";
 		};
@@ -431,7 +427,7 @@
 				CODE_SIGN_ENTITLEMENTS = Fishtank/Fishtank.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 68;
+				CURRENT_PROJECT_VERSION = 69;
 				DEVELOPMENT_ASSET_PATHS = "\"Fishtank/Preview Content\"";
 				DEVELOPMENT_TEAM = JAT3GYBPJ4;
 				ENABLE_PREVIEWS = YES;
@@ -449,7 +445,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.jasonzhang.Fishtank;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "match AppStore dev.jasonzhang.Fishtank";
@@ -471,7 +467,7 @@
 				CODE_SIGN_ENTITLEMENTS = Fishtank/Fishtank.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 68;
+				CURRENT_PROJECT_VERSION = 69;
 				DEVELOPMENT_ASSET_PATHS = "\"Fishtank/Preview Content\"";
 				DEVELOPMENT_TEAM = JAT3GYBPJ4;
 				ENABLE_PREVIEWS = YES;
@@ -489,7 +485,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.jasonzhang.Fishtank;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "match AppStore dev.jasonzhang.Fishtank";
