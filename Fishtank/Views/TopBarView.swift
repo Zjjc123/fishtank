@@ -12,6 +12,7 @@ struct TopBarView: View {
   let onSettingsTapped: () -> Void
   let onStoreTapped: () -> Void
   let onShareTapped: () -> Void
+  let onHelpTapped: () -> Void
   let fishSpeciesCount: Int
 
   @ObservedObject private var userPreferences = UserPreferences.shared
@@ -38,6 +39,16 @@ struct TopBarView: View {
           .padding(8)
           .background(Color.black.opacity(0.15))
           .cornerRadius(8)
+        }
+
+        // Help button
+        Button(action: onHelpTapped) {
+          Image(systemName: "questionmark.circle")
+            .font(.system(size: buttonSize))
+            .foregroundColor(.white)
+            .frame(width: buttonWidth, height: buttonWidth)
+            .background(Color.black.opacity(0.15))
+            .cornerRadius(8)
         }
 
         // Store button
@@ -93,6 +104,7 @@ struct TopBarView: View {
       onSettingsTapped: {},
       onStoreTapped: {},
       onShareTapped: {},
+      onHelpTapped: {},
       fishSpeciesCount: 15
     )
   }
