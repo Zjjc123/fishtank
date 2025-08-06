@@ -57,21 +57,24 @@ final class BackgroundTaskManager {
     // Check if there's an active commitment
     let commitmentManager = CommitmentManager.shared
     if commitmentManager.isActive, let commitment = commitmentManager.currentCommitment {
-      // Force an update of the progress
-      commitmentManager.updateProgress()
-      
-      // If the commitment is completed (progress is 1.0), we need to handle it
-      if commitmentManager.progress >= 1.0 {
-        // First stop app restrictions
-        AppRestrictionManager.shared.stopAppRestriction()
+      // Get current time and calculate if commitment should be completed
+      let now = Date()
+      if let startTime = commitmentManager.commitmentStartTime {
+        let elapsedSinceStart = now.timeIntervalSince(startTime)
+        let shouldComplete = elapsedSinceStart >= commitment.duration
         
-        // Send an immediate notification
-        notificationManager.sendImmediateNotification(
-          title: "Focus Session Complete! 🎉",
-          body: "\(commitment.rawValue) completed! You earned a \(commitment.lootboxType.rawValue) lootbox!"
-        )
-        
-        print("Successfully completed focus session in background and removed app restrictions")
+        if shouldComplete {
+          // Mark the commitment as completed
+          await completeCommitmentInBackground(commitment: commitment)
+        } else {
+          // Force an update of the progress
+          commitmentManager.updateProgress()
+          
+          // Check again after updating progress
+          if commitmentManager.progress >= 1.0 {
+            await completeCommitmentInBackground(commitment: commitment)
+          }
+        }
       }
     }
 
@@ -83,6 +86,31 @@ final class BackgroundTaskManager {
     // End background task and complete
     endBackgroundTask()
     task.setTaskCompleted(success: true)
+  }
+  
+  private func completeCommitmentInBackground(commitment: FocusCommitment) async {
+    // First stop app restrictions
+    AppRestrictionManager.shared.stopAppRestriction()
+    
+    // Send an immediate notification
+    notificationManager.sendImmediateNotification(
+      title: "Focus Session Complete! 🎉",
+      body: "\(commitment.rawValue) completed! You earned a \(commitment.lootboxType.rawValue) lootbox!"
+    )
+    
+    // Track completed focus time
+    await GameStateManager.shared.addFocusTime(commitment.duration)
+    
+    // Spawn lootbox reward (will be visible when app is opened)
+    FishTankManager.shared.spawnLootbox(type: commitment.lootboxType)
+    
+    print("Successfully completed focus session in background")
+    
+    // Mark the commitment as completed in CommitmentManager
+    // We need to do this in a way that preserves the completion state
+    UserDefaults.standard.set(true, forKey: "pendingCommitmentCompletion")
+    UserDefaults.standard.set(commitment.rawValue, forKey: "pendingCommitmentType")
+    UserDefaults.standard.synchronize()
   }
 
   private func endBackgroundTask() {
