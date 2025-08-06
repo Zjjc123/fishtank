@@ -82,6 +82,10 @@ final class CommitmentManager: ObservableObject {
   @objc private func appDidBecomeActive() {
     // Update progress when app comes to foreground
     if isActive {
+      // First check if commitment should be completed based on current state
+      checkAndCompleteCommitment()
+      
+      // Then update progress for background time
       updateProgressAfterBackground()
     }
   }
@@ -116,6 +120,31 @@ final class CommitmentManager: ObservableObject {
 
   private func loadState() {
     let defaults = UserDefaults.standard
+    
+    // Check if there's a pending commitment completion from background task
+    let pendingCompletion = defaults.bool(forKey: "pendingCommitmentCompletion")
+    if pendingCompletion {
+      if let commitmentString = defaults.string(forKey: "pendingCommitmentType"),
+         let commitment = FocusCommitment(rawValue: commitmentString) {
+        // Set the commitment as completed
+        currentCommitment = commitment
+        elapsedTime = commitment.duration
+        isCompleted = true
+        
+        // Clear the pending completion flags
+        defaults.removeObject(forKey: "pendingCommitmentCompletion")
+        defaults.removeObject(forKey: "pendingCommitmentType")
+        defaults.synchronize()
+        
+        // Reset the commitment after a short delay to allow UI to show completion
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+          self?.resetCommitment()
+        }
+        
+        // Exit early since we've handled this special case
+        return
+      }
+    }
 
     // Load commitment type
     if let commitmentString = defaults.string(forKey: commitmentTypeKey),
@@ -131,9 +160,13 @@ final class CommitmentManager: ObservableObject {
 
     // Load elapsed time
     elapsedTime = defaults.double(forKey: elapsedTimeKey)
-
-    // Update progress based on time passed while app was closed
+    
+    // Check if commitment should be completed immediately after loading state
     if isActive {
+      // First check if the commitment should be completed based on loaded state
+      checkAndCompleteCommitment()
+      
+      // Then update progress based on time passed while app was closed
       updateProgressAfterBackground()
     }
   }
@@ -157,16 +190,24 @@ final class CommitmentManager: ObservableObject {
 
         // Add the background time to elapsed time
         elapsedTime += boostedBackgroundTime
-
+        
         // Check if commitment should be completed
-        if elapsedTime >= commitment.duration && !isCompleted {
-          completeCommitment()
-        }
+        checkAndCompleteCommitment()
       }
     }
 
     // Update lastUpdateTime to now
     lastUpdateTime = Date()
+  }
+  
+  // New helper method to centralize commitment completion check
+  private func checkAndCompleteCommitment() {
+    guard let commitment = currentCommitment, !isCompleted else { return }
+    
+    // Check if elapsed time has reached or exceeded the commitment duration
+    if elapsedTime >= commitment.duration {
+      completeCommitment()
+    }
   }
 
   // MARK: - Computed Properties
@@ -230,10 +271,8 @@ final class CommitmentManager: ObservableObject {
     // Update elapsed time
     elapsedTime += boostedElapsed
 
-    // Check for completion
-    if let commitment = currentCommitment, elapsedTime >= commitment.duration {
-      completeCommitment()
-    }
+    // Check for completion using the centralized method
+    checkAndCompleteCommitment()
   }
 
   private func completeCommitment() {
